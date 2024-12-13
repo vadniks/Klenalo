@@ -20,5 +20,5 @@ add_compile_definitions("-D_GNU_SOURCE -D_THREAD_SAFE")
 file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h src/*/*.c src/*/*.h)
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
-include_directories(lib/nuklear/include)
-target_link_libraries(${PROJECT_NAME} c m SDL2)
+include_directories(lib/lvgl/include)
+target_link_libraries(${PROJECT_NAME} c m SDL2 ${PROJECT_SOURCE_DIR}/lib/lvgl/bin/liblvgl.a)
