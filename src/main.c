@@ -102,6 +102,7 @@ int main(void) {
 
     lv_init();
     lv_tick_set_cb(SDL_GetTicks);
+    lv_delay_set_cb(SDL_Delay);
 
     lv_display_t* display = lv_display_create(WIDTH, HEIGHT);
     lv_display_set_color_format(display, LV_COLOR_FORMAT_ARGB8888);
