@@ -9,9 +9,6 @@ static SDL_Window* gWindow = nullptr;
 static SDL_Renderer* gRenderer = nullptr;
 static SDL_Texture* gTexture = nullptr;
 
-static int gMouseX = 0, gMouseY = 0;
-static bool gMouseLeftButtonPressed = false, gMouseRightButtonPressed = false;
-
 static byte gBuffer[WIDTH * HEIGHT * LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_ARGB8888)];
 
 static void flushCallback(lv_display_t* display, const lv_area_t*, byte*) {
@@ -30,15 +27,6 @@ static void flushCallback(lv_display_t* display, const lv_area_t*, byte*) {
     assert(!SDL_RenderClear(gRenderer));
     assert(!SDL_RenderCopy(gRenderer, gTexture, nullptr, nullptr));
     SDL_RenderPresent(gRenderer);
-}
-
-static void mouseInputRead(lv_indev_t*, lv_indev_data_t* data) {
-    if (gMouseLeftButtonPressed) {
-        data->point.x = gMouseX;
-        data->point.y = gMouseY;
-        data->state = LV_INDEV_STATE_PRESSED;
-    } else
-        data->state = LV_INDEV_STATE_RELEASED;
 }
 
 int main(void) {
@@ -90,47 +78,24 @@ int main(void) {
 
 //    lv_display_set_resolution() // TODO
 
-    lv_indev_t* mouseDev = lv_indev_create();
-    lv_indev_set_type(mouseDev, LV_INDEV_TYPE_POINTER);
-//    lv_indev_set_mode(mouseDev, LV_INDEV_MODE_EVENT);
-    lv_indev_set_read_cb(mouseDev, mouseInputRead);
+    // TODO: input
 
     lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x003a57), LV_PART_MAIN);
-//    lv_obj_t* label = lv_label_create(lv_screen_active());
-//    lv_label_set_text(label, "Hello world");
-//    lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0xffffff), LV_PART_MAIN);
-//    lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_t* label = lv_label_create(lv_screen_active());
+    lv_label_set_text(label, "Hello world");
+    lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0xffffff), LV_PART_MAIN);
+    lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
 
     while (true) {
-        SDL_Delay(lv_timer_handler());
+        lv_timer_periodic_handler();
 
         SDL_Event event;
         while (SDL_PollEvent(&event) == 1) {
             switch (event.type) {
                 case SDL_QUIT:
                     goto endLoop;
-                case SDL_MOUSEMOTION:
-                    gMouseX = event.motion.xrel;
-                    gMouseY = event.motion.yrel;
-                    lv_indev_read(mouseDev);
-                    break;
-                case SDL_MOUSEBUTTONDOWN:
-                    if (event.button.button == 0)
-                        gMouseLeftButtonPressed = true;
-                    if (event.button.button == 1)
-                        gMouseRightButtonPressed = true;
-                    lv_indev_read(mouseDev);
-                    break;
-                case SDL_MOUSEBUTTONUP:
-                    if (event.button.button == 0)
-                        gMouseLeftButtonPressed = false;
-                    if (event.button.button == 1)
-                        gMouseRightButtonPressed = false;
-                    lv_indev_read(mouseDev);
-                    break;
-                case SDL_MOUSEWHEEL:
-//                    event.wheel.y > 0 ? up() : down();
-                    break;
+                default:
+
             }
         }
 
@@ -138,8 +103,8 @@ int main(void) {
     }
     endLoop:
 
+    lv_obj_delete(label);
     lv_display_delete(display);
-    lv_indev_delete(mouseDev);
     lv_deinit();
 
     SDL_DestroyTexture(gTexture);
