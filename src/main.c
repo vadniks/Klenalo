@@ -18,7 +18,7 @@ static void flushCallback(lv_display_t* display, const lv_area_t*, byte*) {
     assert(!SDL_LockTexture(gTexture, nullptr, &texturePixels, &texturePitch));
     assert(texturePitch == WIDTH * 4);
 
-    SDL_memcpy(texturePixels, gBuffer, sizeof(gBuffer)/*texturePitch * HEIGHT*/);
+    SDL_memcpy(texturePixels, gBuffer, sizeof(gBuffer));
 
     SDL_UnlockTexture(gTexture);
 
@@ -75,15 +75,18 @@ int main(void) {
 
     lv_display_t* display = lv_display_create(WIDTH, HEIGHT);
 
+    lv_display_set_color_format(display, LV_COLOR_FORMAT_ARGB8888);
+
     lv_display_set_buffers(display, gBuffer, nullptr, sizeof(gBuffer), LV_DISPLAY_RENDER_MODE_DIRECT);
 
     lv_display_set_flush_cb(display, flushCallback);
 
     lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x003a57), LV_PART_MAIN);
-    lv_obj_t * label = lv_label_create(lv_screen_active());
+    lv_obj_t* label = lv_label_create(lv_screen_active());
     lv_label_set_text(label, "Hello world");
     lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0xffffff), LV_PART_MAIN);
     lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+    // TODO: delete label
 
     while (true) {
         SDL_Delay(lv_timer_handler());
