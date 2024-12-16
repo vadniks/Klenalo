@@ -81,6 +81,8 @@ int main(void) {
 
     lv_display_set_flush_cb(display, flushCallback);
 
+//    lv_display_set_resolution() // TODO
+
     lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x003a57), LV_PART_MAIN);
     lv_obj_t* label = lv_label_create(lv_screen_active());
     lv_label_set_text(label, "Hello world");
@@ -89,7 +91,7 @@ int main(void) {
     // TODO: delete label
 
     while (true) {
-        SDL_Delay(lv_timer_handler());
+        /*SDL_Delay();*/ printf("%u\n", lv_timer_handler());
 
         SDL_Event event;
         while (SDL_PollEvent(&event) == 1) {
