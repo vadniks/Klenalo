@@ -1,4 +1,5 @@
 /.idea
 /build
 /lib
+!lib/lvgl/include/lvgl/lv_conf.h
 !.gitignore
