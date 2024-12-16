@@ -11,7 +11,10 @@ static SDL_Texture* gTexture = nullptr;
 
 static byte gBuffer[WIDTH * HEIGHT * LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_ARGB8888)];
 
-static void flushCallback(lv_display_t* display, const lv_area_t*, byte*) {
+static int gMouseX = 0, gMouseY = 0;
+static bool gMousePressed = false;
+
+static void renderCallback(lv_display_t* display, const lv_area_t*, byte*) {
     void* texturePixels = nullptr;
     int texturePitch = 0;
     assert(!SDL_LockTexture(gTexture, nullptr, &texturePixels, &texturePitch));
@@ -27,6 +30,20 @@ static void flushCallback(lv_display_t* display, const lv_area_t*, byte*) {
     assert(!SDL_RenderClear(gRenderer));
     assert(!SDL_RenderCopy(gRenderer, gTexture, nullptr, nullptr));
     SDL_RenderPresent(gRenderer);
+}
+
+static void mouseCallback(lv_indev_t*, lv_indev_data_t* data) {
+    data->point.x = gMouseX;
+    data->point.y = gMouseY;
+    data->state = gMousePressed ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
+}
+
+static void mouseWheelCallback(lv_indev_t*, lv_indev_data_t* data) {
+
+}
+
+static void keyboardCallback(lv_indev_t*, lv_indev_data_t* data) {
+
 }
 
 int main(void) {
@@ -74,11 +91,24 @@ int main(void) {
     lv_display_t* display = lv_display_create(WIDTH, HEIGHT);
     lv_display_set_color_format(display, LV_COLOR_FORMAT_ARGB8888);
     lv_display_set_buffers(display, gBuffer, nullptr, sizeof(gBuffer), LV_DISPLAY_RENDER_MODE_DIRECT);
-    lv_display_set_flush_cb(display, flushCallback);
+    lv_display_set_flush_cb(display, renderCallback);
 
 //    lv_display_set_resolution() // TODO
 
-    // TODO: input
+    lv_indev_t* mouse = lv_indev_create();
+    lv_indev_set_type(mouse, LV_INDEV_TYPE_POINTER);
+    lv_indev_set_mode(mouse, LV_INDEV_MODE_EVENT);
+    lv_indev_set_read_cb(mouse, mouseCallback);
+
+    lv_indev_t* mouseWheel = lv_indev_create();
+    lv_indev_set_type(mouseWheel, LV_INDEV_TYPE_ENCODER);
+    lv_indev_set_mode(mouseWheel, LV_INDEV_MODE_EVENT);
+    lv_indev_set_read_cb(mouseWheel, mouseWheelCallback);
+
+    lv_indev_t* keyboard = lv_indev_create();
+    lv_indev_set_type(keyboard, LV_INDEV_TYPE_KEYPAD);
+    lv_indev_set_mode(keyboard, LV_INDEV_MODE_EVENT);
+    lv_indev_set_read_cb(keyboard, keyboardCallback);
 
     lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x003a57), LV_PART_MAIN);
     lv_obj_t* label = lv_label_create(lv_screen_active());
@@ -94,8 +124,30 @@ int main(void) {
             switch (event.type) {
                 case SDL_QUIT:
                     goto endLoop;
-                default:
-
+                case SDL_MOUSEMOTION:
+                    gMouseX = event.motion.xrel;
+                    gMouseY = event.motion.yrel;
+                    lv_indev_read(mouse);
+                    break;
+                case SDL_MOUSEBUTTONDOWN:
+                    if (event.button.button == SDL_BUTTON_LEFT) {
+                        gMousePressed = true;
+                        lv_indev_read(mouse);
+                    }
+                    break;
+                case SDL_MOUSEBUTTONUP:
+                    if (event.button.button == SDL_BUTTON_LEFT) {
+                        gMousePressed = false;
+                        lv_indev_read(mouse);
+                    }
+                    break;
+                case SDL_WINDOWEVENT:
+                    gMousePressed = false;
+                    lv_indev_read(mouse);
+                    break;
+                case SDL_MOUSEWHEEL:
+//                    event.wheel.y > 0 ? up() : down();
+                    break;
             }
         }
 
@@ -103,6 +155,9 @@ int main(void) {
     }
     endLoop:
 
+    lv_indev_delete(mouse);
+    lv_indev_delete(mouseWheel);
+    lv_indev_delete(keyboard);
     lv_obj_delete(label);
     lv_display_delete(display);
     lv_deinit();
