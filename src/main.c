@@ -11,8 +11,6 @@ static SDL_Window* gWindow = nullptr;
 static SDL_Renderer* gRenderer = nullptr;
 static SDL_Texture* gTexture = nullptr;
 
-static byte* gBuffer = nullptr;
-
 static int gMouseX = 0, gMouseY = 0;
 static bool gMousePressed = false;
 static short gMouseWheelDiff = 0;
@@ -20,15 +18,7 @@ static bool gMouseWheelPressed = false;
 static char gKeyboardInputBuffer[KEYBOARD_INPUT_BUFFER_SIZE] = {0};
 static bool gKeyboardDummyRead = false;
 
-static inline int bufferSize() { return gWidth * gHeight * LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_ARGB8888); }
-
 static inline void resizeBuffer(lv_display_t* display) {
-    gBuffer = SDL_realloc(gBuffer, bufferSize());
-    assert(gBuffer);
-
-    lv_display_set_resolution(display, gWidth, gHeight);
-    lv_display_set_buffers(display, gBuffer, nullptr, bufferSize(), LV_DISPLAY_RENDER_MODE_DIRECT);
-
     if (gTexture) SDL_DestroyTexture(gTexture);
     gTexture = SDL_CreateTexture(
         gRenderer,
@@ -38,16 +28,23 @@ static inline void resizeBuffer(lv_display_t* display) {
         gHeight
     );
     assert(gTexture);
+
+    void* buffer = nullptr;
+    assert(!SDL_LockTexture(gTexture, nullptr, &buffer, unusedVariableBuffer(int)));
+    assert(buffer);
+
+    lv_display_set_resolution(display, gWidth, gHeight);
+    lv_display_set_buffers(
+        display,
+        buffer,
+        nullptr,
+        gWidth * gHeight * LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_ARGB8888),
+        LV_DISPLAY_RENDER_MODE_DIRECT
+    );
 }
 
 static void renderCallback(lv_display_t* display, const lv_area_t*, byte*) {
-    void* texturePixels = nullptr;
-    int texturePitch = 0;
-    assert(!SDL_LockTexture(gTexture, nullptr, &texturePixels, &texturePitch)); // TODO: remove unnecessary texture locks and just recreate texture every time here
-    assert(texturePitch == gWidth * 4);
-    SDL_Log("%p", texturePixels); // TODO: use this texturePixels buffer as display buffer for lvgl instead of currently existing gBuffer
-
-    SDL_memcpy(texturePixels, gBuffer, bufferSize());
+    assert(!SDL_LockTexture(gTexture, nullptr, unusedVariableBuffer(void*), unusedVariableBuffer(int)));
 
     SDL_UnlockTexture(gTexture);
 
@@ -185,6 +182,11 @@ int main(void) {
                 case SDL_WINDOWEVENT:
                     gMousePressed = false;
                     lv_indev_read(mouse);
+
+                    if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+                        SDL_GetRendererOutputSize(gRenderer, &gWidth, &gHeight);
+                        resizeBuffer(display);
+                    }
                     break;
                 case SDL_MOUSEWHEEL:
                     gMouseWheelDiff = (short) -(event.wheel.y);
@@ -250,9 +252,6 @@ int main(void) {
                 }
             }
         }
-
-        SDL_GetRendererOutputSize(gRenderer, &gWidth, &gHeight);
-        resizeBuffer(display);
     }
     endLoop:
 
@@ -260,7 +259,6 @@ int main(void) {
     lv_indev_delete(mouseWheel);
     lv_indev_delete(keyboard);
     lv_obj_delete(label);
-    SDL_free(gBuffer);
     lv_display_delete(display);
     lv_deinit();
 
