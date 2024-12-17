@@ -21,3 +21,27 @@ typedef unsigned char byte;
 staticAssert(sizeof(byte) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
 inline void assert(bool condition) { if (!condition) asm volatile ("call abort"); }
+
+void* mallocZeroed(unsigned long size); // { return SDL_calloc(size, 1); }
+asm(
+//    ".global mallocZeroed\n"
+    "mallocZeroed:\n"
+    "movl $1, %esi\n"
+    "jmp SDL_calloc"
+);
+//asm(
+//    ".global mallocZeroed\n"
+//    "mallocZeroed:\n"
+//    "subq $8, %rsp\n"
+//    "movl $1, %esi\n"
+//    "call SDL_calloc\n"
+//    "addq $8, %rsp\n"
+//    "ret"
+//);
+//asm(
+//    ".global mallocZeroed\n"
+//    "mallocZeroed:\n"
+//    "mov $1, %esi\n"
+//    "jmp SDL_calloc\n"
+//    "nopw 0(%rax, %rax, 1)"
+//);

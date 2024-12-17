@@ -62,6 +62,15 @@ static void keyboardCallback(lv_indev_t*, lv_indev_data_t* data) {
 }
 
 int main(void) {
+    printf("%d\n", SDL_GetNumAllocations());
+    void* a = mallocZeroed(100);
+    printf("%d\n", SDL_GetNumAllocations());
+
+    printf("%p\n", a);
+    SDL_free(a);
+    printf("%d\n", SDL_GetNumAllocations());
+
+    return 0;
     assert(SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0"));
     assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER) == 0);
 
