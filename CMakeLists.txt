@@ -5,8 +5,8 @@ project(Klenalo LANGUAGES C)
 
 set(CMAKE_C_STANDARD 23)
 
-if(NOT CMAKE_C_COMPILER_ID STREQUAL "Clang" AND NOT CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    message(SEND_ERROR "GNU extensions are used")
+if(NOT CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    message(SEND_ERROR "Extensions are used")
 endif()
 
 add_compile_options("-Wall")
