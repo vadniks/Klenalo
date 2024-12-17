@@ -22,7 +22,7 @@ staticAssert(sizeof(byte) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(
 
 inline void assert(bool condition) { if (!condition) asm volatile ("call abort"); }
 
-void* mallocZeroed(unsigned long size); // { return SDL_calloc(size, 1); }
+void* mallocZeroed(unsigned long size);
 asm(
     ".global mallocZeroed\n"
     "mallocZeroed:\n"

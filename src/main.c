@@ -63,10 +63,11 @@ static void keyboardCallback(lv_indev_t*, lv_indev_data_t* data) {
 
 int main(void) {
     printf("%d\n", SDL_GetNumAllocations());
-    void* a = mallocZeroed(100);
+    int* a = mallocZeroed(4);
     printf("%d\n", SDL_GetNumAllocations());
+    *a = 0x12345678;
 
-    printf("%p\n", a);
+    printf("%p %p\n", a, *a);
     SDL_free(a);
     printf("%d\n", SDL_GetNumAllocations());
 
