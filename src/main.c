@@ -43,7 +43,7 @@ static inline void resizeBuffer(lv_display_t* display) {
 static void renderCallback(lv_display_t* display, const lv_area_t*, byte*) {
     void* texturePixels = nullptr;
     int texturePitch = 0;
-    assert(!SDL_LockTexture(gTexture, nullptr, &texturePixels, &texturePitch));
+    assert(!SDL_LockTexture(gTexture, nullptr, &texturePixels, &texturePitch)); // TODO: remove unnecessary texture locks and just recreate texture every time here
     assert(texturePitch == gWidth * 4);
 
     SDL_memcpy(texturePixels, gBuffer, bufferSize());
