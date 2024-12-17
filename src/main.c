@@ -45,6 +45,7 @@ static void renderCallback(lv_display_t* display, const lv_area_t*, byte*) {
     int texturePitch = 0;
     assert(!SDL_LockTexture(gTexture, nullptr, &texturePixels, &texturePitch)); // TODO: remove unnecessary texture locks and just recreate texture every time here
     assert(texturePitch == gWidth * 4);
+    SDL_Log("%p", texturePixels); // TODO: use this texturePixels buffer as display buffer for lvgl instead of currently existing gBuffer
 
     SDL_memcpy(texturePixels, gBuffer, bufferSize());
 
