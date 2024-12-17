@@ -24,24 +24,8 @@ inline void assert(bool condition) { if (!condition) asm volatile ("call abort")
 
 void* mallocZeroed(unsigned long size); // { return SDL_calloc(size, 1); }
 asm(
-//    ".global mallocZeroed\n"
+    ".global mallocZeroed\n"
     "mallocZeroed:\n"
     "movl $1, %esi\n"
     "jmp SDL_calloc"
 );
-//asm(
-//    ".global mallocZeroed\n"
-//    "mallocZeroed:\n"
-//    "subq $8, %rsp\n"
-//    "movl $1, %esi\n"
-//    "call SDL_calloc\n"
-//    "addq $8, %rsp\n"
-//    "ret"
-//);
-//asm(
-//    ".global mallocZeroed\n"
-//    "mallocZeroed:\n"
-//    "mov $1, %esi\n"
-//    "jmp SDL_calloc\n"
-//    "nopw 0(%rax, %rax, 1)"
-//);
