@@ -46,7 +46,7 @@ static void renderCallback(lv_display_t* display, const lv_area_t*, byte*) {
     assert(!SDL_LockTexture(gTexture, nullptr, &texturePixels, &texturePitch));
     assert(texturePitch == gWidth * 4);
 
-    SDL_memcpy(texturePixels, gBuffer, bufferSize()); // TODO: resize sdl texture
+    SDL_memcpy(texturePixels, gBuffer, bufferSize());
 
     SDL_UnlockTexture(gTexture);
 
