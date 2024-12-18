@@ -81,6 +81,10 @@ static void keyboardCallback(lv_indev_t*, lv_indev_data_t* data) {
     }
 }
 
+static void buttonCallback(lv_event_t* event) {
+    SDL_Log("a");
+}
+
 int main(void) {
     assert(SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0"));
     assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER) == 0);
@@ -134,11 +138,24 @@ int main(void) {
     lv_indev_set_mode(keyboard, LV_INDEV_MODE_EVENT);
     lv_indev_set_read_cb(keyboard, keyboardCallback);
 
+    lv_group_t* group = lv_group_create();
+    lv_group_set_default(group);
+    lv_indev_set_group(mouse, group);
+
     lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x003a57), LV_PART_MAIN);
     lv_obj_t* label = lv_label_create(lv_screen_active());
     lv_label_set_text(label, "Hello world");
     lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0xffffff), LV_PART_MAIN);
     lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+
+    lv_obj_t* button = lv_button_create(lv_screen_active());
+    lv_obj_set_pos(button, 10, 10);
+    lv_obj_set_size(button, 120, 50);
+    lv_obj_add_event_cb(button, buttonCallback, LV_EVENT_CLICKED, nullptr);
+
+    lv_obj_t* label2 = lv_label_create(button);
+    lv_label_set_text(label2, "Button");
+    lv_obj_center(label2);
 
     while (true) {
         lv_timer_periodic_handler();
@@ -151,8 +168,8 @@ int main(void) {
                 case SDL_QUIT:
                     goto endLoop;
                 case SDL_MOUSEMOTION:
-                    gMouseX = event.motion.xrel;
-                    gMouseY = event.motion.yrel;
+                    gMouseX = event.motion.x;
+                    gMouseY = event.motion.y;
                     lv_indev_read(mouse);
                     break;
                 case SDL_MOUSEBUTTONDOWN:
@@ -258,7 +275,10 @@ int main(void) {
     lv_indev_delete(mouse);
     lv_indev_delete(mouseWheel);
     lv_indev_delete(keyboard);
+    lv_obj_delete(label2);
+    lv_obj_delete(button);
     lv_obj_delete(label);
+    lv_group_delete(group);
     lv_display_delete(display);
     lv_deinit();
 
