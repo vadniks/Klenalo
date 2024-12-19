@@ -73,7 +73,7 @@ static void keyboardCallback(lv_indev_t*, lv_indev_data_t* data) {
     if (gKeyboardDummyRead) {
         gKeyboardDummyRead = false;
         data->state = LV_INDEV_STATE_RELEASED;
-    } else if (length > 0) {
+    } else if (length > 0) { // TODO: simplify this
         gKeyboardDummyRead = true;
         data->state = LV_INDEV_STATE_PRESSED;
         data->key = (unsigned) gKeyboardInputBuffer[0];
@@ -81,7 +81,7 @@ static void keyboardCallback(lv_indev_t*, lv_indev_data_t* data) {
     }
 }
 
-static void buttonCallback(lv_event_t* event) {
+static void buttonCallback(lv_event_t*) {
     SDL_Log("a");
 }
 
@@ -138,16 +138,18 @@ int main(void) {
     lv_indev_set_mode(keyboard, LV_INDEV_MODE_EVENT);
     lv_indev_set_read_cb(keyboard, keyboardCallback);
 
-    lv_group_t* group = lv_group_create();
-    lv_group_set_default(group);
-    lv_indev_set_group(mouse, group);
-
     lv_font_t* font = lv_freetype_font_create(
         "res/Roboto-Regular.ttf",
         LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
         24,
         LV_FREETYPE_FONT_STYLE_NORMAL
     );
+
+    lv_group_t* group = lv_group_create();
+    lv_group_set_default(group);
+    lv_indev_set_group(mouse, group);
+    lv_indev_set_group(mouseWheel, group);
+    lv_indev_set_group(keyboard, group);
 
     lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x003a57), LV_PART_MAIN);
 
@@ -165,6 +167,10 @@ int main(void) {
     lv_obj_t* label2 = lv_label_create(button);
     lv_label_set_text(label2, "Button");
     lv_obj_center(label2);
+
+    lv_obj_t* textArea = lv_textarea_create(lv_screen_active());
+    lv_obj_set_style_text_font(textArea, font, 0);
+    lv_obj_align(textArea, LV_ALIGN_TOP_MID, 100, 10);
 
     while (true) {
         lv_timer_periodic_handler();
@@ -281,14 +287,15 @@ int main(void) {
     }
     endLoop:
 
-    lv_indev_delete(mouse);
-    lv_indev_delete(mouseWheel);
-    lv_indev_delete(keyboard);
+    lv_obj_delete(textArea);
     lv_obj_delete(label2);
     lv_obj_delete(button);
     lv_obj_delete(label);
-    lv_freetype_font_delete(font);
     lv_group_delete(group);
+    lv_freetype_font_delete(font);
+    lv_indev_delete(mouse);
+    lv_indev_delete(mouseWheel);
+    lv_indev_delete(keyboard);
     lv_display_delete(display);
     lv_deinit();
 
