@@ -28,6 +28,7 @@ static inline void resizeBuffer(lv_display_t* display) {
 
     void* buffer = nullptr;
     assert(!SDL_LockTexture(gTexture, nullptr, &buffer, unusedVariableBuffer(int)));
+    SDL_UnlockTexture(gTexture);
     assert(buffer);
 
     lv_display_set_resolution(display, gWidth, gHeight);
@@ -42,15 +43,14 @@ static inline void resizeBuffer(lv_display_t* display) {
 
 static void renderCallback(lv_display_t* display, const lv_area_t*, byte*) {
     assert(!SDL_LockTexture(gTexture, nullptr, unusedVariableBuffer(void*), unusedVariableBuffer(int)));
-
     SDL_UnlockTexture(gTexture);
-
-    lv_display_flush_ready(display);
 
     assert(!SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0));
     assert(!SDL_RenderClear(gRenderer));
     assert(!SDL_RenderCopy(gRenderer, gTexture, nullptr, nullptr));
     SDL_RenderPresent(gRenderer);
+
+    lv_display_flush_ready(display);
 }
 
 static void mouseCallback(lv_indev_t*, lv_indev_data_t* data) {

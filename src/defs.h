@@ -15,7 +15,7 @@ typedef unsigned char byte;
 #define max(x, y) (x > y ? x : y)
 #define boolToStr(x) (x ? "true" : "false")
 #define xAlloca(x) (void*) ((byte[x]) {0})
-#define unusedVariableBuffer(x) xAlloca(sizeof(x))
+#define unusedVariableBuffer(x) (x[1]) {0}
 #define xalloc(x) SDL_calloc(x, 1)
 #define USED(x) ((void) x)
 #define STUB USED(0)
