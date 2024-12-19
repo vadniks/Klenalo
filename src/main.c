@@ -28,13 +28,13 @@ static inline void resizeBuffer(lv_display_t* display) {
 
     void* buffer = nullptr;
     assert(!SDL_LockTexture(gTexture, nullptr, &buffer, unusedVariableBuffer(int)));
-    SDL_UnlockTexture(gTexture);
     assert(buffer);
+    SDL_UnlockTexture(gTexture);
 
     lv_display_set_resolution(display, gWidth, gHeight);
     lv_display_set_buffers(
         display,
-        buffer,
+        buffer, // this is possibly unsafe that the texture's internal buffer is used directly as the lvgl's display buffer but works fine
         nullptr,
         gWidth * gHeight * LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_ARGB8888),
         LV_DISPLAY_RENDER_MODE_DIRECT
@@ -42,8 +42,7 @@ static inline void resizeBuffer(lv_display_t* display) {
 }
 
 static void renderCallback(lv_display_t* display, const lv_area_t*, byte*) {
-    assert(!SDL_LockTexture(gTexture, nullptr, unusedVariableBuffer(void*), unusedVariableBuffer(int)));
-    SDL_UnlockTexture(gTexture);
+    SDL_UnlockTexture(gTexture); // upload the changes to video memory, doesn't work without it
 
     assert(!SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0));
     assert(!SDL_RenderClear(gRenderer));
