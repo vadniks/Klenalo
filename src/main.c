@@ -64,6 +64,7 @@ static void mouseCallback(lv_indev_t*, lv_indev_data_t* data) {
 
 static void mouseWheelCallback(lv_indev_t*, lv_indev_data_t* data) {
     data->enc_diff = gMouseWheelDiff;
+    gMouseWheelDiff = 0;
     data->state = gMouseWheelPressed ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
 }
 
