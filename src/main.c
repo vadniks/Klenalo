@@ -142,9 +142,18 @@ int main(void) {
     lv_group_set_default(group);
     lv_indev_set_group(mouse, group);
 
+    lv_font_t* font = lv_freetype_font_create(
+        "res/Roboto-Regular.ttf",
+        LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
+        24,
+        LV_FREETYPE_FONT_STYLE_NORMAL
+    );
+
     lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x003a57), LV_PART_MAIN);
+
     lv_obj_t* label = lv_label_create(lv_screen_active());
-    lv_label_set_text(label, "Hello world");
+    lv_obj_set_style_text_font(label, font, 0);
+    lv_label_set_text(label, u8" Hello World!\nПривет мир!");
     lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0xffffff), LV_PART_MAIN);
     lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
 
@@ -278,6 +287,7 @@ int main(void) {
     lv_obj_delete(label2);
     lv_obj_delete(button);
     lv_obj_delete(label);
+    lv_freetype_font_delete(font);
     lv_group_delete(group);
     lv_display_delete(display);
     lv_deinit();
