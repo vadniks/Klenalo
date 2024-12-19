@@ -73,7 +73,6 @@ static void keyboardCallback(lv_indev_t*, lv_indev_data_t* data) {
 
     data->state = LV_INDEV_STATE_PRESSED;
     data->key = gKeyboardInput;
-    gKeyboardInput = 0;
 }
 
 static void buttonCallback(lv_event_t*) {
@@ -262,7 +261,13 @@ int main(void) {
                             break;
                     }
 
-                    gKeyboardInput = key;
+                    if (key) {
+                        gKeyboardInput = key;
+                        lv_indev_read(keyboard);
+                    }
+                    break;
+                case SDL_KEYUP:
+                    gKeyboardInput = 0;
                     lv_indev_read(keyboard);
                     break;
                 case SDL_TEXTINPUT:
