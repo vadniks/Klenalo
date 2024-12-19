@@ -44,7 +44,7 @@ static inline void resizeBuffer(lv_display_t* display) {
 }
 
 static void renderCallback(lv_display_t* display, const lv_area_t*, byte*) {
-    SDL_UnlockTexture(gTexture); // upload the changes to video memory, doesn't work without it
+    SDL_UnlockTexture(gTexture); // upload changes to video memory
 
     assert(!SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0));
     assert(!SDL_RenderClear(gRenderer));
