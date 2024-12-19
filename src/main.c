@@ -3,8 +3,6 @@
 #include <lvgl/lvgl.h>
 #include "defs.h"
 
-static const int KEYBOARD_INPUT_BUFFER_SIZE = KEYBOARD_BUFFER_SIZE;
-
 static int gWidth = 1600, gHeight = 900;
 
 static SDL_Window* gWindow = nullptr;
@@ -15,8 +13,7 @@ static int gMouseX = 0, gMouseY = 0;
 static bool gMousePressed = false;
 static short gMouseWheelDiff = 0;
 static bool gMouseWheelPressed = false;
-static char gKeyboardInputBuffer[KEYBOARD_INPUT_BUFFER_SIZE] = {0};
-static bool gKeyboardDummyRead = false;
+static unsigned gKeyboardInput = 0;
 
 static inline void resizeBuffer(lv_display_t* display) {
     if (gTexture) SDL_DestroyTexture(gTexture);
@@ -69,17 +66,14 @@ static void mouseWheelCallback(lv_indev_t*, lv_indev_data_t* data) {
 }
 
 static void keyboardCallback(lv_indev_t*, lv_indev_data_t* data) {
-    const unsigned long length = SDL_strlen(gKeyboardInputBuffer);
-
-    if (gKeyboardDummyRead) {
-        gKeyboardDummyRead = false;
+    if (!gKeyboardInput) {
         data->state = LV_INDEV_STATE_RELEASED;
-    } else if (length > 0) { // TODO: simplify this
-        gKeyboardDummyRead = true;
-        data->state = LV_INDEV_STATE_PRESSED;
-        data->key = (unsigned) gKeyboardInputBuffer[0];
-        memmove(gKeyboardInputBuffer, gKeyboardInputBuffer + 1, length); // not SDL_memmove (src overflow handled)
+        return;
     }
+
+    data->state = LV_INDEV_STATE_PRESSED;
+    data->key = gKeyboardInput;
+    gKeyboardInput = 0;
 }
 
 static void buttonCallback(lv_event_t*) {
@@ -177,8 +171,6 @@ int main(void) {
         lv_timer_periodic_handler();
 
         SDL_Event event;
-        bool keyboardEvent = false;
-
         while (SDL_PollEvent(&event) == 1) {
             switch (event.type) {
                 case SDL_QUIT:
@@ -270,31 +262,13 @@ int main(void) {
                             break;
                     }
 
-                    if (!key)
-                        break;
-
-                    const int length = (int) SDL_strlen(gKeyboardInputBuffer);
-                    if (length < KEYBOARD_INPUT_BUFFER_SIZE - 1) {
-                        gKeyboardInputBuffer[length] = (char) key;
-                        gKeyboardInputBuffer[length + 1] = 0;
-                    }
-
-                    keyboardEvent = true;
+                    gKeyboardInput = key;
+                    lv_indev_read(keyboard);
                     break;
                 case SDL_TEXTINPUT:
-                    if (SDL_strlen(gKeyboardInputBuffer) + SDL_strlen(event.text.text) < KEYBOARD_INPUT_BUFFER_SIZE - 1)
-                        strcat(gKeyboardInputBuffer, event.text.text);
-                    keyboardEvent = true;
+                    gKeyboardInput = *((int*) event.text.text);
+                    lv_indev_read(keyboard);
                     break;
-            }
-
-            if (keyboardEvent) {
-                int length = (int) SDL_strlen(gKeyboardInputBuffer);
-                while (length) {
-                    lv_indev_read(keyboard);
-                    lv_indev_read(keyboard);
-                    length--;
-                }
             }
         }
     }
