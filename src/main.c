@@ -100,6 +100,7 @@ int main(void) {
         SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI
     );
     assert(gWindow);
+    SDL_SetWindowMinimumSize(gWindow, gWidth, gHeight);
 
     gRenderer = SDL_CreateRenderer(
         gWindow,
