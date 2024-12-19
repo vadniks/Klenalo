@@ -231,31 +231,43 @@ int main(void) {
                         case SDLK_RIGHT:
                         case SDLK_KP_PLUS:
                             key = LV_KEY_RIGHT;
+                            break;
                         case SDLK_LEFT:
                         case SDLK_KP_MINUS:
                             key = LV_KEY_LEFT;
+                            break;
                         case SDLK_UP:
                             key = LV_KEY_UP;
+                            break;
                         case SDLK_DOWN:
                             key = LV_KEY_DOWN;
+                            break;
                         case SDLK_ESCAPE:
                             key = LV_KEY_ESC;
+                            break;
                         case SDLK_BACKSPACE:
                             key = LV_KEY_BACKSPACE;
+                            break;
                         case SDLK_DELETE:
                             key = LV_KEY_DEL;
+                            break;
                         case SDLK_KP_ENTER:
                         case SDLK_RETURN:
                             key = LV_KEY_ENTER;
+                            break;
                         case SDLK_TAB:
                         case SDLK_PAGEDOWN:
                             key = LV_KEY_NEXT;
+                            break;
                         case SDLK_PAGEUP:
                             key = LV_KEY_PREV;
+                            break;
                         case SDLK_HOME:
                             key = LV_KEY_HOME;
+                            break;
                         case SDLK_END:
                             key = LV_KEY_END;
+                            break;
                     }
 
                     if (!key)
