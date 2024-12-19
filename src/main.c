@@ -1,6 +1,9 @@
 
 #include <SDL2/SDL.h>
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 #include <lvgl/lvgl.h>
+#pragma clang diagnostic pop
 #include "defs.h"
 
 static int gWidth = 1600, gHeight = 900;
@@ -10,9 +13,8 @@ static SDL_Renderer* gRenderer = nullptr;
 static SDL_Texture* gTexture = nullptr;
 
 static int gMouseX = 0, gMouseY = 0;
-static bool gMousePressed = false;
+static bool gMousePressed = false, gMouseWheelPressed = false;
 static short gMouseWheelDiff = 0;
-static bool gMouseWheelPressed = false;
 static unsigned gKeyboardInput = 0;
 
 static inline void resizeBuffer(lv_display_t* display) {
@@ -34,7 +36,7 @@ static inline void resizeBuffer(lv_display_t* display) {
     lv_display_set_resolution(display, gWidth, gHeight);
     lv_display_set_buffers(
         display,
-        buffer, // this is possibly unsafe that the texture's internal buffer is used directly as the lvgl's display buffer but works fine
+        buffer, // this is possibly unsafe that the texture's internal buffer is used directly as the lvgl's display buffer (optimization) but it works just fine
         nullptr,
         gWidth * gHeight * LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_ARGB8888),
         LV_DISPLAY_RENDER_MODE_DIRECT
@@ -113,8 +115,13 @@ int main(void) {
 
     lv_display_t* display = lv_display_create(gWidth, gHeight);
     lv_display_set_color_format(display, LV_COLOR_FORMAT_ARGB8888);
+    lv_display_set_antialiasing(display, true);
     resizeBuffer(display);
     lv_display_set_flush_cb(display, renderCallback);
+
+    float hdpi, vdpi;
+    assert(!SDL_GetDisplayDPI(0, nullptr, &hdpi, &vdpi));
+    lv_display_set_dpi(display, (int) min(hdpi, vdpi));
 
     lv_indev_t* mouse = lv_indev_create();
     lv_indev_set_type(mouse, LV_INDEV_TYPE_POINTER);
@@ -148,7 +155,7 @@ int main(void) {
 
     lv_obj_t* label = lv_label_create(lv_screen_active());
     lv_obj_set_style_text_font(label, font, 0);
-    lv_label_set_text(label, u8" Hello World!\nПривет мир!");
+    lv_label_set_text(label, u8" Hello world!\nПривет мир!");
     lv_obj_set_style_text_color(lv_screen_active(), lv_color_hex(0xffffff), LV_PART_MAIN);
     lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
 
