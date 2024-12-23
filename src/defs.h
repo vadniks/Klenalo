@@ -19,6 +19,7 @@ typedef unsigned char byte;
 #define xalloc(x) SDL_calloc(x, 1)
 #define USED(x) ((void) x)
 #define STUB USED(0)
+#define swapValues(x, y) {x ^= y; y ^= x; x ^= y;}
 
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 

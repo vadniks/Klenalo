@@ -17,6 +17,8 @@ static bool gMousePressed = false, gMouseWheelPressed = false;
 static short gMouseWheelDiff = 0;
 static unsigned gKeyboardInput = 0;
 
+static const int UPDATE_PERIOD = 1000 / 60;
+
 static inline void resizeBuffer(lv_display_t* display) {
     if (gTexture) SDL_DestroyTexture(gTexture);
     gTexture = SDL_CreateTexture(
@@ -173,7 +175,9 @@ int main(void) {
     lv_obj_set_style_text_font(textArea, font, 0);
     lv_obj_align(textArea, LV_ALIGN_TOP_MID, 100, 10);
 
+    unsigned startMillis, differenceMillis;
     while (true) {
+        startMillis = SDL_GetTicks();
         lv_timer_periodic_handler();
 
         SDL_Event event;
@@ -283,6 +287,11 @@ int main(void) {
                     break;
             }
         }
+
+        differenceMillis = SDL_GetTicks() - startMillis;
+        if (UPDATE_PERIOD > differenceMillis)
+            SDL_Delay(UPDATE_PERIOD - differenceMillis);
+//        SDL_Log("fps %d", (int) (1000.0f / (float) (SDL_GetTicks() - startMillis)));
     }
     endLoop:
 
