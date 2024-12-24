@@ -4,7 +4,7 @@
 #include "lifecycle.h"
 #include "input.h"
 
-static void buttonCallback(lv_event_t*) {
+static void buttonCallback(lv_event_t* const) {
     SDL_Log("a");
 }
 

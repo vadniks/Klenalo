@@ -15,8 +15,8 @@ static SDL_Texture* gTexture = nullptr;
 
 static lv_display_t* gDisplay = nullptr;
 
-static void resizeBuffer(lv_display_t* display);
-static void render(lv_display_t* display, const lv_area_t*, byte*);
+static void resizeBuffer(lv_display_t* const display);
+static void render(lv_display_t* const display, const lv_area_t* const, byte* const);
 
 void videoInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
@@ -59,7 +59,7 @@ void videoInit(void) {
     lv_display_set_dpi(gDisplay, (int) min(hdpi, vdpi));
 }
 
-static void resizeBuffer(lv_display_t* display) {
+static void resizeBuffer(lv_display_t* const display) {
     if (gTexture) SDL_DestroyTexture(gTexture);
     gTexture = SDL_CreateTexture(
         gRenderer,
@@ -85,7 +85,7 @@ static void resizeBuffer(lv_display_t* display) {
     );
 }
 
-static void render(lv_display_t* display, const lv_area_t*, byte*) {
+static void render(lv_display_t* const display, const lv_area_t* const, byte* const) {
     SDL_UnlockTexture(gTexture); // upload changes to video memory
 
     assert(!SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0));
