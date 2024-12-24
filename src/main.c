@@ -8,7 +8,7 @@ static void buttonCallback(lv_event_t*) {
     SDL_Log("a");
 }
 
-int main(void) { // TODO: input callbacks don't get called
+int main(void) {
     lifecycleInit();
 
     lv_font_t* font = lv_freetype_font_create(

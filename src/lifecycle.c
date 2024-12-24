@@ -6,7 +6,7 @@
 #include "video.h"
 #include "lifecycle.h"
 
-static const int UPDATE_PERIOD = 1000 / 60;
+static const int UPDATE_PERIOD = 16; // floorf(1000.0f / 60.0f)
 
 static atomic bool gInitialized = false;
 
@@ -21,8 +21,8 @@ void lifecycleInit(void) {
     lv_tick_set_cb(SDL_GetTicks);
     lv_delay_set_cb(SDL_Delay);
 
-    inputInit();
     videoInit();
+    inputInit();
 }
 
 bool lifecycleInitialized(void) {
@@ -41,8 +41,8 @@ void lifecycleLoop(void) {
         while (SDL_PollEvent(&event) == 1) {
             if (event.type == SDL_QUIT) return;
 
-            inputProcessEvent(&event);
             videoProcessEvent(&event);
+            inputProcessEvent(&event);
         }
 
         differenceMillis = SDL_GetTicks() - startMillis;
@@ -55,8 +55,8 @@ void lifecycleQuit(void) {
     assert(gInitialized);
     gInitialized = false;
 
-    videoQuit();
     inputQuit();
+    videoQuit();
 
     lv_deinit();
     SDL_Quit();

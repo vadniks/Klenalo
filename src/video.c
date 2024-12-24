@@ -15,42 +15,8 @@ static SDL_Texture* gTexture = nullptr;
 
 static lv_display_t* gDisplay = nullptr;
 
-static void resizeBuffer(lv_display_t* display) {
-    if (gTexture) SDL_DestroyTexture(gTexture);
-    gTexture = SDL_CreateTexture(
-        gRenderer,
-        SDL_PIXELFORMAT_ARGB8888,
-        SDL_TEXTUREACCESS_STREAMING,
-        gWidth,
-        gHeight
-    );
-    assert(gTexture);
-
-    void* buffer = nullptr;
-    assert(!SDL_LockTexture(gTexture, nullptr, &buffer, unusedVariableBuffer(int)));
-    assert(buffer);
-    SDL_UnlockTexture(gTexture);
-
-    lv_display_set_resolution(display, gWidth, gHeight);
-    lv_display_set_buffers(
-        display,
-        buffer, // this is possibly unsafe that the texture's internal buffer is used directly as the lvgl's display buffer (optimization) but it works just fine
-        nullptr,
-        gWidth * gHeight * LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_ARGB8888),
-        LV_DISPLAY_RENDER_MODE_DIRECT
-    );
-}
-
-static void render(lv_display_t* display, const lv_area_t*, byte*) {
-    SDL_UnlockTexture(gTexture); // upload changes to video memory
-
-    assert(!SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0));
-    assert(!SDL_RenderClear(gRenderer));
-    assert(!SDL_RenderCopy(gRenderer, gTexture, nullptr, nullptr));
-    SDL_RenderPresent(gRenderer);
-
-    lv_display_flush_ready(display);
-}
+static void resizeBuffer(lv_display_t* display);
+static void render(lv_display_t* display, const lv_area_t*, byte*);
 
 void videoInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
@@ -91,6 +57,43 @@ void videoInit(void) {
     float hdpi, vdpi;
     assert(!SDL_GetDisplayDPI(0, nullptr, &hdpi, &vdpi));
     lv_display_set_dpi(gDisplay, (int) min(hdpi, vdpi));
+}
+
+static void resizeBuffer(lv_display_t* display) {
+    if (gTexture) SDL_DestroyTexture(gTexture);
+    gTexture = SDL_CreateTexture(
+        gRenderer,
+        SDL_PIXELFORMAT_ARGB8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        gWidth,
+        gHeight
+    );
+    assert(gTexture);
+
+    void* buffer = nullptr;
+    assert(!SDL_LockTexture(gTexture, nullptr, &buffer, unusedVariableBuffer(int)));
+    assert(buffer);
+    SDL_UnlockTexture(gTexture);
+
+    lv_display_set_resolution(display, gWidth, gHeight);
+    lv_display_set_buffers(
+        display,
+        buffer, // this is possibly unsafe that the texture's internal buffer is used directly as the lvgl's display buffer (optimization) but it works just fine
+        nullptr,
+        gWidth * gHeight * LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_ARGB8888),
+        LV_DISPLAY_RENDER_MODE_DIRECT
+    );
+}
+
+static void render(lv_display_t* display, const lv_area_t*, byte*) {
+    SDL_UnlockTexture(gTexture); // upload changes to video memory
+
+    assert(!SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0));
+    assert(!SDL_RenderClear(gRenderer));
+    assert(!SDL_RenderCopy(gRenderer, gTexture, nullptr, nullptr));
+    SDL_RenderPresent(gRenderer);
+
+    lv_display_flush_ready(display);
 }
 
 bool videoInitialized(void) {
