@@ -24,3 +24,5 @@ include_directories(lib/lvgl/include)
 target_link_libraries(${PROJECT_NAME} c m SDL2 ${PROJECT_SOURCE_DIR}/lib/lvgl/bin/liblvgl.a freetype)
 
 file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
+add_compile_options("-fms-extensions")
+add_compile_options("-Wno-microsoft-anon-tag")

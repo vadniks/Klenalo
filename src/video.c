@@ -29,26 +29,24 @@ void videoInit(void) {
     assert(SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2"));
     assert(SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1"));
 
-    gWindow = SDL_CreateWindow(
+    assert(gWindow = SDL_CreateWindow(
         "LVGL",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         gWidth,
         gHeight,
         SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI
-    );
-    assert(gWindow);
+    ));
     SDL_SetWindowMinimumSize(gWindow, gWidth, gHeight);
 
-    gRenderer = SDL_CreateRenderer(
+    assert(gRenderer = SDL_CreateRenderer(
         gWindow,
         0,
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
-    );
-    assert(gRenderer);
+    ));
     assert(!SDL_RenderSetScale(gRenderer, 1.0f, 1.0f));
 
-    gDisplay = lv_display_create(gWidth, gHeight);
+    assert(gDisplay = lv_display_create(gWidth, gHeight));
     lv_display_set_color_format(gDisplay, LV_COLOR_FORMAT_ARGB8888);
     lv_display_set_antialiasing(gDisplay, true);
     resizeBuffer(gDisplay);
@@ -61,14 +59,13 @@ void videoInit(void) {
 
 static void resizeBuffer(lv_display_t* const display) {
     if (gTexture) SDL_DestroyTexture(gTexture);
-    gTexture = SDL_CreateTexture(
+    assert(gTexture = SDL_CreateTexture(
         gRenderer,
         SDL_PIXELFORMAT_ARGB8888,
         SDL_TEXTUREACCESS_STREAMING,
         gWidth,
         gHeight
-    );
-    assert(gTexture);
+    ));
 
     void* buffer = nullptr;
     assert(!SDL_LockTexture(gTexture, nullptr, &buffer, unusedVariableBuffer(int)));

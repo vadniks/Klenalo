@@ -24,17 +24,17 @@ void inputInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
     gInitialized = true;
 
-    gMouse = lv_indev_create();
+    assert(gMouse = lv_indev_create());
     lv_indev_set_type(gMouse, LV_INDEV_TYPE_POINTER);
     lv_indev_set_mode(gMouse, LV_INDEV_MODE_EVENT);
     lv_indev_set_read_cb(gMouse, processMouse);
 
-    gMouseWheel = lv_indev_create();
+    assert(gMouseWheel = lv_indev_create());
     lv_indev_set_type(gMouseWheel, LV_INDEV_TYPE_ENCODER);
     lv_indev_set_mode(gMouseWheel, LV_INDEV_MODE_EVENT);
     lv_indev_set_read_cb(gMouseWheel, processMouseWheel);
 
-    gKeyboard = lv_indev_create();
+    assert(gKeyboard = lv_indev_create());
     lv_indev_set_type(gKeyboard, LV_INDEV_TYPE_KEYPAD);
     lv_indev_set_mode(gKeyboard, LV_INDEV_MODE_EVENT);
     lv_indev_set_read_cb(gKeyboard, processKeyboard);
@@ -66,7 +66,7 @@ bool inputInitialized(void) {
     return gInitialized;
 }
 
-void inputAssignToGroup(struct _lv_group_t* const group) {
+void inputAssignToGroup(lv_group_t* const group) {
     assert(lifecycleInitialized() && gInitialized);
 
     lv_indev_set_group(gMouse, group);
