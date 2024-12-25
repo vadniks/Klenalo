@@ -4,6 +4,7 @@
 #include "consts.h"
 #include "lifecycle.h"
 #include "input.h"
+#include "resources.h"
 #include "loginScene.h"
 
 static atomic bool gInitialized = false;
@@ -35,26 +36,30 @@ void loginSceneInit(void) {
     inputAssignToGroup(gGroup);
 
     assert(gTitleLabel = lv_label_create(gScreen));
-//    lv_obj_get_style_text_font(); // TODO
+    lv_obj_set_style_text_font(gTitleLabel, resourcesFontLarge(), LV_STYLE_STATE_CMP_SAME);
     lv_label_set_text(gTitleLabel, TITLE);
 
     assert(gUsernameTextField = lv_textarea_create(gScreen));
     lv_textarea_set_one_line(gUsernameTextField, true);
     lv_textarea_set_max_length(gUsernameTextField, MAX_USERNAME_SIZE);
+    lv_obj_set_style_text_font(gUsernameTextField, resourcesFontNormal(), LV_STYLE_STATE_CMP_SAME);
     lv_textarea_set_placeholder_text(gUsernameTextField, USERNAME);
 
     assert(gPasswordTextField = lv_textarea_create(gScreen));
     lv_textarea_set_one_line(gPasswordTextField, true);
     lv_textarea_set_max_length(gPasswordTextField, MAX_PASSWORD_SIZE);
     lv_textarea_set_placeholder_text(gPasswordTextField, PASSWORD);
+    lv_obj_set_style_text_font(gPasswordTextField, resourcesFontNormal(), LV_STYLE_STATE_CMP_SAME);
     lv_textarea_set_password_mode(gPasswordTextField, true);
 
     assert(gRememberCredentialsCheckbox = lv_checkbox_create(gScreen));
+    lv_obj_set_style_text_font(gRememberCredentialsCheckbox, resourcesFontNormal(), LV_STYLE_STATE_CMP_SAME);
     lv_checkbox_set_text(gRememberCredentialsCheckbox, REMEMBER_CREDENTIALS);
 
     assert(gSignInButton = lv_button_create(gScreen));
 
     assert(gSignInLabel = lv_label_create(gSignInButton));
+    lv_obj_set_style_text_font(gSignInLabel, resourcesFontNormal(), LV_STYLE_STATE_CMP_SAME);
     lv_label_set_text(gSignInLabel, SIGN_IN);
     lv_obj_center(gSignInLabel);
 }

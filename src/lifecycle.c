@@ -2,8 +2,9 @@
 #include <SDL2/SDL.h>
 #include "xlvgl.h"
 #include "defs.h"
-#include "input.h"
 #include "video.h"
+#include "input.h"
+#include "resources.h"
 #include "lifecycle.h"
 
 static const int UPDATE_PERIOD = 16; // floorf(1000.0f / 60.0f)
@@ -23,6 +24,7 @@ void lifecycleInit(void) {
 
     videoInit();
     inputInit();
+    resourcesInit();
 }
 
 bool lifecycleInitialized(void) {
@@ -55,6 +57,7 @@ void lifecycleQuit(void) {
     assert(gInitialized);
     gInitialized = false;
 
+    resourcesQuit();
     inputQuit();
     videoQuit();
 
