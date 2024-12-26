@@ -6,8 +6,17 @@ enum : int {
     MAX_PASSWORD_SIZE = 16
 };
 
-#define TITLE u8"Klenalo"
-#define USERNAME u8"Username"
-#define PASSWORD u8"Password"
-#define SIGN_IN u8"Sign in"
-#define REMEMBER_CREDENTIALS u8"Remember credentials"
+typedef enum : char {
+    LANGUAGE_EN
+} ConstsLanguage;
+
+typedef enum : int {
+    TITLE,
+    WELCOME,
+    PASSWORD,
+    SIGN_IN,
+    REMEMBER_CREDENTIALS
+} ConstsString;
+
+void constsSetLanguage(const ConstsLanguage language);
+const char* constsString(const ConstsString string);
