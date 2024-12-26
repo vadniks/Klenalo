@@ -2,7 +2,7 @@
 #include "xlvgl.h"
 #include "defs.h"
 #include "consts.h"
-#include "lifecycle.h"
+#include "video.h"
 #include "input.h"
 #include "resources.h"
 #include "loginScene.h"
@@ -20,7 +20,7 @@ static lv_obj_t* gSignInButton = nullptr;
 static lv_obj_t* gSignInLabel = nullptr;
 
 void loginSceneInit(void) {
-    assert(lifecycleInitialized() && !gInitialized);
+    assert(videoInitialized() && !gInitialized);
     gInitialized = true;
 
     assert(gPreviousScreen = lv_screen_active());

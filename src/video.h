@@ -1,7 +1,7 @@
 
-#include "defs.h"
-
 #pragma once
+
+union SDL_Event;
 
 void videoInit(void);
 bool videoInitialized(void);
