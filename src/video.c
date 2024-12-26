@@ -97,7 +97,7 @@ bool videoInitialized(void) {
     return gInitialized;
 }
 
-void videoProcessEvent(SDL_Event* const event) {
+void videoProcessEvent(const SDL_Event* const event) {
     assert(lifecycleInitialized() && gInitialized);
     if (event->type != SDL_WINDOWEVENT || event->window.event != SDL_WINDOWEVENT_SIZE_CHANGED) return;
     SDL_GetRendererOutputSize(gRenderer, &gWidth, &gHeight);

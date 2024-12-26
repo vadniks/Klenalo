@@ -74,7 +74,7 @@ void inputAssignToGroup(lv_group_t* const group) {
     lv_indev_set_group(gKeyboard, group);
 }
 
-static void processMouseButton(SDL_Event* const event, bool const down) {
+static void processMouseButton(const SDL_Event* const event, bool const down) {
     switch (event->button.button) {
         case SDL_BUTTON_LEFT:
             gMousePressed = down;
@@ -87,7 +87,7 @@ static void processMouseButton(SDL_Event* const event, bool const down) {
     }
 }
 
-static void processKeyDown(SDL_Event* const event) {
+static void processKeyDown(const SDL_Event* const event) {
     unsigned key = 0;
 
     switch (event->key.keysym.sym) {
@@ -138,7 +138,7 @@ static void processKeyDown(SDL_Event* const event) {
     lv_indev_read(gKeyboard);
 }
 
-void inputProcessEvent(SDL_Event* const event) {
+void inputProcessEvent(const SDL_Event* const event) {
     assert(lifecycleInitialized() && gInitialized);
     switch (event->type) {
         case SDL_MOUSEMOTION:
