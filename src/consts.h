@@ -7,7 +7,7 @@ enum : int {
 };
 
 typedef enum : char {
-    LANGUAGE_EN
+    CONSTS_LANGUAGE_EN
 } ConstsLanguage;
 
 typedef enum : int {

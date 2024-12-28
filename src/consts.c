@@ -1,7 +1,7 @@
 
 #include "consts.h"
 
-static ConstsLanguage gLanguage = LANGUAGE_EN;
+static ConstsLanguage gLanguage = CONSTS_LANGUAGE_EN;
 
 void constsSetLanguage(const ConstsLanguage language) {
     gLanguage = language;

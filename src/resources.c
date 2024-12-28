@@ -1,52 +1,79 @@
 
 #include "xlvgl.h"
 #include "defs.h"
-#include "lifecycle.h"
+#include "video.h"
 #include "resources.h"
 
+static const int FONT_SIZES = 3, FONT_TYPES = 3, FONTS = FONT_SIZES * FONT_TYPES;
+
 static atomic bool gInitialized = false;
+static bool gFreetypeInitializedInternally = false;
 
-static struct _lv_font_t* gFontLarge = nullptr;
-static struct _lv_font_t* gFontNormal = nullptr;
-static struct _lv_font_t* gFontSmall = nullptr;
+static lv_font_t* gFonts[FONTS] = {nullptr};
 
-static void createFont(lv_font_t** const variable, const unsigned size);
+static inline int fontIndex(const ResourcesFontSize size, const ResourcesFontType type);
+static void createFont(const ResourcesFontSize size, const ResourcesFontType type);
 
 void resourcesInit(void) {
-    assert(lifecycleInitialized() && !gInitialized);
+    assert(videoInitialized() && !gInitialized);
     gInitialized = true;
 
-    createFont(&gFontLarge, 20);
-    createFont(&gFontNormal, 14);
-    createFont(&gFontSmall, 10);
+    gFreetypeInitializedInternally = !lv_freetype_init(LV_FREETYPE_CACHE_FT_GLYPH_CNT);
+
+    static const int fontSizes[FONT_SIZES] = {
+        RESOURCES_FONT_SIZE_SMALL,
+        RESOURCES_FONT_SIZE_NORMAL,
+        RESOURCES_FONT_SIZE_LARGE,
+    };
+
+    for (int sizeIndex = 0; sizeIndex < FONT_SIZES; sizeIndex++)
+        for (int type = RESOURCES_FONT_TYPE_REGULAR; type < RESOURCES_FONT_TYPE_REGULAR + FONT_TYPES; type++)
+            createFont(fontSizes[sizeIndex], type);
+
+    assert(lv_theme_default_init( // there's no way to manually destroy the returned object unless using the ..._deinit(void) which doesn't require that object
+        videoDisplay(),
+        (lv_color_t) {0xff, 0x79, 0x29},
+        (lv_color_t) {0xff, 0xe5, 0x00},
+        true,
+        gFonts[fontIndex(RESOURCES_FONT_SIZE_NORMAL, RESOURCES_FONT_TYPE_REGULAR)]
+    ));
 }
 
-static void createFont(lv_font_t** const variable, const unsigned size) {
-    *variable = lv_freetype_font_create(
+static inline int fontIndex(const ResourcesFontSize size, const ResourcesFontType type) {
+    return (size / 100) * min(FONT_SIZES, FONT_TYPES) + type;
+}
+
+static void createFont(const ResourcesFontSize size, const ResourcesFontType type) {
+    static const char* const paths[FONT_TYPES] = {
         "res/Roboto-Regular.ttf",
+        "res/Roboto-Italic.ttf",
+        "res/Roboto-Bold.ttf"
+    };
+
+    lv_font_t* font = lv_freetype_font_create(
+        paths[type],
         LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
-        size,
-        LV_FREETYPE_FONT_STYLE_NORMAL
+        size % 100,
+        (lv_freetype_font_style_t) type
     );
+    assert(font);
+
+    gFonts[fontIndex(size, type)] = font;
 }
 
-const lv_font_t* resourcesFontLarge(void) {
-    return gFontLarge;
-}
-
-const lv_font_t* resourcesFontNormal(void) {
-    return gFontNormal;
-}
-
-const lv_font_t* resourcesFontSmall(void) {
-    return gFontSmall;
+const lv_font_t* resourcesFont(ResourcesFontSize size, ResourcesFontType type) {
+    assert(gInitialized);
+    return gFonts[fontIndex(size, type)];
 }
 
 void resourcesQuit(void) {
     assert(gInitialized);
     gInitialized = false;
 
-    lv_freetype_font_delete(gFontLarge);
-    lv_freetype_font_delete(gFontNormal);
-    lv_freetype_font_delete(gFontSmall);
+    lv_theme_default_deinit();
+
+    for (byte i = 0; i < FONTS; lv_freetype_font_delete(gFonts[i++]));
+
+    if (!gFreetypeInitializedInternally)
+        lv_freetype_uninit();
 }

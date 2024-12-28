@@ -36,29 +36,26 @@ void loginSceneInit(void) {
     inputAssignToGroup(gGroup);
 
     assert(gWelcomeLabel = lv_label_create(gScreen));
-    lv_obj_set_style_text_font(gWelcomeLabel, resourcesFontLarge(), 0);
+    lv_obj_set_style_text_font(gWelcomeLabel, resourcesFont(RESOURCES_FONT_SIZE_LARGE, RESOURCES_FONT_TYPE_REGULAR), 0);
     lv_label_set_text_static(gWelcomeLabel, constsString(WELCOME));
 
     assert(gAddressLabel = lv_label_create(gScreen));
-    lv_obj_set_style_text_font(gAddressLabel, resourcesFontNormal(), 0);
-    lv_obj_set_style_text_opa(gAddressLabel, 171, 0);
+    lv_obj_set_style_text_font(gAddressLabel, resourcesFont(RESOURCES_FONT_SIZE_NORMAL, RESOURCES_FONT_TYPE_BOLD), 0);
+    lv_obj_set_style_text_opa(gAddressLabel, 0xff / 3 * 2, 0);
     lv_label_set_text_static(gAddressLabel, "IP address: 0.0.0.0"); // TODO: stub
 
     assert(gPasswordTextArea = lv_textarea_create(gScreen));
     lv_textarea_set_one_line(gPasswordTextArea, true);
     lv_textarea_set_max_length(gPasswordTextArea, MAX_PASSWORD_SIZE);
     lv_textarea_set_placeholder_text(gPasswordTextArea, constsString(PASSWORD));
-    lv_obj_set_style_text_font(gPasswordTextArea, resourcesFontNormal(), 0);
     lv_textarea_set_password_mode(gPasswordTextArea, true);
 
     assert(gRememberCredentialsCheckbox = lv_checkbox_create(gScreen));
-    lv_obj_set_style_text_font(gRememberCredentialsCheckbox, resourcesFontNormal(), 0);
     lv_checkbox_set_text_static(gRememberCredentialsCheckbox, constsString(REMEMBER_CREDENTIALS));
 
     assert(gSignInButton = lv_button_create(gScreen));
 
     assert(gSignInLabel = lv_label_create(gSignInButton));
-    lv_obj_set_style_text_font(gSignInLabel, resourcesFontNormal(), 0);
     lv_label_set_text_static(gSignInLabel, constsString(SIGN_IN));
     lv_obj_center(gSignInLabel);
 }

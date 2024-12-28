@@ -50,12 +50,13 @@ void videoInit(void) {
     assert(gDisplay = lv_display_create(gWidth, gHeight));
     lv_display_set_color_format(gDisplay, LV_COLOR_FORMAT_ARGB8888);
     lv_display_set_antialiasing(gDisplay, true);
-    resizeBuffer(gDisplay);
     lv_display_set_flush_cb(gDisplay, render);
 
     float hdpi, vdpi;
     assert(!SDL_GetDisplayDPI(0, nullptr, &hdpi, &vdpi));
     lv_display_set_dpi(gDisplay, (int) min(hdpi, vdpi));
+
+    resizeBuffer(gDisplay);
 }
 
 static void resizeBuffer(lv_display_t* const display) {
@@ -96,6 +97,11 @@ static void render(lv_display_t* const display, const lv_area_t* const, byte* co
 
 bool videoInitialized(void) {
     return gInitialized;
+}
+
+lv_display_t* videoDisplay(void) {
+    assert(gInitialized);
+    return gDisplay;
 }
 
 void videoProcessEvent(const SDL_Event* const event) {
