@@ -4,7 +4,7 @@
 #include "video.h"
 #include "resources.h"
 
-static const int FONT_SIZES = 3, FONT_TYPES = 3, FONTS = FONT_SIZES * FONT_TYPES;
+static const int FONT_SIZES = 3, FONT_TYPES = 4, FONTS = FONT_SIZES * FONT_TYPES;
 
 static atomic bool gInitialized = false;
 static bool gFreetypeInitializedInternally = false;
@@ -40,14 +40,15 @@ void resourcesInit(void) {
 }
 
 static inline int fontIndex(const ResourcesFontSize size, const ResourcesFontType type) {
-    return (size / 100) * min(FONT_SIZES, FONT_TYPES) + type;
+    return (size / 100) * max(FONT_SIZES, FONT_TYPES) + type;
 }
 
 static void createFont(const ResourcesFontSize size, const ResourcesFontType type) {
     static const char* const paths[FONT_TYPES] = {
         "res/Roboto-Regular.ttf",
         "res/Roboto-Italic.ttf",
-        "res/Roboto-Bold.ttf"
+        "res/Roboto-Bold.ttf",
+        "res/Roboto-BoldItalic.ttf"
     };
 
     lv_font_t* font = lv_freetype_font_create(
