@@ -3,7 +3,7 @@
 
 struct _lv_font_t;
 
-typedef enum {
+typedef enum { // xyy: x - index, yy = size
     RESOURCES_FONT_SIZE_SMALL = 210,
     RESOURCES_FONT_SIZE_NORMAL = 114,
     RESOURCES_FONT_SIZE_LARGE = 20
