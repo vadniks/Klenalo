@@ -2,7 +2,7 @@
 #include <SDL2/SDL.h>
 #include "xlvgl.h"
 #include "defs.h"
-#include "lifecycle.h"
+#include "video.h"
 #include "input.h"
 
 static atomic bool gInitialized = false;
@@ -21,7 +21,7 @@ static void processMouseWheel(lv_indev_t*, lv_indev_data_t* data);
 static void processKeyboard(lv_indev_t*, lv_indev_data_t* data);
 
 void inputInit(void) {
-    assert(lifecycleInitialized() && !gInitialized);
+    assert(videoInitialized() && !gInitialized);
     gInitialized = true;
 
     assert(gMouse = lv_indev_create());
@@ -67,7 +67,7 @@ bool inputInitialized(void) {
 }
 
 void inputAssignToGroup(lv_group_t* const group) {
-    assert(lifecycleInitialized() && gInitialized);
+    assert(gInitialized);
 
     lv_indev_set_group(gMouse, group);
     lv_indev_set_group(gMouseWheel, group);
@@ -139,7 +139,7 @@ static void processKeyDown(const SDL_Event* const event) {
 }
 
 void inputProcessEvent(const SDL_Event* const event) {
-    assert(lifecycleInitialized() && gInitialized);
+    assert(gInitialized);
     switch (event->type) {
         case SDL_MOUSEMOTION:
             gMouseX = event->motion.x;

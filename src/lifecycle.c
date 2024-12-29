@@ -5,6 +5,7 @@
 #include "video.h"
 #include "input.h"
 #include "resources.h"
+#include "scenes.h"
 #include "lifecycle.h"
 
 static const int UPDATE_PERIOD = 16; // floorf(1000.0f / 60.0f)
@@ -25,6 +26,7 @@ void lifecycleInit(void) {
     videoInit();
     inputInit();
     resourcesInit();
+    scenesInit();
 }
 
 bool lifecycleInitialized(void) {
@@ -57,6 +59,7 @@ void lifecycleQuit(void) {
     assert(gInitialized);
     gInitialized = false;
 
+    scenesQuit();
     resourcesQuit();
     inputQuit();
     videoQuit();

@@ -62,7 +62,7 @@ static void createFont(const ResourcesFontSize size, const ResourcesFontType typ
     gFonts[fontIndex(size, type)] = font;
 }
 
-const lv_font_t* resourcesFont(ResourcesFontSize size, ResourcesFontType type) {
+const lv_font_t* resourcesFont(const ResourcesFontSize size, const ResourcesFontType type) {
     assert(gInitialized);
     return gFonts[fontIndex(size, type)];
 }

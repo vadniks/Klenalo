@@ -1,8 +1,8 @@
 
 #include "xlvgl.h"
 #include "defs.h"
+#include "scenes.h"
 #include "consts.h"
-#include "video.h"
 #include "input.h"
 #include "resources.h"
 #include "loginScene.h"
@@ -20,14 +20,14 @@ static lv_obj_t* gSignInButton = nullptr;
 static lv_obj_t* gSignInLabel = nullptr;
 
 void loginSceneInit(void) {
-    assert(videoInitialized() && !gInitialized);
+    assert(scenesInitialized() && !gInitialized);
     gInitialized = true;
 
     assert(gPreviousScreen = lv_screen_active());
 
     assert(gScreen = lv_obj_create(nullptr));
     lv_screen_load(gScreen);
-    lv_obj_align(gScreen, LV_ALIGN_DEFAULT, 0, 0);
+//    lv_obj_align(gScreen, LV_ALIGN_DEFAULT, 0, 0);
     lv_obj_set_flex_flow(gScreen, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(gScreen, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 

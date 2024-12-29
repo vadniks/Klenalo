@@ -105,7 +105,7 @@ lv_display_t* videoDisplay(void) {
 }
 
 void videoProcessEvent(const SDL_Event* const event) {
-    assert(lifecycleInitialized() && gInitialized);
+    assert(gInitialized);
     if (event->type != SDL_WINDOWEVENT || event->window.event != SDL_WINDOWEVENT_SIZE_CHANGED) return;
     SDL_GetRendererOutputSize(gRenderer, &gWidth, &gHeight);
     resizeBuffer(gDisplay);
