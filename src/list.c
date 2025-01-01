@@ -54,12 +54,12 @@ void listPush(List* const list, void* const value) {
 }
 
 void* listGet(const List* const list, const int index) {
-    assert(list->size > 0 && list->values && index >= 0 && index < list->size);
+    assert(list->size && list->values && index >= 0 && index < list->size);
     return list->values[index];
 }
 
 void* listPopFirst(List* const list) {
-    assert(list->size > 0 && list->values);
+    assert(list->size && list->values);
 
     void* const value = list->values[0];
     const int newSize = list->size - 1;
@@ -83,7 +83,7 @@ void* listPopFirst(List* const list) {
 }
 
 void* listPopLast(List* const list) {
-    assert(list->size > 0 && list->values);
+    assert(list->size && list->values);
 
     list->size--;
     void* const value = list->values[list->size];
@@ -99,7 +99,7 @@ void* listPopLast(List* const list) {
 }
 
 void listRemove(List* const list, const int index) {
-    assert(list->size > 0 && list->values && index >= 0 && index < list->size && list->deallocator);
+    assert(list->size && list->values && index >= 0 && index < list->size && list->deallocator);
 
     list->deallocator(list->values[index]);
     for (int i = index; i < list->size - 1; list->values[i] = list->values[i + 1], i++);
@@ -127,7 +127,7 @@ int listSize(const List* const list) {
 }
 
 void* nullable listBinarySearch(const List* const list, const void* const key, const ListComparator comparator) {
-    assert(list->size > 0 && list->values);
+    assert(list->size && list->values);
 
     const unsigned long index =
         (void**) SDL_bsearch(key, list->values, list->size, sizeof(void*), comparator) - list->values;
