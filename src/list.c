@@ -20,6 +20,7 @@ List* listInit(const ListDeallocator nullable deallocator) {
 }
 
 List* listCopy(const List* const old, const ListItemDuplicator itemDuplicator) {
+    assert(old->size && old->values);
     List* const new = listInit(old->deallocator);
 
     for (int i = 0; i < old->size; i++)
