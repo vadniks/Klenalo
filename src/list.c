@@ -32,6 +32,7 @@ void listAddBack(List* const list, void* const value) {
     assert(list->size < MAX_SIZE);
 
     list->values = SDL_realloc(list->values, ++list->size * sizeof(void*));
+    assert(list->values);
     list->values[list->size - 1] = value;
 }
 
@@ -39,6 +40,7 @@ void listAddFront(List* const list, void* const value) {
     assert(list->size < MAX_SIZE);
 
     void** const temp = SDL_malloc(++list->size * sizeof(void*));
+    assert(temp);
     temp[0] = value;
     for (int i = 1; i < list->size; temp[i] = list->values[i - 1], i++);
 
@@ -51,13 +53,11 @@ void listPush(List* const list, void* const value) {
 }
 
 void* listGet(const List* const list, const int index) {
-    assert(list->size > 0 && list->size < MAX_SIZE && index >= 0 && index < MAX_SIZE);
-
-    assert(list->values);
+    assert(list->size > 0 && list->values && index >= 0 && index < list->size);
     return list->values[index];
 }
 
-void* listPop(List* const list) {
+void* listPopFirst(List* const list) {
     assert(list->size > 0 && list->values);
 
     void* const value = list->values[0];
@@ -71,6 +71,7 @@ void* listPop(List* const list) {
     }
 
     void** const temp = SDL_malloc(newSize * sizeof(void*));
+    assert(temp);
     SDL_memcpy(temp, &(list->values[1]), newSize * sizeof(void*));
 
     SDL_free(list->values);
@@ -80,9 +81,44 @@ void* listPop(List* const list) {
     return value;
 }
 
-void* nullable listPeek(const List* const list) {
+void* listPopLast(List* const list) {
+    assert(list->size > 0 && list->values);
+
+    list->size--;
+    void* const value = list->values[list->size];
+
+    if (list->size)
+        list->values = SDL_realloc(list->values, list->size * sizeof(void*));
+    else {
+        SDL_free(list->values);
+        list->values = nullptr;
+    }
+
+    return value;
+}
+
+void listRemove(List* const list, const int index) {
+    assert(list->size > 0 && list->values && index >= 0 && index < list->size && list->deallocator);
+
+    list->deallocator(list->values[index]);
+    for (int i = index; i < list->size - 1; list->values[i] = list->values[i + 1], i++);
+
+    if (--list->size)
+        list->values = SDL_realloc(list->values, list->size * sizeof(void*));
+    else {
+        SDL_free(list->values);
+        list->values = nullptr;
+    }
+}
+
+void* nullable listPeekFirst(const List* const list) {
     assert(!list->size && !list->values || list->size && list->values);
     return list->size ? list->values[0] : nullptr;
+}
+
+void* nullable listPeekLast(const List* const list) {
+    assert(!list->size && !list->values || list->size && list->values);
+    return list->size ? list->values[list->size - 1] : nullptr;
 }
 
 int listSize(const List* const list) {
