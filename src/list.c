@@ -32,7 +32,7 @@ void listAddBack(List* const list, void* const value) {
     assert(list->size < MAX_SIZE);
 
     list->values = SDL_realloc(list->values, ++list->size * sizeof(void*));
-    list->values[list->size - 1] = (void*) value;
+    list->values[list->size - 1] = value;
 }
 
 void listAddFront(List* const list, void* const value) {
