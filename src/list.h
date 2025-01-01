@@ -14,8 +14,11 @@ List* listInit(const ListDeallocator nullable deallocator);
 List* listCopy(const List* const old, const ListItemDuplicator itemDuplicator);
 void listAddBack(List* const list, void* const value);
 void listAddFront(List* const list, void* const value);
+void listPush(List* const list, void* const value);
 void* listGet(const List* const list, const int index);
+void* listPop(List* const list);
+void* nullable listPeek(const List* const list);
 int listSize(const List* const list);
 void* nullable listBinarySearch(const List* const list, const void* const key, const ListComparator comparator);
 void listClear(List* const list);
-void listDestroy(List* const list); // all values that are still remain inside a list at a time destroy is called are deallocated via supplied deallocator if it's not null
+void listDestroy(List* const list);

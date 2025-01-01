@@ -46,11 +46,43 @@ void listAddFront(List* const list, void* const value) {
     list->values = temp;
 }
 
+void listPush(List* const list, void* const value) {
+    listAddBack(list, value);
+}
+
 void* listGet(const List* const list, const int index) {
     assert(list->size > 0 && list->size < MAX_SIZE && index >= 0 && index < MAX_SIZE);
 
     assert(list->values);
     return list->values[index];
+}
+
+void* listPop(List* const list) {
+    assert(list->size > 0 && list->values);
+
+    void* const value = list->values[0];
+    const int newSize = list->size - 1;
+
+    if (!newSize) {
+        SDL_free(list->values);
+        list->values = nullptr;
+        list->size = 0;
+        return value;
+    }
+
+    void** const temp = SDL_malloc(newSize * sizeof(void*));
+    SDL_memcpy(temp, &(list->values[1]), newSize * sizeof(void*));
+
+    SDL_free(list->values);
+    list->values = temp;
+    list->size = newSize;
+
+    return value;
+}
+
+void* nullable listPeek(const List* const list) {
+    assert(!list->size && !list->values || list->size && list->values);
+    return list->size ? list->values[0] : nullptr;
 }
 
 int listSize(const List* const list) {
