@@ -12,16 +12,17 @@ typedef void* (* ListItemDuplicator)(const void* const);
 
 List* listInit(const ListDeallocator nullable deallocator);
 List* listCopy(const List* const old, const ListItemDuplicator itemDuplicator);
-void listAddBack(List* const list, void* const value);
-void listAddFront(List* const list, void* const value);
-void listPush(List* const list, void* const value);
+void listAddBack(List* const list, void* const value); // listAdd, stackPush
+void listAddFront(List* const list, void* const value); // queuePush
+void listPush(List* const list, void* const value); // queuePush
 void* listGet(const List* const list, const int index);
-void* listPopFirst(List* const list);
-void* listPopLast(List* const list);
+void* listPopFirst(List* const list); // queuePop
+void* listPopLast(List* const list); // stackPop
 void listRemove(List* const list, const int index);
-void* nullable listPeekFirst(const List* const list);
-void* nullable listPeekLast(const List* const list);
+void* nullable listPeekFirst(const List* const list); // queuePeek
+void* nullable listPeekLast(const List* const list); // stackPeek
 int listSize(const List* const list);
 void* nullable listBinarySearch(const List* const list, const void* const key, const ListComparator comparator);
+void listQSort(List* const list, const ListComparator comparator);
 void listClear(List* const list);
 void listDestroy(List* const list);

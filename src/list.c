@@ -129,6 +129,11 @@ void* nullable listBinarySearch(const List* const list, const void* const key, c
     return (int) index >= list->size ? nullptr : list->values[index];
 }
 
+void listQSort(List* const list, const ListComparator comparator) {
+    assert(list->size && list->values);
+    SDL_qsort(list->values, list->size, sizeof(void*), comparator);
+}
+
 static void destroyValuesIfNotEmpty(List* const list) {
     if (!list->deallocator) return;
     assert(list->size && list->values || !list->size && !list->values);
