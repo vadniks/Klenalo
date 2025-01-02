@@ -3,6 +3,8 @@
 
 #include "defs.h"
 
+// not thread-safe, null values unsupported
+
 struct _List;
 typedef struct _List List;
 
