@@ -23,7 +23,7 @@ List* listCopy(const List* const old, const ListItemDuplicator itemDuplicator) {
     assert(old->size && old->values);
     List* const new = listInit(old->deallocator);
 
-    new->values = SDL_malloc(old->size * sizeof(void*));
+    assert(new->values = SDL_malloc(old->size * sizeof(void*)));
     new->size = old->size;
     for (int i = 0; i < old->size; new->values[i] = itemDuplicator(old->values[i]), i++);
 
@@ -33,8 +33,7 @@ List* listCopy(const List* const old, const ListItemDuplicator itemDuplicator) {
 void listAddBack(List* const list, void* const value) {
     assert(list->size < MAX_SIZE);
 
-    list->values = SDL_realloc(list->values, ++list->size * sizeof(void*));
-    assert(list->values);
+    assert(list->values = SDL_realloc(list->values, ++list->size * sizeof(void*)));
     list->values[list->size - 1] = value;
 }
 
