@@ -5,6 +5,8 @@
 #include "defs.h"
 #include "rwMutex.h"
 
+// https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock#Using_two_mutexes
+
 struct _RWMutex {
     SDL_mutex* mutex;
     SDL_atomic_t counter;
