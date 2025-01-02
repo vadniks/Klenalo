@@ -73,7 +73,7 @@ void* listPopFirst(List* const list) {
 
     void** const temp = SDL_malloc(newSize * sizeof(void*));
     assert(temp);
-    SDL_memcpy(temp, &(list->values[1]), newSize * sizeof(void*));
+    SDL_memcpy(temp, (void*) list->values + 1 * sizeof(void*), newSize * sizeof(void*));
 
     SDL_free(list->values);
     list->values = temp;
