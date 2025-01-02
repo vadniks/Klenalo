@@ -23,8 +23,9 @@ List* listCopy(const List* const old, const ListItemDuplicator itemDuplicator) {
     assert(old->size && old->values);
     List* const new = listInit(old->deallocator);
 
-    for (int i = 0; i < old->size; i++)
-        listAddBack(new, itemDuplicator(old->values[i]));
+    new->values = SDL_malloc(old->size * sizeof(void*));
+    new->size = old->size;
+    for (int i = 0; i < old->size; new->values[i] = itemDuplicator(old->values[i]), i++);
 
     return new;
 }
@@ -89,7 +90,7 @@ void* listPopLast(List* const list) {
     void* const value = list->values[list->size];
 
     if (list->size)
-        list->values = SDL_realloc(list->values, list->size * sizeof(void*));
+        assert(list->values = SDL_realloc(list->values, list->size * sizeof(void*)));
     else {
         SDL_free(list->values);
         list->values = nullptr;
@@ -105,7 +106,7 @@ void listRemove(List* const list, const int index) {
     for (int i = index; i < list->size - 1; list->values[i] = list->values[i + 1], i++);
 
     if (--list->size)
-        list->values = SDL_realloc(list->values, list->size * sizeof(void*));
+        assert(list->values = SDL_realloc(list->values, list->size * sizeof(void*)));
     else {
         SDL_free(list->values);
         list->values = nullptr;
