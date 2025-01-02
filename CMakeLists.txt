@@ -15,7 +15,10 @@ add_compile_options("-Wpedantic")
 add_compile_options("-O3")
 #add_link_options("-s")
 
+add_compile_options(-Wno-language-extension-token)
+add_compile_options(-Wno-gnu-folding-constant)
 add_compile_options(-Wno-logical-op-parentheses)
+add_compile_options(-Wno-gnu-pointer-arith)
 
 add_compile_definitions("-D_GNU_SOURCE -D_THREAD_SAFE")
 
