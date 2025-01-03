@@ -9,7 +9,7 @@ struct _Hashtable;
 typedef struct _Hashtable Hashtable;
 
 int hashtableHash(const byte* key, int size);
-Hashtable* hashtableInit(const HashtableDeallocator nullable deallocator);
+Hashtable* hashtableInit(const HashtableDeallocator deallocator);
 void hashtablePut(Hashtable* const hashtable, const int hash, void* const value);
 void* nullable hashtableGet(const Hashtable* const hashtable, const int hash);
 void hashtableRemove(Hashtable* const hashtable, const int hash);

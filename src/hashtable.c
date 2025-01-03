@@ -14,14 +14,14 @@ typedef struct _Entry {
 
 struct _Hashtable {
     Entry** table;
-    int tableSize;
-    int valueCount;
+    int capacity;
+    int count;
     int threshold;
-    HashtableDeallocator nullable deallocator;
+    HashtableDeallocator deallocator;
 };
 
 static const int SINT32_MAX = 0x7fffffff;
-static const int INITIAL_SIZE = 11;
+static const int INITIAL_CAPACITY = 11;
 static const float LOAD_FACTOR = 0.75f;
 
 int hashtableHash(const byte* key, int size) {
@@ -30,38 +30,38 @@ int hashtableHash(const byte* key, int size) {
     return hash;
 }
 
-Hashtable* hashtableInit(const HashtableDeallocator nullable deallocator) {
+Hashtable* hashtableInit(const HashtableDeallocator deallocator) {
     Hashtable* const hashtable = SDL_malloc(sizeof *hashtable);
     assert(hashtable);
-    hashtable->table = SDL_calloc((hashtable->tableSize = INITIAL_SIZE), sizeof(void*));
-    hashtable->valueCount = 0;
-    hashtable->threshold = (int) ((float) INITIAL_SIZE * LOAD_FACTOR);
+    hashtable->table = SDL_calloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*));
+    hashtable->count = 0;
+    hashtable->threshold = (int) ((float) INITIAL_CAPACITY * LOAD_FACTOR);
     hashtable->deallocator = deallocator;
     return hashtable;
 }
 
 static int makeIndex(const Hashtable* const hashtable, const int hash) {
-    assert(hashtable->tableSize);
-    return (hash & SINT32_MAX) % hashtable->tableSize;
+    assert(hashtable->capacity);
+    return (hash & SINT32_MAX) % hashtable->capacity;
 }
 
 static void rehash(Hashtable* const hashtable) {
-    const int oldTableSize = hashtable->tableSize;
-    if (oldTableSize == SINT32_MAX) return;
+    const int oldCapacity = hashtable->capacity;
+    if (oldCapacity == SINT32_MAX) return;
+
+    const int newCapacity = (oldCapacity << 1) + 1;
+    if (newCapacity <= oldCapacity || newCapacity == SINT32_MAX) return;
 
     Entry** const oldTable = hashtable->table;
 
-    int newTableSize = (oldTableSize << 1) + 1;
-    if (newTableSize <= oldTableSize) return;
+    Entry** const newTable = SDL_calloc(newCapacity, sizeof(void*));
+    assert(newCapacity);
 
-    Entry** const newTable = SDL_calloc(newTableSize, sizeof(void*));
-    assert(newTableSize);
-
-    hashtable->threshold = (int) ((float) newTableSize * LOAD_FACTOR);
+    hashtable->threshold = (int) ((float) newCapacity * LOAD_FACTOR);
     hashtable->table = newTable;
-    hashtable->tableSize = newTableSize;
+    hashtable->capacity = newCapacity;
 
-    for (int i = oldTableSize; i-- > 0;) {
+    for (int i = oldCapacity; i-- > 0;) {
         for (Entry* old = oldTable[i]; old;) {
             Entry* entry = old;
             old = old->next;
@@ -76,25 +76,26 @@ static void rehash(Hashtable* const hashtable) {
 }
 
 void hashtablePut(Hashtable* const hashtable, const int hash, void* const value) {
-    assert(hashtable->tableSize < SINT32_MAX && hashtable->valueCount < SINT32_MAX);
+    assert(hashtable->capacity < SINT32_MAX && hashtable->count < SINT32_MAX);
 
     int index = makeIndex(hashtable, hash);
     for (Entry* entry = hashtable->table[index]; entry; entry = entry->next) {
         if (entry->hash == hash) {
+            hashtable->deallocator(entry->value);
             entry->value = value;
             return;
         }
     }
 
-    if (hashtable->valueCount >= hashtable->threshold) {
+    if (hashtable->count >= hashtable->threshold) {
         rehash(hashtable);
         index = makeIndex(hashtable, hash);
     }
 
-    Entry* previous = hashtable->table[index];
+    Entry* const previous = hashtable->table[index];
     hashtable->table[index] = SDL_malloc(sizeof(void*));
     *hashtable->table[index] = (Entry) {hash, value, previous};
-    hashtable->valueCount++;
+    hashtable->count++;
 }
 
 void* nullable hashtableGet(const Hashtable* const hashtable, const int hash) {
