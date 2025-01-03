@@ -5,12 +5,12 @@
 
 // not thread-safe, null values unsupported
 
-struct _List;
-typedef struct _List List;
-
 typedef void (* ListDeallocator)(void* const);
 typedef int (* ListComparator)(const void* const, const void* const);
 typedef void* (* ListItemDuplicator)(const void* const);
+
+struct _List;
+typedef struct _List List;
 
 List* listInit(const ListDeallocator nullable deallocator);
 List* listCopy(const List* const old, const ListItemDuplicator itemDuplicator);

@@ -2,13 +2,13 @@
 #include <SDL2/SDL_stdinc.h>
 #include "list.h"
 
-static const int MAX_SIZE = 0x7fffffff;
-
 struct _List {
     void** values;
     int size;
     ListDeallocator nullable deallocator;
 };
+
+static const int MAX_SIZE = 0x7fffffff;
 
 List* listInit(const ListDeallocator nullable deallocator) {
     List* const list = SDL_malloc(sizeof *list);

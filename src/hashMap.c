@@ -2,7 +2,9 @@
 #include <SDL2/SDL_stdinc.h>
 #include "hashMap.h"
 
-static const int MAX_SIZE = 0x7fffffff;
+
+// TODO: rename to HashTable
+
 
 typedef struct {
     void* value;
@@ -21,6 +23,8 @@ struct _HashMap {
     HashMapDeallocator nullable deallocator;
 };
 
+static const int MAX_SIZE = 0x7fffffff;
+
 int hashMapHash(const byte* value, int size) {
     int hash = 1;
     for (; size--; hash = 31 * hash + *value++); // from Java
@@ -37,13 +41,10 @@ HashMap* hashMapInit(const HashMapDeallocator nullable deallocator) {
     return hashMap;
 }
 
-static int hash(const int key) {
-    return key ^ (int) ((unsigned) key >> 16u); // from Java
-}
-
 static int makeIndex(const HashMap* const hashMap, const int key) {
     assert(hashMap->size);
-    return hash(key) % hashMap->size;
+    staticAssert(0x7fffffff == 0b01111111111111111111111111111111);
+    return (key & 0x7fffffff) % hashMap->size;
 }
 
 static int compareItems(const void* const a, const void* const b) {
@@ -54,6 +55,8 @@ static int compareItems(const void* const a, const void* const b) {
 
 void hashMapPut(HashMap* const hashMap, const int key, void* const value) {
     assert(hashMap->size < MAX_SIZE && hashMap->total < MAX_SIZE);
+
+    // TODO *
 
     const int index = makeIndex(hashMap, key);
     const Item item = {value, key};

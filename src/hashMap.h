@@ -3,10 +3,10 @@
 
 #include "defs.h"
 
+typedef void (* HashMapDeallocator)(void* const);
+
 struct _HashMap;
 typedef struct _HashMap HashMap;
-
-typedef void (* HashMapDeallocator)(void* const);
 
 int hashMapHash(const byte* value, int size);
 HashMap* hashMapInit(const HashMapDeallocator nullable deallocator);
