@@ -2,98 +2,103 @@
 #include <SDL2/SDL_stdinc.h>
 #include "hashtable.h"
 
-typedef struct {
-    void* value;
-    int hash;
-} Item;
+// TODO: binary search (or red black) tree instead of linear (or linked) list or sort on insertion
 
-typedef struct {
-    Item* items; // TODO: binary search tree (or red black tree) instead of linear list or sort on insertion
-    int size;
-} Bucket;
+// Based on Java's Hashtable
+
+typedef struct _Entry {
+    int hash;
+    void* value;
+    struct _Entry* nullable next;
+} Entry;
 
 struct _Hashtable {
-    Bucket* buckets;
-    int size;
-    int total;
+    Entry** table;
+    int tableSize;
+    int valueCount;
+    int threshold;
     HashtableDeallocator nullable deallocator;
 };
 
-static const int MAX_SIZE = 0x7fffffff;
+static const int SINT32_MAX = 0x7fffffff;
+static const int INITIAL_SIZE = 11;
+static const float LOAD_FACTOR = 0.75f;
 
 int hashtableHash(const byte* key, int size) {
     int hash = 1;
-    for (; size--; hash = 31 * hash + *key++); // from Java
+    for (; size--; hash = 31 * hash + *key++);
     return hash;
 }
 
 Hashtable* hashtableInit(const HashtableDeallocator nullable deallocator) {
     Hashtable* const hashtable = SDL_malloc(sizeof *hashtable);
     assert(hashtable);
-    hashtable->buckets = nullptr;
-    hashtable->size = 0;
-    hashtable->total = 0;
+    hashtable->table = SDL_calloc((hashtable->tableSize = INITIAL_SIZE), sizeof(void*));
+    hashtable->valueCount = 0;
+    hashtable->threshold = (int) ((float) INITIAL_SIZE * LOAD_FACTOR);
     hashtable->deallocator = deallocator;
     return hashtable;
 }
 
 static int makeIndex(const Hashtable* const hashtable, const int hash) {
-    assert(hashtable->size);
-    return (hash & MAX_SIZE) % hashtable->size;
+    assert(hashtable->tableSize);
+    return (hash & SINT32_MAX) % hashtable->tableSize;
 }
 
-static int compareItems(const void* const a, const void* const b) {
-    const int aa = ((const Item*) a)->hash;
-    const int bb = ((const Item*) b)->hash;
-    return (aa > bb) - (aa < bb);
+static void rehash(Hashtable* const hashtable) {
+    const int oldTableSize = hashtable->tableSize;
+    if (oldTableSize == SINT32_MAX) return;
+
+    Entry** const oldTable = hashtable->table;
+
+    int newTableSize = (oldTableSize << 1) + 1;
+    if (newTableSize <= oldTableSize) return;
+
+    Entry** const newTable = SDL_calloc(newTableSize, sizeof(void*));
+    assert(newTableSize);
+
+    hashtable->threshold = (int) ((float) newTableSize * LOAD_FACTOR);
+    hashtable->table = newTable;
+    hashtable->tableSize = newTableSize;
+
+    for (int i = oldTableSize; i-- > 0;) {
+        for (Entry* old = oldTable[i]; old;) {
+            Entry* entry = old;
+            old = old->next;
+
+            const int index = makeIndex(hashtable, entry->hash);
+            entry->next = newTable[index];
+            newTable[index] = entry;
+        }
+    }
+
+    SDL_free(oldTable);
 }
 
 void hashtablePut(Hashtable* const hashtable, const int hash, void* const value) {
-    assert(hashtable->size < MAX_SIZE && hashtable->total < MAX_SIZE);
+    assert(hashtable->tableSize < SINT32_MAX && hashtable->valueCount < SINT32_MAX);
 
-    // TODO *
-
-    const int index = makeIndex(hashtable, hash);
-    const Item item = {value, hash};
-
-    if (index >= hashtable->size) {
-        assert(hashtable->buckets = SDL_realloc(hashtable->buckets, (index + 1) * sizeof(Bucket))); // TODO: rehash
-
-        for (; hashtable->size < index - 1; hashtable->size++) {
-            Bucket* const bucket = &hashtable->buckets[hashtable->size];
-            bucket->items = nullptr;
-            bucket->size = 0;
+    int index = makeIndex(hashtable, hash);
+    for (Entry* entry = hashtable->table[index]; entry; entry = entry->next) {
+        if (entry->hash == hash) {
+            entry->value = value;
+            return;
         }
-        hashtable->size += 2;
-
-        Bucket* const bucket = &hashtable->buckets[index];
-        assert(bucket->items = SDL_malloc(sizeof(Item)));
-        bucket->items[0] = item;
-        bucket->size = 1;
-    } else {
-        Bucket* const bucket = &hashtable->buckets[index];
-        assert(bucket->size < MAX_SIZE);
-        assert(bucket->items = SDL_realloc(bucket->items, ++bucket->size * sizeof(Item))); // TODO: rehash
-        bucket->items[bucket->size - 1] = item;
-
-        SDL_qsort(bucket->items, bucket->size, sizeof(Item), compareItems);
     }
 
-    hashtable->total++;
+    if (hashtable->valueCount >= hashtable->threshold) {
+        rehash(hashtable);
+        index = makeIndex(hashtable, hash);
+    }
+
+    Entry* previous = hashtable->table[index];
+    hashtable->table[index] = SDL_malloc(sizeof(void*));
+    *hashtable->table[index] = (Entry) {hash, value, previous};
+    hashtable->valueCount++;
 }
 
 void* nullable hashtableGet(const Hashtable* const hashtable, const int hash) {
-    if (!hashtable->size) return nullptr;
 
-    const int index = makeIndex(hashtable, hash);
-    if (index < 0 || index >= hashtable->size) return nullptr;
-
-    const Bucket* const bucket = &hashtable->buckets[index];
-    if (bucket->size == 1) return bucket->items[0].value;
-
-    const Item* const item =
-        SDL_bsearch(&(Item) {.hash = hash}, bucket->items, bucket->size, sizeof(Item), compareItems);
-    return item ? item->value : nullptr;
 }
 
 void hashtableRemove(Hashtable* const hashtable, const int hash) {
