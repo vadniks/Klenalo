@@ -3,7 +3,7 @@
 #include "list.h"
 
 struct _List {
-    void** values;
+    void** nullable values;
     int size;
     ListDeallocator nullable deallocator;
 };

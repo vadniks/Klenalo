@@ -3,7 +3,7 @@
 
 #include "defs.h"
 
-// not thread-safe, null values unsupported
+// not thread-safe, null values are not supported
 
 typedef void (* ListDeallocator)(void* const);
 typedef int (* ListComparator)(const void* const, const void* const);
