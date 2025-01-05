@@ -42,7 +42,7 @@ Hashtable* hashtableInit(const HashtableDeallocator deallocator) {
 
 static int makeIndex(const Hashtable* const hashtable, const int hash) {
     assert(hashtable->capacity);
-    return (hash & SINT32_MAX) % hashtable->capacity;
+    return (hash & SINT32_MAX) % hashtable->capacity; // cannot be negative
 }
 
 static void rehash(Hashtable* const hashtable) {
@@ -76,7 +76,12 @@ static void rehash(Hashtable* const hashtable) {
 }
 
 void hashtablePut(Hashtable* const hashtable, const int hash, void* const value) {
-    assert(hashtable->capacity < SINT32_MAX && hashtable->count < SINT32_MAX);
+    assert(
+        hashtable->capacity >= INITIAL_CAPACITY &&
+        hashtable->capacity < SINT32_MAX &&
+        hashtable->count < SINT32_MAX &&
+        hashtable->table
+    );
 
     int index = makeIndex(hashtable, hash);
     for (Entry* entry = hashtable->table[index]; entry; entry = entry->next) {
@@ -99,15 +104,41 @@ void hashtablePut(Hashtable* const hashtable, const int hash, void* const value)
 }
 
 void* nullable hashtableGet(const Hashtable* const hashtable, const int hash) {
+    assert(hashtable->capacity && hashtable->count && hashtable->table);
+    const int index = makeIndex(hashtable, hash);
 
+    for (Entry* entry = hashtable->table[index]; entry; entry = entry->next) {
+        if (entry->hash == hash)
+            return entry;
+    }
+
+    return nullptr;
 }
 
 void hashtableRemove(Hashtable* const hashtable, const int hash) {
+    assert(hashtable->capacity && hashtable->count && hashtable->table);
+    const int index = makeIndex(hashtable, hash);
 
+    for (Entry* entry = hashtable->table[index], * previous = nullptr; entry; previous = entry, entry = entry->next) {
+        if (entry->hash != hash) continue;
+
+        if (previous) previous->next = entry->next;
+        else hashtable->table[index] = entry->next;
+
+        hashtable->count--;
+        hashtable->deallocator(entry->value);
+        SDL_free(entry);
+
+        break;
+    }
 }
 
-int hashtableSize(const Hashtable* const hashtable) {
+int hashtableCapacity(const Hashtable* const hashtable) {
+    return hashtable->capacity;
+}
 
+int hashtableCount(const Hashtable* const hashtable) {
+    return hashtable->count;
 }
 
 void hashtableDestroy(Hashtable* const hashtable) {
