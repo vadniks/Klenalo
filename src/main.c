@@ -1,10 +1,10 @@
 
 #if TESTING
-#include <SDL2/SDL.h>
-#include "list.h"
-#include "hashtable.h"
+#   include <SDL2/SDL.h>
+#   include "list.h"
+#   include "hashtable.h"
 #else
-#include "lifecycle.h"
+#   include "lifecycle.h"
 #endif
 
 int main(
