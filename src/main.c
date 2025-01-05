@@ -25,10 +25,11 @@ int main(
     }
 
     SDL_Quit();
-#endif
-
+#else
     lifecycleInit();
     lifecycleLoop();
     lifecycleQuit();
+#endif
+
     return 0;
 }
