@@ -153,7 +153,7 @@ void hashtableDestroy(Hashtable* const hashtable) {
     SDL_free(hashtable);
 }
 
-#ifdef TESTING
+#if TESTING
 void hashtableRunTests(void) {
     // TODO
 }

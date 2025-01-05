@@ -19,6 +19,6 @@ int hashtableCapacity(const Hashtable* const hashtable); // amount of currently 
 int hashtableCount(const Hashtable* const hashtable); // amount of elements being stored
 void hashtableDestroy(Hashtable* const hashtable);
 
-#ifdef TESTING
+#if TESTING
 void hashtableRunTests(void);
 #endif

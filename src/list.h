@@ -29,6 +29,6 @@ void listQSort(List* const list, const ListComparator comparator);
 void listClear(List* const list);
 void listDestroy(List* const list);
 
-#ifdef TESTING
+#if TESTING
 void listRunTests(void);
 #endif
