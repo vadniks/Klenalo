@@ -142,5 +142,13 @@ int hashtableCount(const Hashtable* const hashtable) {
 }
 
 void hashtableDestroy(Hashtable* const hashtable) {
+    for (int index = 0; index < hashtable->capacity; index++) {
+        for (Entry* entry = hashtable->table[index]; entry; entry = entry->next) {
+            hashtable->deallocator(entry->value);
+            SDL_free(entry);
+        }
+    }
 
+    SDL_free(hashtable->table);
+    SDL_free(hashtable);
 }
