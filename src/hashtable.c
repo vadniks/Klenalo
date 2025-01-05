@@ -2,7 +2,7 @@
 #include <SDL2/SDL_stdinc.h>
 #include "hashtable.h"
 
-// TODO: binary search (or red black) tree instead of linear (or linked) list or sort on insertion
+// TODO: binary search (or red black) tree instead of linear (or linked) list or sort on insertion and use binary search
 
 // Based on Java's Hashtable
 
