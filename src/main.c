@@ -3,9 +3,9 @@
 #include <SDL2/SDL.h>
 #include "list.h"
 #include "hashtable.h"
-#endif
-
+#else
 #include "lifecycle.h"
+#endif
 
 int main(
 #if TESTING
