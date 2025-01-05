@@ -28,3 +28,7 @@ void* nullable listBinarySearch(const List* const list, const void* const key, c
 void listQSort(List* const list, const ListComparator comparator);
 void listClear(List* const list);
 void listDestroy(List* const list);
+
+#ifdef TESTING
+void listRunTests(void);
+#endif

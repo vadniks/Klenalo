@@ -18,3 +18,7 @@ void hashtableRemove(Hashtable* const hashtable, const int hash);
 int hashtableCapacity(const Hashtable* const hashtable); // amount of currently allocated cells for storing collision buckets
 int hashtableCount(const Hashtable* const hashtable); // amount of elements being stored
 void hashtableDestroy(Hashtable* const hashtable);
+
+#ifdef TESTING
+void hashtableRunTests(void);
+#endif

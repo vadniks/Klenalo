@@ -5,6 +5,8 @@
 #   error
 #endif
 
+#define TESTING true
+
 typedef unsigned char byte;
 
 #define staticAssert(x) static_assert(x)

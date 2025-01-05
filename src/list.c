@@ -153,3 +153,9 @@ void listDestroy(List* const list) {
     SDL_free(list->values);
     SDL_free(list);
 }
+
+#ifdef TESTING
+void listRunTests(void) {
+    // TODO
+}
+#endif

@@ -152,3 +152,9 @@ void hashtableDestroy(Hashtable* const hashtable) {
     SDL_free(hashtable->table);
     SDL_free(hashtable);
 }
+
+#ifdef TESTING
+void hashtableRunTests(void) {
+    // TODO
+}
+#endif
