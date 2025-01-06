@@ -254,8 +254,7 @@ void listRunTests(void) {
         assert(listGet(list, 3) == (void*) 3);
         assert(listGet(list, 4) == (void*) 4);
 
-        const void* key = (void*) 3;
-        assert(listBinarySearch(list, &key, comparator) == (void*) 3);
+        assert(listBinarySearch(list, (void*[1]) {(void*) 3}, comparator) == (void*) 3);
 
         listDestroy(list);
     }
