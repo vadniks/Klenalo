@@ -49,10 +49,6 @@ void listAddFront(List* const list, void* const value) {
     list->values = temp;
 }
 
-void listPush(List* const list, void* const value) {
-    listAddBack(list, value);
-}
-
 void* listGet(const List* const list, const int index) {
     assert(list->size && list->values && index >= 0 && index < list->size);
     return list->values[index];
@@ -96,9 +92,9 @@ void listRemove(List* const list, const int index) {
     assert(list->size && list->values && index >= 0 && index < list->size && list->deallocator);
 
     list->deallocator(list->values[index]);
-    for (int i = index; i < --list->size; list->values[i] = list->values[i + 1], i++);
+    for (int i = index; i < list->size; list->values[i] = list->values[i + 1], i++);
 
-    if (list->size)
+    if (--list->size)
         assert(list->values = SDL_realloc(list->values, list->size * sizeof(void*)));
     else {
         SDL_free(list->values);
@@ -155,7 +151,159 @@ void listDestroy(List* const list) {
 }
 
 #if TESTING
+static void stubDeallocator(void* const) {}
+
+static void deallocator(void* const value) {
+    SDL_free(value);
+}
+
+static int comparator(const void* const a, const void* const b) {
+    const void* const aa = *(const void* const*) a;
+    const void* const bb = *(const void* const*) b;
+    return (aa > bb) - (aa < bb);
+}
+
+static void* duplicator(const void* const value) {
+    int* const copy = SDL_malloc(sizeof(int));
+    *copy = *(int*) value;
+    return copy;
+}
+
 void listRunTests(void) {
-    // TODO
+    const int allocations = SDL_GetNumAllocations();
+
+    {
+        List* const list = listInit(stubDeallocator);
+        assert(list);
+
+        listAddBack(list, (void*) 1);
+        listAddBack(list, (void*) 2);
+        listAddBack(list, (void*) 3);
+        listAddBack(list, (void*) 4);
+        listAddBack(list, (void*) 5);
+
+        assert(listGet(list, 0) == (void*) 1);
+        assert(listGet(list, 1) == (void*) 2);
+        assert(listGet(list, 2) == (void*) 3);
+        assert(listGet(list, 3) == (void*) 4);
+        assert(listGet(list, 4) == (void*) 5);
+
+        assert(listPeekFirst(list) == (void*) 1);
+        assert(listPeekLast(list) == (void*) 5);
+
+        listRemove(list, 0);
+        listRemove(list, 1);
+        listRemove(list, 2);
+
+        assert(listGet(list, 0) == (void*) 2);
+        assert(listGet(list, 1) == (void*) 4);
+
+        listDestroy(list);
+    }
+
+    {
+        List* const list = listInit(nullptr);
+        assert(list);
+
+        for (int i = 0; i < 5; i ++) {
+            int* const j = SDL_malloc(sizeof(int));
+            *j = i;
+            listAddFront(list, j);
+        }
+
+        assert(*(int*) listGet(list, 0) == 4);
+        assert(*(int*) listGet(list, 1) == 3);
+        assert(*(int*) listGet(list, 2) == 2);
+        assert(*(int*) listGet(list, 3) == 1);
+        assert(*(int*) listGet(list, 4) == 0);
+
+        for (int i = 0, j = 4; i < 5; i++, j--) {
+            int* const k = listPopFirst(list);
+            assert(*k == j);
+            SDL_free(k);
+        }
+
+        listDestroy(list);
+    }
+
+    {
+        List* const list = listInit(deallocator);
+        assert(list);
+
+        for (int i = 0; i < 5; i ++)
+            listAddBack(list, SDL_malloc(1));
+
+        listDestroy(list);
+    }
+
+    {
+        List* const list = listInit(nullptr);
+        assert(list);
+
+        listAddBack(list, (void*) 1);
+        listAddBack(list, (void*) 4);
+        listAddBack(list, (void*) 2);
+        listAddBack(list, (void*) 0);
+        listAddBack(list, (void*) 3);
+
+        listQSort(list, comparator);
+
+        assert(listGet(list, 0) == (void*) 0);
+        assert(listGet(list, 1) == (void*) 1);
+        assert(listGet(list, 2) == (void*) 2);
+        assert(listGet(list, 3) == (void*) 3);
+        assert(listGet(list, 4) == (void*) 4);
+
+        const void* key = (void*) 3;
+        assert(listBinarySearch(list, &key, comparator) == (void*) 3);
+
+        listDestroy(list);
+    }
+
+    {
+        List* const list = listInit(nullptr);
+        assert(list);
+
+        listAddBack(list, (void*) 0);
+        listAddBack(list, (void*) 1);
+        listAddBack(list, (void*) 2);
+        listAddBack(list, (void*) 3);
+        listAddBack(list, (void*) 4);
+
+        assert(listPopFirst(list) == (void*) 0);
+        assert(listPopLast(list) == (void*) 4);
+
+        assert(listGet(list, 0) == (void*) 1);
+        assert(listGet(list, 1) == (void*) 2);
+        assert(listGet(list, 2) == (void*) 3);
+
+        assert(listSize(list) == 3);
+
+        listDestroy(list);
+    }
+
+    {
+        List* const list = listInit(deallocator);
+        assert(list);
+
+        for (int i = 0; i < 5; i++) {
+            int* const j = SDL_malloc(sizeof(int));
+            *j = i;
+            listAddBack(list, j);
+        }
+
+        List* const list2 = listCopy(list, duplicator);
+        listDestroy(list);
+
+        for (int i = 0; i < 5; i++)
+            assert(*(int*) listGet(list2, i) == i);
+
+        listClear(list2);
+        assert(listSize(list2) == 0);
+
+        listDestroy(list2);
+    }
+
+    assert(allocations == SDL_GetNumAllocations());
 }
 #endif
