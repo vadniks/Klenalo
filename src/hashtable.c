@@ -5,6 +5,7 @@
 // TODO: binary search (or red black) tree instead of linear (or linked) list or sort on insertion and use binary search
 
 // Based on Java's Hashtable
+// https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/util/Hashtable.java
 
 typedef struct _Entry {
     int hash;
@@ -25,7 +26,7 @@ static const int INITIAL_CAPACITY = 11;
 static const float LOAD_FACTOR = 0.75f;
 
 int hashtableHash(const byte* key, int size) {
-    int hash = 1;
+    int hash = 0;
     for (; size--; hash = 31 * hash + *key++);
     return hash;
 }
