@@ -3,7 +3,7 @@
 
 #include "defs.h"
 
-// not thread-safe, null values are not supported
+// not thread-safe
 
 typedef void (* HashtableDeallocator)(void* const);
 
@@ -11,7 +11,7 @@ struct _Hashtable;
 typedef struct _Hashtable Hashtable;
 
 int hashtableHash(const byte* key, int size); // aka Java Object's default hashCode()
-Hashtable* hashtableInit(const HashtableDeallocator deallocator);
+Hashtable* hashtableInit(const HashtableDeallocator nullable deallocator);
 void hashtablePut(Hashtable* const hashtable, const int hash, void* const value); // hashes are the keys and they must be unique
 void* nullable hashtableGet(const Hashtable* const hashtable, const int hash);
 void hashtableRemove(Hashtable* const hashtable, const int hash);

@@ -3,7 +3,7 @@
 
 #include "defs.h"
 
-// Linear list, queue and stack, not thread-safe, allows null values
+// Linear list, queue and stack, not thread-safe
 
 typedef void (* ListDeallocator)(void* const);
 typedef int (* ListComparator)(const void* const, const void* const);

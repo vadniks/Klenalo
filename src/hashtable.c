@@ -13,11 +13,11 @@ typedef struct _Entry {
 } Entry;
 
 struct _Hashtable {
-    Entry** table;
+    Entry* nullable* table;
     int capacity;
     int count;
     int threshold;
-    HashtableDeallocator deallocator;
+    HashtableDeallocator nullable deallocator;
 };
 
 static const int SINT32_MAX = 0x7fffffff;
@@ -30,7 +30,7 @@ int hashtableHash(const byte* key, int size) {
     return hash;
 }
 
-Hashtable* hashtableInit(const HashtableDeallocator deallocator) {
+Hashtable* hashtableInit(const HashtableDeallocator nullable deallocator) {
     Hashtable* const hashtable = SDL_malloc(sizeof *hashtable);
     assert(hashtable);
     hashtable->table = SDL_calloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*));
@@ -86,7 +86,8 @@ void hashtablePut(Hashtable* const hashtable, const int hash, void* const value)
     int index = makeIndex(hashtable, hash);
     for (Entry* entry = hashtable->table[index]; entry; entry = entry->next) {
         if (entry->hash == hash) {
-            hashtable->deallocator(entry->value);
+            if (hashtable->deallocator)
+                hashtable->deallocator(entry->value);
             entry->value = value;
             return;
         }
@@ -126,7 +127,8 @@ void hashtableRemove(Hashtable* const hashtable, const int hash) {
         else hashtable->table[index] = entry->next;
 
         hashtable->count--;
-        hashtable->deallocator(entry->value);
+        if (hashtable->deallocator)
+            hashtable->deallocator(entry->value);
         SDL_free(entry);
 
         break;
@@ -144,7 +146,8 @@ int hashtableCount(const Hashtable* const hashtable) {
 void hashtableDestroy(Hashtable* const hashtable) {
     for (int index = 0; index < hashtable->capacity; index++) {
         for (Entry* entry = hashtable->table[index]; entry; entry = entry->next) {
-            hashtable->deallocator(entry->value);
+            if (hashtable->deallocator)
+                hashtable->deallocator(entry->value);
             SDL_free(entry);
         }
     }
@@ -155,6 +158,6 @@ void hashtableDestroy(Hashtable* const hashtable) {
 
 #if TESTING
 void hashtableRunTests(void) {
-    // TODO
+
 }
 #endif
