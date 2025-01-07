@@ -156,6 +156,10 @@ void hashtableDestroy(Hashtable* const hashtable) {
     SDL_free(hashtable);
 }
 
+
+// TODO: add shrinkToFit() - allocate only minimal entries to fit all the values so that each entry contains only one value and call it after remove()
+
+
 #if TESTING
 static void deallocator(void* const value) {
     SDL_free(value);
@@ -180,6 +184,14 @@ void hashtableRunTests(void) {
     }
 
     assert(hashtableCount(hashtable) == 100);
+//    printf("%d\n", hashtableCapacity(hashtable));
+
+    for (int i = 0; i < hashtableCapacity(hashtable); i++) {
+        int j = 0;
+        for (Entry* entry = hashtable->table[i]; entry; entry = entry->next)
+            j++;
+        assert(j <= 2);
+    }
 
     hashtableRemove(hashtable, hashtableHash((byte*) (int[1]) {0}, sizeof(int)));
     hashtableRemove(hashtable, hashtableHash((byte*) (int[1]) {5}, sizeof(int)));
