@@ -158,6 +158,7 @@ void hashtableDestroy(Hashtable* const hashtable) {
 
 
 // TODO: add shrinkToFit() - allocate only minimal entries to fit all the values so that each entry contains only one value and call it after remove()
+// TODO: add find() or contains()
 
 
 #if TESTING
