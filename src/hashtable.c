@@ -86,12 +86,13 @@ void hashtablePut(Hashtable* const hashtable, const int hash, void* const value)
 
     int index = makeIndex(hashtable, hash);
     for (Entry* entry = hashtable->table[index]; entry; entry = entry->next) {
-        if (entry->hash == hash) {
-            if (hashtable->deallocator)
-                hashtable->deallocator(entry->value);
-            entry->value = value;
-            return;
-        }
+        if (entry->hash != hash) continue;
+
+        if (hashtable->deallocator)
+            hashtable->deallocator(entry->value);
+
+        entry->value = value;
+        return;
     }
 
     if (hashtable->count >= hashtable->threshold) {
@@ -170,39 +171,58 @@ static void deallocator(void* const value) {
 void hashtableRunTests(void) {
     const int allocations = SDL_GetNumAllocations();
 
-    Hashtable* const hashtable = hashtableInit(deallocator);
-    assert(hashtable);
+    {
+        Hashtable* const hashtable = hashtableInit(deallocator);
+        assert(hashtable);
 
-    for (int i = 0; i < 100; i++) {
-        int* const j = SDL_malloc(sizeof(int));
-        *j = i;
-        hashtablePut(hashtable, hashtableHash((byte*) j, sizeof(int)), j);
+        for (int i = 0; i < 100; i++) {
+            int* const j = SDL_malloc(sizeof(int));
+            *j = i;
+            hashtablePut(hashtable, hashtableHash((byte*) j, sizeof(int)), j);
+        }
+
+        for (int i = 0; i < 100; i++) {
+            const int j = hashtableHash((byte*) &i, sizeof(int));
+            const int* const k = hashtableGet(hashtable, j);
+            assert(k && *k == i);
+        }
+
+        assert(hashtableCount(hashtable) == 100);
+    //    printf("%d\n", hashtableCapacity(hashtable));
+
+        for (int i = 0; i < hashtableCapacity(hashtable); i++) {
+            int j = 0;
+            for (Entry* entry = hashtable->table[i]; entry; entry = entry->next)
+                j++;
+            assert(j <= 2);
+        }
+
+        hashtableRemove(hashtable, hashtableHash((byte*) (int[1]) {0}, sizeof(int)));
+        hashtableRemove(hashtable, hashtableHash((byte*) (int[1]) {5}, sizeof(int)));
+        hashtableRemove(hashtable, hashtableHash((byte*) (int[1]) {11}, sizeof(int)));
+        hashtableRemove(hashtable, hashtableHash((byte*) (int[1]) {99}, sizeof(int)));
+
+        assert(hashtableCount(hashtable) == 96);
+
+        hashtableDestroy(hashtable);
     }
 
-    for (int i = 0; i < 100; i++) {
-        const int j = hashtableHash((byte*) &i, sizeof(int));
-        const int* const k = hashtableGet(hashtable, j);
-        assert(k && *k == i);
+    {
+        Hashtable* const hashtable = hashtableInit(deallocator);
+        assert(hashtable);
+
+        for (int i = 0; i < 100; i++) {
+            int* const j = SDL_malloc(sizeof(int));
+            *j = i;
+            printf("%d\n", hashtableCapacity(hashtable));
+            hashtablePut(hashtable, hashtableHash((byte*) j, sizeof(int)), j);
+        }
+
+        for (int i = 0; i < 00; i++)
+            hashtableRemove(hashtable, hashtableHash((byte*) &i, sizeof(int)));
+
+        hashtableDestroy(hashtable);
     }
-
-    assert(hashtableCount(hashtable) == 100);
-//    printf("%d\n", hashtableCapacity(hashtable));
-
-    for (int i = 0; i < hashtableCapacity(hashtable); i++) {
-        int j = 0;
-        for (Entry* entry = hashtable->table[i]; entry; entry = entry->next)
-            j++;
-        assert(j <= 2);
-    }
-
-    hashtableRemove(hashtable, hashtableHash((byte*) (int[1]) {0}, sizeof(int)));
-    hashtableRemove(hashtable, hashtableHash((byte*) (int[1]) {5}, sizeof(int)));
-    hashtableRemove(hashtable, hashtableHash((byte*) (int[1]) {11}, sizeof(int)));
-    hashtableRemove(hashtable, hashtableHash((byte*) (int[1]) {99}, sizeof(int)));
-
-    assert(hashtableCount(hashtable) == 96);
-
-    hashtableDestroy(hashtable);
 
     assert(allocations == SDL_GetNumAllocations());
 }
