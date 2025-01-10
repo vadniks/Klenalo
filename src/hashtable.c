@@ -2,19 +2,14 @@
 #include <SDL2/SDL_stdinc.h>
 #include "hashtable.h"
 
-// TODO: binary search (or red black) tree instead of linear (or linked) list or sort on insertion and use binary search
-
-// Based on Java's Hashtable
-// https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/util/Hashtable.java
-
-typedef struct _Entry {
+typedef struct Node {
     int hash;
     void* value;
-    struct _Entry* nullable next;
-} Entry;
+    struct Node* nullable next;
+} Node;
 
 struct _Hashtable {
-    Entry* nullable* table;
+    Node* nullable* table;
     int capacity;
     int count;
     int threshold;
@@ -34,46 +29,43 @@ int hashtableHash(const byte* key, int size) {
 Hashtable* hashtableInit(const HashtableDeallocator nullable deallocator) {
     Hashtable* const hashtable = SDL_malloc(sizeof *hashtable);
     assert(hashtable);
-    hashtable->table = SDL_calloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*));
+    assert(hashtable->table = SDL_calloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*)));
     hashtable->count = 0;
     hashtable->threshold = (int) ((float) INITIAL_CAPACITY * LOAD_FACTOR);
     hashtable->deallocator = deallocator;
     return hashtable;
 }
 
-static int makeIndex(const Hashtable* const hashtable, const int hash) {
-    assert(hashtable->capacity);
-    return (hash & SINT32_MAX) % hashtable->capacity; // cannot be negative
+static int makeIndex(const int capacity, const int hash) {
+    assert(capacity);
+    return (hash & SINT32_MAX) % capacity; // cannot be negative or exceed the capacity
 }
 
 static void rehash(Hashtable* const hashtable) {
     const int oldCapacity = hashtable->capacity;
     if (oldCapacity == SINT32_MAX) return;
 
-    const int newCapacity = (oldCapacity << 1) + 1;
-    if (newCapacity <= oldCapacity || newCapacity == SINT32_MAX) return;
+    const int newCapacity = oldCapacity * 2 + 1;
+    if (newCapacity < oldCapacity) return;
 
-    Entry** const oldTable = hashtable->table;
+    Node** newTable = SDL_calloc(newCapacity, sizeof(void*));
+    assert(newTable);
 
-    Entry** const newTable = SDL_calloc(newCapacity, sizeof(void*));
-    assert(newCapacity);
+    for (int index = 0; index < oldCapacity; index++) {
+        for (Node* anchor = hashtable->table[index]; anchor;) {
+            Node* const current = anchor;
+            anchor = anchor->next;
 
-    hashtable->threshold = (int) ((float) newCapacity * LOAD_FACTOR);
-    hashtable->table = newTable;
-    hashtable->capacity = newCapacity;
-
-    for (int i = oldCapacity; i-- > 0;) {
-        for (Entry* old = oldTable[i]; old;) {
-            Entry* entry = old;
-            old = old->next;
-
-            const int index = makeIndex(hashtable, entry->hash);
-            entry->next = newTable[index];
-            newTable[index] = entry;
+            const int newIndex = makeIndex(newCapacity, current->hash);
+            current->next = newTable[newIndex];
+            newTable[newIndex] = current;
         }
     }
 
-    SDL_free(oldTable);
+    hashtable->threshold = (int) ((float) newCapacity * LOAD_FACTOR);
+    SDL_free(hashtable->table);
+    hashtable->table = newTable;
+    hashtable->capacity = newCapacity;
 }
 
 void hashtablePut(Hashtable* const hashtable, const int hash, void* const value) {
@@ -84,35 +76,34 @@ void hashtablePut(Hashtable* const hashtable, const int hash, void* const value)
         hashtable->table
     );
 
-    int index = makeIndex(hashtable, hash);
-    for (Entry* entry = hashtable->table[index]; entry; entry = entry->next) {
-        if (entry->hash != hash) continue;
+    Node** const anchor = &hashtable->table[makeIndex(hashtable->capacity, hash)];
+
+    for (Node* node = *anchor; node; node = node->next) {
+        if (node->hash != hash) continue;
 
         if (hashtable->deallocator)
-            hashtable->deallocator(entry->value);
+            hashtable->deallocator(node->value);
 
-        entry->value = value;
+        node->value = value;
         return;
     }
 
-    if (hashtable->count >= hashtable->threshold) {
-        rehash(hashtable);
-        index = makeIndex(hashtable, hash);
-    }
-
-    Entry* const previous = hashtable->table[index];
-    hashtable->table[index] = SDL_malloc(sizeof(void*));
-    *hashtable->table[index] = (Entry) {hash, value, previous};
+    Node* const new = SDL_malloc(sizeof *new);
+    assert(new);
+    *new = (Node) {hash, value, *anchor};
+    *anchor = new;
     hashtable->count++;
+
+    if (hashtable->count >= hashtable->threshold)
+        rehash(hashtable);
 }
 
 void* nullable hashtableGet(const Hashtable* const hashtable, const int hash) {
     assert(hashtable->capacity && hashtable->count && hashtable->table);
-    const int index = makeIndex(hashtable, hash);
 
-    for (Entry* entry = hashtable->table[index]; entry; entry = entry->next) {
-        if (entry->hash == hash)
-            return entry->value;
+    for (const Node* node = hashtable->table[makeIndex(hashtable->capacity, hash)]; node; node = node->next) {
+        if (node->hash == hash)
+            return node->value;
     }
 
     return nullptr;
@@ -120,19 +111,20 @@ void* nullable hashtableGet(const Hashtable* const hashtable, const int hash) {
 
 void hashtableRemove(Hashtable* const hashtable, const int hash) {
     assert(hashtable->capacity && hashtable->count && hashtable->table);
-    const int index = makeIndex(hashtable, hash);
 
-    for (Entry* entry = hashtable->table[index], * previous = nullptr; entry; previous = entry, entry = entry->next) {
-        if (entry->hash != hash) continue;
+    Node** const anchor = &hashtable->table[makeIndex(hashtable->capacity, hash)];
 
-        if (previous) previous->next = entry->next;
-        else hashtable->table[index] = entry->next;
+    for (Node* node = *anchor, * previous = nullptr; node; previous = node, node = node->next) {
+        if (node->hash != hash) continue;
 
-        hashtable->count--;
+        if (previous) previous->next = node->next;
+        else *anchor = node->next;
+
         if (hashtable->deallocator)
-            hashtable->deallocator(entry->value);
-        SDL_free(entry);
+            hashtable->deallocator(node->value);
 
+        SDL_free(node);
+        hashtable->count--;
         break;
     }
 }
@@ -147,10 +139,10 @@ int hashtableCount(const Hashtable* const hashtable) {
 
 void hashtableDestroy(Hashtable* const hashtable) {
     for (int index = 0; index < hashtable->capacity; index++) {
-        for (Entry* entry = hashtable->table[index]; entry; entry = entry->next) {
+        for (Node* node = hashtable->table[index]; node; node = node->next) {
             if (hashtable->deallocator)
-                hashtable->deallocator(entry->value);
-            SDL_free(entry);
+                hashtable->deallocator(node->value);
+            SDL_free(node);
         }
     }
 
@@ -159,7 +151,7 @@ void hashtableDestroy(Hashtable* const hashtable) {
 }
 
 
-// TODO: add shrinkToFit() - allocate only minimal entries to fit all the values so that each entry contains only one value and call it after remove()
+// TODO: add shrinkToFit() - allocate only minimal nodes to fit all the values so that each node contains only one value and call it after remove()
 // TODO: add find() or contains()
 
 
@@ -192,7 +184,7 @@ void hashtableRunTests(void) {
 
         for (int i = 0; i < hashtableCapacity(hashtable); i++) {
             int j = 0;
-            for (Entry* entry = hashtable->table[i]; entry; entry = entry->next)
+            for (Node* node = hashtable->table[i]; node; node = node->next)
                 j++;
             assert(j <= 2);
         }
@@ -223,6 +215,8 @@ void hashtableRunTests(void) {
 
         hashtableDestroy(hashtable);
     }
+
+    // TODO: replace value
 
     assert(allocations == SDL_GetNumAllocations());
 }

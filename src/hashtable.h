@@ -3,7 +3,7 @@
 
 #include "defs.h"
 
-// not thread-safe
+// not thread-safe, not intended to store nulls
 
 typedef void (* HashtableDeallocator)(void* const);
 
