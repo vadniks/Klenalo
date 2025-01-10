@@ -196,6 +196,10 @@ void hashtableRunTests(void) {
 
         assert(hashtableCount(hashtable) == 96);
 
+        hashtablePut(hashtable, hashtableHash((byte*) (int[1]) {1}, sizeof(int)), SDL_malloc(sizeof(int)));
+        hashtablePut(hashtable, hashtableHash((byte*) (int[1]) {50}, sizeof(int)), SDL_malloc(sizeof(int)));
+        hashtablePut(hashtable, hashtableHash((byte*) (int[1]) {90}, sizeof(int)), SDL_malloc(sizeof(int)));
+
         hashtableDestroy(hashtable);
     }
 
@@ -215,8 +219,6 @@ void hashtableRunTests(void) {
 
         hashtableDestroy(hashtable);
     }
-
-    // TODO: replace value
 
     assert(allocations == SDL_GetNumAllocations());
 }
