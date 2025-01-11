@@ -10,7 +10,7 @@ struct _List {
 
 static const int MAX_SIZE = 0x7fffffff;
 
-List* listInit(const ListDeallocator nullable deallocator) {
+List* listCreate(const ListDeallocator nullable deallocator) {
     List* const list = SDL_malloc(sizeof *list);
     assert(list);
     list->values = nullptr;
@@ -21,7 +21,7 @@ List* listInit(const ListDeallocator nullable deallocator) {
 
 List* listCopy(const List* const old, const ListItemDuplicator itemDuplicator) {
     assert(old->size && old->values);
-    List* const new = listInit(old->deallocator);
+    List* const new = listCreate(old->deallocator);
 
     assert(new->values = SDL_malloc(old->size * sizeof(void*)));
     new->size = old->size;
@@ -173,7 +173,7 @@ void listRunTests(void) {
     const int allocations = SDL_GetNumAllocations();
 
     {
-        List* const list = listInit(stubDeallocator);
+        List* const list = listCreate(stubDeallocator);
         assert(list);
 
         listAddBack(list, (void*) 1);
@@ -202,7 +202,7 @@ void listRunTests(void) {
     }
 
     {
-        List* const list = listInit(nullptr);
+        List* const list = listCreate(nullptr);
         assert(list);
 
         for (int i = 0; i < 5; i ++) {
@@ -227,7 +227,7 @@ void listRunTests(void) {
     }
 
     {
-        List* const list = listInit(deallocator);
+        List* const list = listCreate(deallocator);
         assert(list);
 
         for (int i = 0; i < 5; i ++)
@@ -237,7 +237,7 @@ void listRunTests(void) {
     }
 
     {
-        List* const list = listInit(nullptr);
+        List* const list = listCreate(nullptr);
         assert(list);
 
         listAddBack(list, (void*) 1);
@@ -260,7 +260,7 @@ void listRunTests(void) {
     }
 
     {
-        List* const list = listInit(nullptr);
+        List* const list = listCreate(nullptr);
         assert(list);
 
         listAddBack(list, (void*) 0);
@@ -282,7 +282,7 @@ void listRunTests(void) {
     }
 
     {
-        List* const list = listInit(deallocator);
+        List* const list = listCreate(deallocator);
         assert(list);
 
         for (int i = 0; i < 5; i++) {

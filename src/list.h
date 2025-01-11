@@ -12,7 +12,7 @@ typedef void* (* ListItemDuplicator)(const void* const);
 struct _List;
 typedef struct _List List;
 
-List* listInit(const ListDeallocator nullable deallocator);
+List* listCreate(const ListDeallocator nullable deallocator);
 List* listCopy(const List* const old, const ListItemDuplicator itemDuplicator);
 void listAddBack(List* const list, void* const value); // listAdd, stackPush
 void listAddFront(List* const list, void* const value); // queuePush

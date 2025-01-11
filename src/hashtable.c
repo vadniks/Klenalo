@@ -3,7 +3,7 @@
 #include "hashtable.h"
 
 typedef struct Node {
-    int hash;
+    int hash; // const
     void* value;
     struct Node* nullable next;
 } Node;
@@ -26,7 +26,7 @@ int hashtableHash(const byte* key, int size) {
     return hash;
 }
 
-Hashtable* hashtableInit(const HashtableDeallocator nullable deallocator) {
+Hashtable* hashtableCreate(const HashtableDeallocator nullable deallocator) {
     Hashtable* const hashtable = SDL_malloc(sizeof *hashtable);
     assert(hashtable);
     assert(hashtable->table = SDL_calloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*)));
@@ -164,7 +164,7 @@ void hashtableRunTests(void) {
     const int allocations = SDL_GetNumAllocations();
 
     {
-        Hashtable* const hashtable = hashtableInit(deallocator);
+        Hashtable* const hashtable = hashtableCreate(deallocator);
         assert(hashtable);
 
         for (int i = 0; i < 100; i++) {
@@ -204,7 +204,7 @@ void hashtableRunTests(void) {
     }
 
     {
-        Hashtable* const hashtable = hashtableInit(deallocator);
+        Hashtable* const hashtable = hashtableCreate(deallocator);
         assert(hashtable);
 
         for (int i = 0; i < 100; i++) {

@@ -1,16 +1,28 @@
 
 #include <SDL2/SDL.h>
 #include "xlvgl.h"
-#include "defs.h"
 #include "video.h"
 #include "input.h"
 #include "resources.h"
 #include "scenes.h"
+#include "list.h"
 #include "lifecycle.h"
+
+typedef struct {
+    const LifecycleAsyncActionFunction function;
+    void* nullable const parameter;
+    const int delayMillis;
+} AsyncAction;
 
 static const int UPDATE_PERIOD = 16; // floorf(1000.0f / 60.0f)
 
 static atomic bool gInitialized = false;
+static atomic bool gRunning = false;
+static List* gAsyncActionsQueue = nullptr; // <AsyncAction*>
+static SDL_mutex* gAsyncActionsQueueMutex = nullptr;
+static SDL_Thread* gAsyncActionsThread = nullptr;
+
+static int asyncActionsThreadLoop(void* const);
 
 void lifecycleInit(void) {
     assert(!gInitialized);
@@ -27,37 +39,90 @@ void lifecycleInit(void) {
     inputInit();
     resourcesInit();
     scenesInit();
+
+    gRunning = true;
+
+    gAsyncActionsQueue = listCreate(SDL_free);
+    assert(gAsyncActionsQueueMutex = SDL_CreateMutex());
+    assert(gAsyncActionsThread = SDL_CreateThread(asyncActionsThreadLoop, "asyncActions", nullptr));
+}
+
+static void delayThread(const unsigned startMillis) {
+    const unsigned differenceMillis = SDL_GetTicks() - startMillis;
+    if (UPDATE_PERIOD > differenceMillis)
+        SDL_Delay(UPDATE_PERIOD - differenceMillis);
+}
+
+static int asyncActionsThreadLoop(void* const) {
+    AsyncAction* action = nullptr;
+    unsigned startMillis;
+
+    while (gRunning) {
+        assert(startMillis = SDL_GetTicks());
+
+        assert(!SDL_LockMutex(gAsyncActionsQueueMutex));
+        if (listSize(gAsyncActionsQueue))
+            action = listPopFirst(gAsyncActionsQueue);
+        assert(!SDL_UnlockMutex(gAsyncActionsQueueMutex));
+
+        if (action) {
+            if (action->delayMillis) SDL_Delay(action->delayMillis);
+            action->function(action->parameter);
+            SDL_free(action);
+            action = nullptr;
+        }
+
+        delayThread(startMillis);
+    }
+
+    return 0;
 }
 
 bool lifecycleInitialized(void) {
     return gInitialized;
 }
 
+void lifecycleAsync(const LifecycleAsyncActionFunction function, void* nullable const parameter, int delayMillis) {
+    assert(gInitialized && gRunning);
+
+    AsyncAction* const action = SDL_malloc(sizeof *action);
+    SDL_memcpy(action, &(AsyncAction) {function, parameter, delayMillis}, sizeof *action);
+
+    assert(!SDL_LockMutex(gAsyncActionsQueueMutex));
+    listAddFront(gAsyncActionsQueue, action);
+    assert(!SDL_UnlockMutex(gAsyncActionsQueueMutex));
+}
+
 void lifecycleLoop(void) {
     assert(gInitialized);
 
-    unsigned startMillis, differenceMillis;
+    unsigned startMillis;
     while (true) {
-        startMillis = SDL_GetTicks();
+        assert(startMillis = SDL_GetTicks());
         lv_timer_periodic_handler();
 
         SDL_Event event;
         while (SDL_PollEvent(&event) == 1) {
-            if (event.type == SDL_QUIT) return;
+            if (event.type == SDL_QUIT) goto end;
 
             videoProcessEvent(&event);
             inputProcessEvent(&event);
         }
 
-        differenceMillis = SDL_GetTicks() - startMillis;
-        if (UPDATE_PERIOD > differenceMillis)
-            SDL_Delay(UPDATE_PERIOD - differenceMillis);
+        delayThread(startMillis);
     }
+    end:
+
+    gRunning = false;
 }
 
 void lifecycleQuit(void) {
     assert(gInitialized);
     gInitialized = false;
+
+    SDL_WaitThread(gAsyncActionsThread, nullptr);
+    SDL_DestroyMutex(gAsyncActionsQueueMutex);
+    listDestroy(gAsyncActionsQueue);
 
     scenesQuit();
     resourcesQuit();
