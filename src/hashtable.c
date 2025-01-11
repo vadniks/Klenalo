@@ -210,7 +210,7 @@ void hashtableRunTests(void) {
         for (int i = 0; i < 100; i++) {
             int* const j = SDL_malloc(sizeof(int));
             *j = i;
-            printf("%d\n", hashtableCapacity(hashtable));
+//            printf("%d\n", hashtableCapacity(hashtable));
             hashtablePut(hashtable, hashtableHash((byte*) j, sizeof(int)), j);
         }
 
