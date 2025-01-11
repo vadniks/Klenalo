@@ -67,7 +67,7 @@ static int asyncActionsThreadLoop(void* const) {
 
         if (action) {
             if (action->delayMillis) SDL_Delay(action->delayMillis);
-            action->function(action->parameter);
+            if (gRunning) action->function(action->parameter);
             SDL_free(action);
             action = nullptr;
         }
