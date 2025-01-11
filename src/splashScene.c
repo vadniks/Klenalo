@@ -2,6 +2,7 @@
 #include "xlvgl.h"
 #include "scenes.h"
 #include "defs.h"
+#include "lifecycle.h"
 #include "splashScene.h"
 
 static atomic bool gInitialized = false;
@@ -9,6 +10,10 @@ static atomic bool gInitialized = false;
 static lv_obj_t* gPreviousScreen = nullptr;
 static lv_obj_t* gScreen = nullptr;
 static lv_obj_t* gLabel = nullptr;
+
+static void end(void) {
+    scenesSetCurrentScene(SCENES_SCENE_LOGIN);
+}
 
 void splashSceneInit(void) {
     assert(scenesInitialized() && !gInitialized);
@@ -23,6 +28,8 @@ void splashSceneInit(void) {
     assert(gLabel = lv_label_create(gScreen));
     lv_label_set_text_static(gLabel, "Splash"); // TODO
     lv_obj_align(gLabel, LV_ALIGN_CENTER, 0, 0);
+
+    lifecycleAsync((LifecycleAsyncActionFunction) end, nullptr, 500);
 }
 
 void splashSceneQuit(void) {

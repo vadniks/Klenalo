@@ -31,6 +31,10 @@ void lifecycleInit(void) {
     assert(SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0"));
     assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) == 0);
 
+    gAsyncActionsQueue = listCreate(SDL_free);
+    assert(gAsyncActionsQueueMutex = SDL_CreateMutex());
+    assert(gAsyncActionsThread = SDL_CreateThread(asyncActionsThreadLoop, "asyncActions", nullptr));
+
     lv_init();
     lv_tick_set_cb(SDL_GetTicks);
     lv_delay_set_cb(SDL_Delay);
@@ -39,10 +43,6 @@ void lifecycleInit(void) {
     inputInit();
     resourcesInit();
     scenesInit();
-
-    gAsyncActionsQueue = listCreate(SDL_free);
-    assert(gAsyncActionsQueueMutex = SDL_CreateMutex());
-    assert(gAsyncActionsThread = SDL_CreateThread(asyncActionsThreadLoop, "asyncActions", nullptr));
 }
 
 static void delayThread(const unsigned startMillis) {
@@ -52,7 +52,7 @@ static void delayThread(const unsigned startMillis) {
 }
 
 static int asyncActionsThreadLoop(void* const) {
-    assert(gRunning);
+    while (!gRunning); // wait for main thread to start looping
 
     AsyncAction* action = nullptr;
     unsigned startMillis;
@@ -83,7 +83,7 @@ bool lifecycleInitialized(void) {
 }
 
 void lifecycleAsync(const LifecycleAsyncActionFunction function, void* nullable const parameter, int delayMillis) {
-    assert(gInitialized && gRunning);
+    assert(gInitialized);
 
     AsyncAction* const action = SDL_malloc(sizeof *action);
     SDL_memcpy(action, &(AsyncAction) {function, parameter, delayMillis}, sizeof *action);
@@ -121,15 +121,16 @@ void lifecycleQuit(void) {
     assert(gInitialized);
     gInitialized = false;
 
-    SDL_WaitThread(gAsyncActionsThread, nullptr);
-    SDL_DestroyMutex(gAsyncActionsQueueMutex);
-    listDestroy(gAsyncActionsQueue);
-
     scenesQuit();
     resourcesQuit();
     inputQuit();
     videoQuit();
 
     lv_deinit();
+
+    SDL_WaitThread(gAsyncActionsThread, nullptr);
+    SDL_DestroyMutex(gAsyncActionsQueueMutex);
+    listDestroy(gAsyncActionsQueue);
+
     SDL_Quit();
 }
