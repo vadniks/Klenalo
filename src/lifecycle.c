@@ -40,8 +40,6 @@ void lifecycleInit(void) {
     resourcesInit();
     scenesInit();
 
-    gRunning = true;
-
     gAsyncActionsQueue = listCreate(SDL_free);
     assert(gAsyncActionsQueueMutex = SDL_CreateMutex());
     assert(gAsyncActionsThread = SDL_CreateThread(asyncActionsThreadLoop, "asyncActions", nullptr));
@@ -54,6 +52,8 @@ static void delayThread(const unsigned startMillis) {
 }
 
 static int asyncActionsThreadLoop(void* const) {
+    assert(gRunning);
+
     AsyncAction* action = nullptr;
     unsigned startMillis;
 
@@ -95,6 +95,7 @@ void lifecycleAsync(const LifecycleAsyncActionFunction function, void* nullable 
 
 void lifecycleLoop(void) {
     assert(gInitialized);
+    gRunning = true;
 
     unsigned startMillis;
     while (true) {
