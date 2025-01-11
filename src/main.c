@@ -1,4 +1,6 @@
 
+#include <SDL2/SDL_stdinc.h>
+
 #if TESTING
 #   include <SDL2/SDL.h>
 #   include "list.h"
@@ -22,5 +24,6 @@ int main(void) {
     lifecycleQuit();
 #endif
 
+    assert(!SDL_GetNumAllocations());
     return 0;
 }
