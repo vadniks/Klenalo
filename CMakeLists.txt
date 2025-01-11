@@ -30,4 +30,4 @@ target_link_libraries(${PROJECT_NAME} c m SDL2 ${PROJECT_SOURCE_DIR}/lib/lvgl/bi
 
 file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
 
-add_compile_definitions(TESTING)
+#add_compile_definitions(TESTING)
