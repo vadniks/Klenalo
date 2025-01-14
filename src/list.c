@@ -67,7 +67,7 @@ void* listPopFirst(List* const list) {
     }
 
     SDL_memmove(list->values, (void*) list->values + sizeof(void*), list->size * sizeof(void*));
-    assert(list->values = SDL_realloc(list->values, list->size));
+    assert(list->values = SDL_realloc(list->values, list->size * sizeof(void*)));
 
     return value;
 }
