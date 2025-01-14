@@ -1,5 +1,6 @@
 
 #include <SDL2/SDL.h>
+#include <time.h>
 #include "xlvgl.h"
 #include "video.h"
 #include "input.h"
@@ -18,6 +19,7 @@ static const int UPDATE_PERIOD = 16; // floorf(1000.0f / 60.0f)
 
 static atomic bool gInitialized = false;
 static atomic bool gRunning = false;
+
 static List* gAsyncActionsQueue = nullptr; // <AsyncAction*>
 static SDL_mutex* gAsyncActionsQueueMutex = nullptr;
 static SDL_Thread* gAsyncActionsThread = nullptr;
@@ -29,7 +31,7 @@ void lifecycleInit(void) {
     gInitialized = true;
 
     assert(SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0"));
-    assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) == 0);
+    assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER) == 0);
 
     gAsyncActionsQueue = listCreate(SDL_free);
     assert(gAsyncActionsQueueMutex = SDL_CreateMutex());
@@ -82,7 +84,13 @@ bool lifecycleInitialized(void) {
     return gInitialized;
 }
 
-void lifecycleAsync(const LifecycleAsyncActionFunction function, void* nullable const parameter, int delayMillis) {
+unsigned long lifecycleCurrentTimeMillis(void) {
+    struct timespec timespec;
+    assert(!clock_gettime(CLOCK_REALTIME, &timespec));
+    return (unsigned long) timespec.tv_sec * 1000ul + (unsigned long) timespec.tv_nsec / 1000000ul;
+}
+
+void lifecycleAsync(const LifecycleAsyncActionFunction function, void* nullable const parameter, const int delayMillis) {
     assert(gInitialized);
 
     AsyncAction* const action = SDL_malloc(sizeof *action);

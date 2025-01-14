@@ -25,5 +25,6 @@ typedef unsigned char byte;
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
 inline void assert(bool const condition) { if (!condition) asm volatile ("call abort"); }
+inline void* assertNotNull(void* const mem) { assert(mem); return mem; } // TODO: for mallocs
 
 // TODO: malloc realloc calloc free
