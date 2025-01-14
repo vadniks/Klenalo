@@ -21,8 +21,11 @@ static atomic bool gInitialized = false;
 static atomic bool gRunning = false;
 
 static List* gAsyncActionsQueue = nullptr; // <AsyncAction*>
-static SDL_mutex* gAsyncActionsQueueMutex = nullptr;
+static SDL_mutex* gAsyncActionsQueueMutex = nullptr; // TODO: put in struct
 static SDL_Thread* gAsyncActionsThread = nullptr;
+
+static List* gMainThreadActionsQueue = nullptr;
+static SDL_mutex* gMainThreadActionsQueueMutex = nullptr;
 
 static int asyncActionsThreadLoop(void* const);
 
@@ -36,6 +39,9 @@ void lifecycleInit(void) {
     gAsyncActionsQueue = listCreate(SDL_free);
     assert(gAsyncActionsQueueMutex = SDL_CreateMutex());
     assert(gAsyncActionsThread = SDL_CreateThread(asyncActionsThreadLoop, "asyncActions", nullptr));
+
+    gMainThreadActionsQueue = listCreate(SDL_free);
+    assert(gMainThreadActionsQueueMutex = SDL_CreateMutex());
 
     lv_init();
     lv_tick_set_cb(SDL_GetTicks);
@@ -90,7 +96,7 @@ unsigned long lifecycleCurrentTimeMillis(void) {
     return (unsigned long) timespec.tv_sec * 1000ul + (unsigned long) timespec.tv_nsec / 1000000ul;
 }
 
-void lifecycleAsync(const LifecycleAsyncActionFunction function, void* nullable const parameter, const int delayMillis) {
+void lifecycleRunAsync(const LifecycleAsyncActionFunction function, void* nullable const parameter, const int delayMillis) {
     assert(gInitialized);
 
     AsyncAction* const action = SDL_malloc(sizeof *action);
@@ -99,6 +105,17 @@ void lifecycleAsync(const LifecycleAsyncActionFunction function, void* nullable 
     assert(!SDL_LockMutex(gAsyncActionsQueueMutex));
     listAddFront(gAsyncActionsQueue, action);
     assert(!SDL_UnlockMutex(gAsyncActionsQueueMutex));
+}
+// TODO: unify run*()
+void lifecycleRunInMainThread(const LifecycleAsyncActionFunction function, void* nullable const parameter) {
+    assert(gInitialized);
+
+    AsyncAction* const action = SDL_malloc(sizeof *action);
+    SDL_memcpy(action, &(AsyncAction) {function, parameter, 0}, sizeof *action);
+
+    assert(!SDL_LockMutex(gMainThreadActionsQueueMutex));
+    listAddFront(gMainThreadActionsQueue, action);
+    assert(!SDL_UnlockMutex(gMainThreadActionsQueueMutex));
 }
 
 void lifecycleLoop(void) {
@@ -118,6 +135,18 @@ void lifecycleLoop(void) {
             inputProcessEvent(&event);
         }
 
+        AsyncAction* action = nullptr; // TODO: move outside
+
+        assert(!SDL_LockMutex(gMainThreadActionsQueueMutex));
+        if (listSize(gMainThreadActionsQueue))
+            action = listPopFirst(gMainThreadActionsQueue);
+        assert(!SDL_UnlockMutex(gMainThreadActionsQueueMutex));
+
+        if (action) {
+            action->function(action->parameter);
+            SDL_free(action);
+        }
+
         delayThread(startMillis);
     }
     end:
@@ -135,6 +164,9 @@ void lifecycleQuit(void) {
     videoQuit();
 
     lv_deinit();
+
+    SDL_DestroyMutex(gMainThreadActionsQueueMutex);
+    listDestroy(gMainThreadActionsQueue);
 
     SDL_WaitThread(gAsyncActionsThread, nullptr);
     SDL_DestroyMutex(gAsyncActionsQueueMutex);

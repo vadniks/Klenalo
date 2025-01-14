@@ -5,14 +5,25 @@
 #include "lifecycle.h"
 #include "splashScene.h"
 
+static const int PROGRESS_BAR_MAX = 100, PROGRESS_BAR_INCREMENT = 5;
+
 static atomic bool gInitialized = false;
 
-static lv_obj_t* gPreviousScreen = nullptr;
+static lv_obj_t* gPreviousScreen = nullptr; // TODO: move previous screen manipulation to scenes module
 static lv_obj_t* gScreen = nullptr;
 static lv_obj_t* gLabel = nullptr;
+static lv_obj_t* gProgressBar = nullptr;
 
-static void end(void) {
-    scenesSetCurrentScene(SCENES_SCENE_LOGIN);
+static void progress(void* const) {
+    if (!gInitialized) return;
+
+    const int value = lv_bar_get_value(gProgressBar) + PROGRESS_BAR_INCREMENT;
+
+    if (value <= PROGRESS_BAR_MAX) {
+        lv_bar_set_value(gProgressBar, value, LV_ANIM_OFF);
+        lifecycleRunInMainThread(progress, nullptr);
+    } else
+        scenesSetCurrentScene(SCENES_SCENE_LOGIN);
 }
 
 void splashSceneInit(void) {
@@ -27,9 +38,16 @@ void splashSceneInit(void) {
 
     assert(gLabel = lv_label_create(gScreen));
     lv_label_set_text_static(gLabel, "Splash"); // TODO
-    lv_obj_align(gLabel, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(gLabel, LV_ALIGN_CENTER, 0, -10);
 
-    lifecycleAsync((LifecycleAsyncActionFunction) end, nullptr, 500);
+    assert(gProgressBar = lv_bar_create(gScreen));
+    lv_obj_align(gProgressBar, LV_ALIGN_CENTER, 0, 10);
+    lv_bar_set_mode(gProgressBar, LV_BAR_MODE_NORMAL);
+    lv_bar_set_orientation(gProgressBar, LV_BAR_ORIENTATION_HORIZONTAL);
+    lv_bar_set_range(gProgressBar, 0, PROGRESS_BAR_MAX);
+    lv_bar_set_start_value(gProgressBar, 0, LV_ANIM_OFF);
+
+    lifecycleRunInMainThread(progress, nullptr);
 }
 
 void splashSceneQuit(void) {
@@ -38,6 +56,7 @@ void splashSceneQuit(void) {
 
     lv_screen_load(gPreviousScreen);
 
+    lv_obj_delete(gProgressBar);
     lv_obj_delete(gLabel);
     lv_obj_delete(gScreen);
 }
