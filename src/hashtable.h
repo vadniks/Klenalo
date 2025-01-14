@@ -13,7 +13,7 @@ typedef struct _Hashtable Hashtable;
 struct _HashtableIterator;
 typedef struct _HashtableIterator HashtableIterator;
 
-int hashtableHash(const byte* key, int size); // aka Java Object's default hashCode()
+int hashtableHash(const byte* key, int size);
 Hashtable* hashtableCreate(const HashtableDeallocator nullable deallocator);
 void hashtablePut(Hashtable* const hashtable, const int hash, void* const value); // hashes are the keys and they must be unique
 void* nullable hashtableGet(const Hashtable* const hashtable, const int hash);
