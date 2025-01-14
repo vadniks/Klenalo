@@ -161,15 +161,17 @@ void* nullable hashtableIterate(HashtableIterator* const iterator) {
     assert(iterator->hashtable->iterating);
     if (iterator->index >= iterator->hashtable->capacity) return nullptr;
 
+    Node* node;
+
     if (iterator->node) {
-        Node* const node = iterator->node;
+        node = iterator->node;
         iterator->node = node->next;
         return node->value;
     }
 
     while (iterator->index < iterator->hashtable->capacity) {
         if ((iterator->node = iterator->hashtable->table[iterator->index++])) {
-            Node* const node = iterator->node;
+            node = iterator->node;
             iterator->node = node->next;
             return node->value;
         }
