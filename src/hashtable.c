@@ -10,10 +10,15 @@ typedef struct Node {
 
 struct _Hashtable {
     Node* nullable* table;
-    int capacity;
-    int count;
-    int threshold;
+    int capacity, count, threshold;
     HashtableDeallocator nullable deallocator;
+    bool iterating;
+};
+
+struct _HashtableIterator {
+    Hashtable* hashtable;
+    int index;
+    Node* nullable node;
 };
 
 static const int SINT32_MAX = 0x7fffffff;
@@ -33,6 +38,7 @@ Hashtable* hashtableCreate(const HashtableDeallocator nullable deallocator) {
     hashtable->count = 0;
     hashtable->threshold = (int) ((float) INITIAL_CAPACITY * LOAD_FACTOR);
     hashtable->deallocator = deallocator;
+    hashtable->iterating = false;
     return hashtable;
 }
 
@@ -73,7 +79,8 @@ void hashtablePut(Hashtable* const hashtable, const int hash, void* const value)
         hashtable->capacity >= INITIAL_CAPACITY &&
         hashtable->capacity < SINT32_MAX &&
         hashtable->count < SINT32_MAX &&
-        hashtable->table
+        hashtable->table &&
+        !hashtable->iterating
     );
 
     Node** const anchor = &hashtable->table[makeIndex(hashtable->capacity, hash)];
@@ -110,7 +117,7 @@ void* nullable hashtableGet(const Hashtable* const hashtable, const int hash) {
 }
 
 void hashtableRemove(Hashtable* const hashtable, const int hash) {
-    assert(hashtable->capacity && hashtable->count && hashtable->table);
+    assert(hashtable->capacity && hashtable->count && hashtable->table && !hashtable->iterating);
 
     Node** const anchor = &hashtable->table[makeIndex(hashtable->capacity, hash)];
 
@@ -137,7 +144,49 @@ int hashtableCount(const Hashtable* const hashtable) {
     return hashtable->count;
 }
 
+HashtableIterator* hashtableIteratorCreate(Hashtable* const hashtable) {
+    assert(hashtable->count && !hashtable->iterating);
+
+    hashtable->iterating = true;
+
+    HashtableIterator* const iterator = SDL_malloc(sizeof *iterator);
+    assert(iterator);
+    iterator->hashtable = hashtable;
+    iterator->index = 0;
+    iterator->node = nullptr;
+    return iterator;
+}
+
+void* nullable hashtableIterate(HashtableIterator* const iterator) {
+    assert(iterator->hashtable->iterating);
+    if (iterator->index >= iterator->hashtable->capacity) return nullptr;
+
+    if (iterator->node) {
+        Node* const node = iterator->node;
+        iterator->node = node->next;
+        return node->value;
+    }
+
+    while (iterator->index < iterator->hashtable->capacity) {
+        if ((iterator->node = iterator->hashtable->table[iterator->index++])) {
+            Node* const node = iterator->node;
+            iterator->node = node->next;
+            return node->value;
+        }
+    }
+
+    return nullptr;
+}
+
+void hashtableIteratorDestroy(HashtableIterator* const iterator) {
+    assert(iterator->hashtable->iterating);
+    iterator->hashtable->iterating = false;
+    SDL_free(iterator);
+}
+
 void hashtableDestroy(Hashtable* const hashtable) {
+    assert(!hashtable->iterating);
+
     for (int index = 0; index < hashtable->capacity; index++) {
         for (Node* node = hashtable->table[index]; node; node = node->next) {
             if (hashtable->deallocator)
@@ -180,7 +229,19 @@ void hashtableRunTests(void) {
         }
 
         assert(hashtableCount(hashtable) == 100);
-    //    printf("%d\n", hashtableCapacity(hashtable));
+//        printf("%d\n", hashtableCapacity(hashtable));
+
+        {
+            HashtableIterator* const iterator = hashtableIteratorCreate(hashtable);
+            int i = 0;
+            int* value;
+            while ((value = hashtableIterate(iterator))) {
+                assert(value == hashtableGet(hashtable, hashtableHash((byte*) value, sizeof(int))));
+                i++;
+            }
+            assert(i == hashtableCount(hashtable));
+            hashtableIteratorDestroy(iterator);
+        }
 
         for (int i = 0; i < hashtableCapacity(hashtable); i++) {
             int j = 0;

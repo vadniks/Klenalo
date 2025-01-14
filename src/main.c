@@ -14,8 +14,12 @@ int main(void) {
 #if TESTING
     assert(!SDL_Init(0));
 
+    const int allocations = SDL_GetNumAllocations();
+
     listRunTests();
     hashtableRunTests();
+
+    assert(SDL_GetNumAllocations() == allocations);
 
     SDL_Quit();
 #else
@@ -23,7 +27,5 @@ int main(void) {
     lifecycleLoop();
     lifecycleQuit();
 #endif
-
-    assert(!SDL_GetNumAllocations());
     return 0;
 }
