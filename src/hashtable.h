@@ -22,7 +22,7 @@ int hashtableCapacity(const Hashtable* const hashtable); // amount of currently 
 int hashtableCount(const Hashtable* const hashtable); // amount of elements being stored
 HashtableIterator* hashtableIteratorCreate(Hashtable* const hashtable); // don't use put or remove while iterator is active, fails if there's another active iterator, fails if there's no items
 void* nullable hashtableIterate(HashtableIterator* const iterator); // returns null when there aren't any more items available
-void hashtableIteratorDestroy(HashtableIterator* const iterator);
+void hashtableIteratorDestroy(HashtableIterator* const iterator); // must be called while its hashtable is still active
 void hashtableDestroy(Hashtable* const hashtable);
 
 #if TESTING

@@ -247,8 +247,7 @@ void hashtableRunTests(void) {
 
         for (int i = 0; i < hashtableCapacity(hashtable); i++) {
             int j = 0;
-            for (Node* node = hashtable->table[i]; node; node = node->next)
-                j++;
+            for (Node* node = hashtable->table[i]; node; node = node->next, j++);
             assert(j <= 2);
         }
 
@@ -279,6 +278,46 @@ void hashtableRunTests(void) {
 
         for (int i = 0; i < 00; i++)
             hashtableRemove(hashtable, hashtableHash((byte*) &i, sizeof(int)));
+
+        hashtableDestroy(hashtable);
+    }
+
+    {
+        Hashtable* const hashtable = hashtableCreate(nullptr);
+        assert(hashtable);
+
+        hashtable->table[0] = SDL_malloc(sizeof(Node));
+        hashtable->table[0]->value = (void*) 1;
+        hashtable->table[0]->next = SDL_malloc(sizeof(Node));
+        hashtable->table[0]->next->value = (void*) 2;
+        hashtable->table[0]->next->next = nullptr;
+
+        hashtable->table[1] = SDL_malloc(sizeof(Node));
+        hashtable->table[1]->value = (void*) 3;
+        hashtable->table[1]->next = nullptr;
+
+        hashtable->table[2] = SDL_malloc(sizeof(Node));
+        hashtable->table[2]->value = (void*) 4;
+        hashtable->table[2]->next = SDL_malloc(sizeof(Node));
+        hashtable->table[2]->next->value = (void*) 5;
+        hashtable->table[2]->next->next = SDL_malloc(sizeof(Node));
+        hashtable->table[2]->next->next->value = (void*) 6;
+        hashtable->table[2]->next->next->next = nullptr;
+
+        hashtable->count = 6;
+
+        HashtableIterator* const iterator = hashtableIteratorCreate(hashtable);
+        assert(iterator);
+
+        int i = 0;
+        int* value;
+        while ((value = hashtableIterate(iterator))) {
+            assert((int) value == i + 1);
+            i++;
+        }
+
+        assert(i == hashtableCount(hashtable));
+        hashtableIteratorDestroy(iterator);
 
         hashtableDestroy(hashtable);
     }
