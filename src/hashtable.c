@@ -11,12 +11,12 @@ typedef struct Node {
 struct _Hashtable {
     Node* nullable* table;
     int capacity, count, threshold;
-    HashtableDeallocator nullable deallocator;
+    HashtableDeallocator nullable deallocator; // const
     bool iterating;
 };
 
 struct _HashtableIterator {
-    Hashtable* hashtable;
+    Hashtable* hashtable; // const
     int index;
     Node* nullable node;
 };

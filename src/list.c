@@ -5,7 +5,7 @@
 struct _List {
     void** nullable values;
     int size;
-    ListDeallocator nullable deallocator;
+    ListDeallocator nullable deallocator; // const
 };
 
 static const int MAX_SIZE = 0x7fffffff;
