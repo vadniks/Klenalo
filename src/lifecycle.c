@@ -1,6 +1,7 @@
 
 #include <SDL2/SDL.h>
 #include <time.h>
+#include <threads.h>
 #include "xlvgl.h"
 #include "video.h"
 #include "input.h"
@@ -33,6 +34,8 @@ static struct {
     gBackgroundActionsLooper = {nullptr, nullptr, nullptr},
     gMainActionsLooper = {nullptr, nullptr, nullptr};
 
+static thrd_t gMainThreadId = 0;
+
 static int backgroundActionsLoop(void* const);
 
 void lifecycleInit(void) {
@@ -48,6 +51,8 @@ void lifecycleInit(void) {
 
     gMainActionsLooper.queue = listCreate(SDL_free);
     assert(gMainActionsLooper.mutex = SDL_CreateMutex());
+
+    gMainThreadId = thrd_current();
 
     lv_init();
     lv_tick_set_cb(SDL_GetTicks);
@@ -129,6 +134,10 @@ void lifecycleRunInBackground(const LifecycleAsyncActionFunction function, void*
 
 void lifecycleRunInMainThread(const LifecycleAsyncActionFunction function, void* nullable const parameter) {
     scheduleAction(function, parameter, 0, LOOPER_MAIN);
+}
+
+void lifecycleAssertMainThread(void) {
+    assert(thrd_current() == gMainThreadId);
 }
 
 void lifecycleLoop(void) {
