@@ -15,6 +15,11 @@ typedef struct {
     const int delayMillis;
 } AsyncAction;
 
+typedef enum {
+    LOOPER_ASYNC,
+    LOOPER_MAIN
+} Looper;
+
 static const int UPDATE_PERIOD = 16; // floorf(1000.0f / 60.0f)
 
 static atomic bool gInitialized = false;
@@ -96,26 +101,25 @@ unsigned long lifecycleCurrentTimeMillis(void) {
     return (unsigned long) timespec.tv_sec * 1000ul + (unsigned long) timespec.tv_nsec / 1000000ul;
 }
 
-void lifecycleRunAsync(const LifecycleAsyncActionFunction function, void* nullable const parameter, const int delayMillis) {
+static void scheduleAction(const LifecycleAsyncActionFunction function, void* nullable const parameter, const int delayMillis, const Looper looper) {
     assert(gInitialized);
 
     AsyncAction* const action = SDL_malloc(sizeof *action);
     SDL_memcpy(action, &(AsyncAction) {function, parameter, delayMillis}, sizeof *action);
 
-    assert(!SDL_LockMutex(gAsyncActionsQueueMutex));
-    listAddFront(gAsyncActionsQueue, action);
-    assert(!SDL_UnlockMutex(gAsyncActionsQueueMutex));
+    SDL_mutex* const mutex = looper == LOOPER_ASYNC ? gAsyncActionsQueueMutex : gMainThreadActionsQueueMutex;
+
+    assert(!SDL_LockMutex(mutex));
+    listAddFront(looper == LOOPER_ASYNC ? gAsyncActionsQueue : gMainThreadActionsQueue, action);
+    assert(!SDL_UnlockMutex(mutex));
 }
-// TODO: unify run*()
+
+void lifecycleRunAsync(const LifecycleAsyncActionFunction function, void* nullable const parameter, const int delayMillis) {
+    scheduleAction(function, parameter, delayMillis, LOOPER_ASYNC);
+}
+
 void lifecycleRunInMainThread(const LifecycleAsyncActionFunction function, void* nullable const parameter) {
-    assert(gInitialized);
-
-    AsyncAction* const action = SDL_malloc(sizeof *action);
-    SDL_memcpy(action, &(AsyncAction) {function, parameter, 0}, sizeof *action);
-
-    assert(!SDL_LockMutex(gMainThreadActionsQueueMutex));
-    listAddFront(gMainThreadActionsQueue, action);
-    assert(!SDL_UnlockMutex(gMainThreadActionsQueueMutex));
+    scheduleAction(function, parameter, 0, LOOPER_MAIN);
 }
 
 void lifecycleLoop(void) {
