@@ -65,7 +65,7 @@ static void delayThread(const unsigned startMillis) {
         SDL_Delay(UPDATE_PERIOD - differenceMillis);
 }
 
-static int backgroundActionsLoop(void* const) { // TODO: rename
+static int backgroundActionsLoop(void* const) {
     while (!gRunning); // wait for main thread to start looping
 
     AsyncAction* action = nullptr;
