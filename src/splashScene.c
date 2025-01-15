@@ -11,7 +11,6 @@ static const int PROGRESS_BAR_MAX = 100, PROGRESS_BAR_INCREMENT = 5;
 static atomic bool gInitialized = false;
 static void* gQuitCheck = nullptr; // ensure that the scene has been quited indeed
 
-static lv_obj_t* gPreviousScreen = nullptr; // TODO: move previous screen manipulation to scenes module
 static lv_obj_t* gScreen = nullptr;
 static lv_obj_t* gLabel = nullptr;
 static lv_obj_t* gProgressBar = nullptr;
@@ -32,8 +31,6 @@ void splashSceneInit(void) {
     assert(scenesInitialized() && !gInitialized);
     gInitialized = true;
     assert(gQuitCheck = SDL_malloc(1));
-
-    assert(gPreviousScreen = lv_screen_active());
 
     assert(gScreen = lv_obj_create(nullptr));
     lv_screen_load(gScreen);
@@ -57,8 +54,6 @@ void splashSceneQuit(void) {
     assert(scenesInitialized() && gInitialized);
     gInitialized = false;
     SDL_free(gQuitCheck);
-
-    lv_screen_load(gPreviousScreen);
 
     lv_obj_delete(gProgressBar);
     lv_obj_delete(gLabel);

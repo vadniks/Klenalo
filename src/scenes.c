@@ -1,4 +1,5 @@
 
+#include <lvgl/lvgl.h>
 #include "defs.h"
 #include "video.h"
 #include "splashScene.h"
@@ -7,6 +8,7 @@
 
 static atomic bool gInitialized = false;
 
+static lv_obj_t* gPreviousScreen = nullptr; // allocated elsewhere
 static atomic ScenesScene gCurrentScene = SCENES_SCENE_NONE;
 
 void scenesInit(void) {
@@ -26,6 +28,9 @@ ScenesScene scenesCurrentScene(void) {
 }
 
 static void quitCurrentScene(void) {
+    assert(gPreviousScreen);
+    lv_screen_load(gPreviousScreen);
+
     switch (gCurrentScene) {
         case SCENES_SCENE_NONE:
             break;
@@ -41,7 +46,10 @@ static void quitCurrentScene(void) {
 void scenesSetCurrentScene(const ScenesScene scene) {
     assert(videoInitialized() && gInitialized);
 
-    quitCurrentScene();
+    if (gCurrentScene != SCENES_SCENE_NONE)
+        quitCurrentScene();
+
+    assert(gPreviousScreen = lv_screen_active());
 
     switch (scene) {
         case SCENES_SCENE_NONE:

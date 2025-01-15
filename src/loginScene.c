@@ -11,7 +11,6 @@
 static atomic bool gInitialized = false;
 static void* gQuitCheck = nullptr; // ensure that the scene has been quited indeed
 
-static lv_obj_t* gPreviousScreen = nullptr;
 static lv_obj_t* gScreen = nullptr;
 static lv_group_t* gGroup = nullptr;
 static lv_obj_t* gWelcomeLabel = nullptr;
@@ -26,11 +25,8 @@ void loginSceneInit(void) {
     gInitialized = true;
     assert(gQuitCheck = SDL_malloc(1));
 
-    assert(gPreviousScreen = lv_screen_active());
-
     assert(gScreen = lv_obj_create(nullptr));
     lv_screen_load(gScreen);
-//    lv_obj_align(gScreen, LV_ALIGN_DEFAULT, 0, 0);
     lv_obj_set_flex_flow(gScreen, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(gScreen, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
@@ -67,8 +63,6 @@ void loginSceneQuit(void) {
     assert(scenesInitialized() && gInitialized);
     gInitialized = false;
     SDL_free(gQuitCheck);
-
-    lv_screen_load(gPreviousScreen);
 
     lv_obj_delete(gSignInLabel);
     lv_obj_delete(gSignInButton);
