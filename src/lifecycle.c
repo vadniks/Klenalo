@@ -65,25 +65,33 @@ static void delayThread(const unsigned startMillis) {
         SDL_Delay(UPDATE_PERIOD - differenceMillis);
 }
 
+static AsyncAction* nullable nextAsyncAction(const Looper looper) {
+    AsyncAction* action = nullptr;
+
+    SDL_mutex* const mutex = looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.mutex : gMainActionsLooper.mutex;
+    List* const queue = looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.queue : gMainActionsLooper.queue;
+
+    assert(!SDL_LockMutex(mutex));
+    if (listSize(queue))
+        action = listPopFirst(queue);
+    assert(!SDL_UnlockMutex(mutex));
+
+    return action;
+}
+
 static int backgroundActionsLoop(void* const) {
     while (!gRunning); // wait for main thread to start looping
 
-    AsyncAction* action = nullptr;
+    AsyncAction* action;
     unsigned startMillis;
 
     while (gRunning) {
         assert(startMillis = SDL_GetTicks());
 
-        assert(!SDL_LockMutex(gBackgroundActionsLooper.mutex));
-        if (listSize(gBackgroundActionsLooper.queue))
-            action = listPopFirst(gBackgroundActionsLooper.queue);
-        assert(!SDL_UnlockMutex(gBackgroundActionsLooper.mutex));
-
-        if (action) {
+        if ((action = nextAsyncAction(LOOPER_BACKGROUND))) {
             if (action->delayMillis) SDL_Delay(action->delayMillis);
             if (gRunning) action->function(action->parameter);
             SDL_free(action);
-            action = nullptr;
         }
 
         delayThread(startMillis);
@@ -128,6 +136,8 @@ void lifecycleLoop(void) {
     gRunning = true;
 
     unsigned startMillis;
+    AsyncAction* action;
+
     while (true) {
         assert(startMillis = SDL_GetTicks());
         lv_timer_periodic_handler();
@@ -140,14 +150,7 @@ void lifecycleLoop(void) {
             inputProcessEvent(&event);
         }
 
-        AsyncAction* action = nullptr; // TODO: move outside and unify
-
-        assert(!SDL_LockMutex(gMainActionsLooper.mutex));
-        if (listSize(gMainActionsLooper.queue))
-            action = listPopFirst(gMainActionsLooper.queue);
-        assert(!SDL_UnlockMutex(gMainActionsLooper.mutex));
-
-        if (action) {
+        if ((action = nextAsyncAction(LOOPER_MAIN))) {
             action->function(action->parameter);
             SDL_free(action);
         }
