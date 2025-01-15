@@ -33,7 +33,7 @@ static struct {
     gBackgroundActionsLooper = {nullptr, nullptr, nullptr},
     gMainActionsLooper = {nullptr, nullptr, nullptr};
 
-static int asyncActionsThreadLoop(void* const);
+static int backgroundActionsLoop(void* const);
 
 void lifecycleInit(void) {
     assert(!gInitialized);
@@ -44,7 +44,7 @@ void lifecycleInit(void) {
 
     gBackgroundActionsLooper.queue = listCreate(SDL_free);
     assert(gBackgroundActionsLooper.mutex = SDL_CreateMutex());
-    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(asyncActionsThreadLoop, "backgroundActions", nullptr));
+    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, "backgroundActions", nullptr));
 
     gMainActionsLooper.queue = listCreate(SDL_free);
     assert(gMainActionsLooper.mutex = SDL_CreateMutex());
@@ -65,7 +65,7 @@ static void delayThread(const unsigned startMillis) {
         SDL_Delay(UPDATE_PERIOD - differenceMillis);
 }
 
-static int asyncActionsThreadLoop(void* const) { // TODO: rename
+static int backgroundActionsLoop(void* const) { // TODO: rename
     while (!gRunning); // wait for main thread to start looping
 
     AsyncAction* action = nullptr;
