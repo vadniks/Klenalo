@@ -36,6 +36,8 @@ static struct {
 
 static thrd_t gMainThreadId = 0;
 
+static RWMutex* gUIRWMutex = nullptr;
+
 static int backgroundActionsLoop(void* const);
 
 void lifecycleInit(void) {
@@ -53,6 +55,8 @@ void lifecycleInit(void) {
     assert(gMainActionsLooper.mutex = SDL_CreateMutex());
 
     gMainThreadId = thrd_current();
+
+    gUIRWMutex = rwMutexCreate();
 
     lv_init();
     lv_tick_set_cb(SDL_GetTicks);
@@ -137,7 +141,13 @@ void lifecycleRunInMainThread(const LifecycleAsyncActionFunction function, void*
 }
 
 void lifecycleAssertMainThread(void) {
+    assert(gInitialized);
     assert(thrd_current() == gMainThreadId);
+}
+
+void lifecycleUIMutexCommand(const RWMutexCommand command) {
+    assert(gInitialized);
+    rwMutexCommand(gUIRWMutex, command);
 }
 
 void lifecycleLoop(void) {
@@ -182,6 +192,8 @@ void lifecycleQuit(void) {
     gInitialized = false;
 
     lv_deinit();
+
+    rwMutexDestroy(gUIRWMutex);
 
     SDL_DestroyMutex(gMainActionsLooper.mutex);
     listDestroy(gMainActionsLooper.queue);

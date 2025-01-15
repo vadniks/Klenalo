@@ -7,9 +7,17 @@
 struct _RWMutex;
 typedef struct _RWMutex RWMutex;
 
-RWMutex* rwMutexInit(void);
+typedef enum {
+    RW_MUTEX_COMMAND_READ_LOCK,
+    RW_MUTEX_COMMAND_READ_UNLOCK,
+    RW_MUTEX_COMMAND_WRITE_LOCK,
+    RW_MUTEX_COMMAND_WRITE_UNLOCK
+} RWMutexCommand;
+
+RWMutex* rwMutexCreate(void);
 void rwMutexReadLock(RWMutex* const rwMutex);
 void rwMutexReadUnlock(RWMutex* const rwMutex);
 void rwMutexWriteLock(RWMutex* const rwMutex);
 void rwMutexWriteUnlock(RWMutex* const rwMutex);
+void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command);
 void rwMutexDestroy(RWMutex* const rwMutex);

@@ -12,7 +12,7 @@ struct _RWMutex {
     SDL_atomic_t counter;
 };
 
-RWMutex* rwMutexInit(void) {
+RWMutex* rwMutexCreate(void) {
     RWMutex* const rwMutex = SDL_malloc(sizeof *rwMutex);
     assert(rwMutex);
     assert(rwMutex->mutex = SDL_CreateMutex());
@@ -44,6 +44,15 @@ void rwMutexWriteLock(RWMutex* const rwMutex) {
 
 void rwMutexWriteUnlock(RWMutex* const rwMutex) {
     assert(!SDL_UnlockMutex(rwMutex->mutex));
+}
+
+void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command) {
+    switch (command) {
+        case RW_MUTEX_COMMAND_READ_LOCK: rwMutexReadLock(rwMutex); break;
+        case RW_MUTEX_COMMAND_READ_UNLOCK: rwMutexReadUnlock(rwMutex); break;
+        case RW_MUTEX_COMMAND_WRITE_LOCK: rwMutexWriteLock(rwMutex); break;
+        case RW_MUTEX_COMMAND_WRITE_UNLOCK: rwMutexWriteUnlock(rwMutex); break;
+    }
 }
 
 void rwMutexDestroy(RWMutex* const rwMutex) {
