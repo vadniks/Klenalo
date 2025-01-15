@@ -1,4 +1,5 @@
 
+#include <SDL2/SDL_stdinc.h>
 #include "xlvgl.h"
 #include "scenes.h"
 #include "defs.h"
@@ -8,6 +9,7 @@
 static const int PROGRESS_BAR_MAX = 100, PROGRESS_BAR_INCREMENT = 5;
 
 static atomic bool gInitialized = false;
+static void* gQuitCheck = nullptr; // ensure that the scene has been quited indeed
 
 static lv_obj_t* gPreviousScreen = nullptr; // TODO: move previous screen manipulation to scenes module
 static lv_obj_t* gScreen = nullptr;
@@ -29,6 +31,7 @@ static void progress(void* const) {
 void splashSceneInit(void) {
     assert(scenesInitialized() && !gInitialized);
     gInitialized = true;
+    assert(gQuitCheck = SDL_malloc(1));
 
     assert(gPreviousScreen = lv_screen_active());
 
@@ -53,6 +56,7 @@ void splashSceneInit(void) {
 void splashSceneQuit(void) {
     assert(scenesInitialized() && gInitialized);
     gInitialized = false;
+    SDL_free(gQuitCheck);
 
     lv_screen_load(gPreviousScreen);
 
