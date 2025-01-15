@@ -61,7 +61,7 @@ void loginSceneInit(void) {
 }
 
 void loginSceneQuit(void) {
-    assert(gInitialized);
+    assert(scenesInitialized() && gInitialized);
     gInitialized = false;
 
     lv_screen_load(gPreviousScreen);

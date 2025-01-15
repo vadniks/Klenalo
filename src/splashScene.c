@@ -51,7 +51,7 @@ void splashSceneInit(void) {
 }
 
 void splashSceneQuit(void) {
-    assert(gInitialized);
+    assert(scenesInitialized() && gInitialized);
     gInitialized = false;
 
     lv_screen_load(gPreviousScreen);

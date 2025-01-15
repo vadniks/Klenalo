@@ -21,7 +21,7 @@ bool scenesInitialized(void) {
 }
 
 ScenesScene scenesCurrentScene(void) {
-    assert(gInitialized);
+    assert(videoInitialized() && gInitialized);
     return gCurrentScene;
 }
 
@@ -39,7 +39,7 @@ static void quitCurrentScene(void) {
 }
 
 void scenesSetCurrentScene(const ScenesScene scene) {
-    assert(gInitialized);
+    assert(videoInitialized() && gInitialized);
 
     quitCurrentScene();
 
@@ -58,8 +58,9 @@ void scenesSetCurrentScene(const ScenesScene scene) {
 }
 
 void scenesQuit(void) {
-    assert(gInitialized);
-    gInitialized = false;
+    assert(videoInitialized() && gInitialized);
 
     quitCurrentScene();
+
+    gInitialized = false;
 }

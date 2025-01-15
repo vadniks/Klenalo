@@ -173,12 +173,13 @@ void lifecycleLoop(void) {
 
 void lifecycleQuit(void) {
     assert(gInitialized);
-    gInitialized = false;
 
     scenesQuit();
     resourcesQuit();
     inputQuit();
     videoQuit();
+
+    gInitialized = false;
 
     lv_deinit();
 

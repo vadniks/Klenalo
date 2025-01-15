@@ -63,12 +63,12 @@ static void createFont(const ResourcesFontSize size, const ResourcesFontType typ
 }
 
 const lv_font_t* resourcesFont(const ResourcesFontSize size, const ResourcesFontType type) {
-    assert(gInitialized);
+    assert(videoInitialized() && gInitialized);
     return gFonts[fontIndex(size, type)];
 }
 
 void resourcesQuit(void) {
-    assert(gInitialized);
+    assert(videoInitialized() && gInitialized);
     gInitialized = false;
 
     lv_theme_default_deinit();

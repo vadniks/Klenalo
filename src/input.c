@@ -41,18 +41,24 @@ void inputInit(void) {
 }
 
 static void processMouse(lv_indev_t* const, lv_indev_data_t* const data) {
+    assert(videoInitialized() && gInitialized);
+
     data->point.x = gMouseX;
     data->point.y = gMouseY;
     data->state = gMousePressed ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
 }
 
 static void processMouseWheel(lv_indev_t* const, lv_indev_data_t* const data) {
+    assert(videoInitialized() && gInitialized);
+
     data->enc_diff = gMouseWheelDiff;
     gMouseWheelDiff = 0;
     data->state = gMouseWheelPressed ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
 }
 
 static void processKeyboard(lv_indev_t* const, lv_indev_data_t* const data) {
+    assert(videoInitialized() && gInitialized);
+
     if (!gKeyboardInput) {
         data->state = LV_INDEV_STATE_RELEASED;
         return;
@@ -67,7 +73,7 @@ bool inputInitialized(void) {
 }
 
 void inputAssignToGroup(lv_group_t* const group) {
-    assert(gInitialized);
+    assert(videoInitialized() && gInitialized);
 
     lv_indev_set_group(gMouse, group);
     lv_indev_set_group(gMouseWheel, group);
@@ -139,7 +145,7 @@ static void processKeyDown(const SDL_Event* const event) {
 }
 
 void inputProcessEvent(const SDL_Event* const event) {
-    assert(gInitialized);
+    assert(videoInitialized() && gInitialized);
     switch (event->type) {
         case SDL_MOUSEMOTION:
             gMouseX = event->motion.x;
@@ -179,7 +185,7 @@ void inputProcessEvent(const SDL_Event* const event) {
 }
 
 void inputQuit(void) {
-    assert(gInitialized);
+    assert(videoInitialized() && gInitialized);
     gInitialized = false;
 
     lv_indev_delete(gMouse);

@@ -60,6 +60,8 @@ void videoInit(void) {
 }
 
 static void resizeBuffer(lv_display_t* const display) {
+    assert(lifecycleInitialized() && gInitialized);
+
     if (gTexture) SDL_DestroyTexture(gTexture);
     assert(gTexture = SDL_CreateTexture(
         gRenderer,
@@ -85,6 +87,8 @@ static void resizeBuffer(lv_display_t* const display) {
 }
 
 static void render(lv_display_t* const display, const lv_area_t* const, byte* const) {
+    assert(lifecycleInitialized() && gInitialized);
+
     SDL_UnlockTexture(gTexture); // upload changes to video memory
 
     assert(!SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0));
@@ -100,19 +104,20 @@ bool videoInitialized(void) {
 }
 
 lv_display_t* videoDisplay(void) {
-    assert(gInitialized);
+    assert(lifecycleInitialized() && gInitialized);
     return gDisplay;
 }
 
 void videoProcessEvent(const SDL_Event* const event) {
-    assert(gInitialized);
+    assert(lifecycleInitialized() && gInitialized);
     if (event->type != SDL_WINDOWEVENT || event->window.event != SDL_WINDOWEVENT_SIZE_CHANGED) return;
+
     SDL_GetRendererOutputSize(gRenderer, &gWidth, &gHeight);
     resizeBuffer(gDisplay);
 }
 
 void videoQuit(void) {
-    assert(gInitialized);
+    assert(lifecycleInitialized() && gInitialized);
     gInitialized = false;
 
     lv_display_delete(gDisplay);
