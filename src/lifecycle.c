@@ -35,7 +35,10 @@ static struct {
 
 static RWMutex* gUIRWMutex = nullptr;
 
+static SDL_Thread* gNetThread = nullptr;
+
 static int backgroundActionsLoop(void* const);
+static int netLoop(void* const);
 
 void lifecycleInit(void) {
     assert(!gInitialized);
@@ -52,6 +55,8 @@ void lifecycleInit(void) {
     assert(gMainActionsLooper.mutex = SDL_CreateMutex());
 
     gUIRWMutex = rwMutexCreate();
+
+    gNetThread = SDL_CreateThread(netLoop, "net", nullptr);
 
     lv_init();
     lv_tick_set_cb(SDL_GetTicks);
@@ -83,24 +88,38 @@ static AsyncAction* nullable nextAsyncAction(const Looper looper) {
     return action;
 }
 
-static int backgroundActionsLoop(void* const) {
+static void threadLoop(void (* const body)(void)) {
     while (!gRunning); // wait for main thread to start looping
 
-    AsyncAction* action;
     unsigned startMillis;
 
     while (gRunning) {
         assert(startMillis = SDL_GetTicks());
-
-        if ((action = nextAsyncAction(LOOPER_BACKGROUND))) {
-            if (action->delayMillis) SDL_Delay(action->delayMillis);
-            if (gRunning) action->function(action->parameter);
-            SDL_free(action);
-        }
-
+        body();
         delayThread(startMillis);
     }
+}
 
+static void backgroundActionsLoopBody(void) {
+    AsyncAction* action;
+    if ((action = nextAsyncAction(LOOPER_BACKGROUND))) {
+        if (action->delayMillis) SDL_Delay(action->delayMillis);
+        if (gRunning) action->function(action->parameter);
+        SDL_free(action);
+    }
+}
+
+static int backgroundActionsLoop(void* const) {
+    threadLoop(backgroundActionsLoopBody);
+    return 0;
+}
+
+static void netLoopBody(void) {
+    // TODO
+}
+
+static int netLoop(void* const) {
+    threadLoop(netLoopBody);
     return 0;
 }
 
@@ -182,6 +201,8 @@ void lifecycleQuit(void) {
     gInitialized = false;
 
     lv_deinit();
+
+    SDL_WaitThread(gNetThread, nullptr);
 
     rwMutexDestroy(gUIRWMutex);
 
