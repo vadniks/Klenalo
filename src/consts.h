@@ -11,6 +11,7 @@ typedef enum : char {
 } ConstsLanguage;
 
 typedef enum : int {
+    SPLASH,
     TITLE,
     WELCOME,
     PASSWORD,

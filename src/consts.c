@@ -9,6 +9,10 @@ void constsSetLanguage(const ConstsLanguage language) {
 
 static const char* enString(const ConstsString string) {
     switch (string) {
+        case SPLASH:
+            return u8"Klenalo Copyright (C) 2024-2025 Vadim Nikolaev (https://github.com/vadniks)  \n"
+                   u8"              This program comes with ABSOLUTELY NO WARRANTY;                \n"
+                   u8"This is free software which is available under the terms of the GNU GPL 3.0";
         case TITLE:
             return u8"Klenalo";
         case WELCOME:

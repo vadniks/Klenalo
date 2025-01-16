@@ -4,6 +4,8 @@
 #include "scenes.h"
 #include "defs.h"
 #include "lifecycle.h"
+#include "consts.h"
+#include "resources.h"
 #include "splashScene.h"
 
 static const int PROGRESS_BAR_MAX = 100, PROGRESS_BAR_INCREMENT = 5;
@@ -34,14 +36,14 @@ void splashSceneInit(void) {
 
     assert(gScreen = lv_obj_create(nullptr));
     lv_screen_load(gScreen);
-    lv_obj_align(gScreen, LV_ALIGN_DEFAULT, 0, 0);
+    lv_obj_set_flex_flow(gScreen, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(gScreen, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
     assert(gLabel = lv_label_create(gScreen));
-    lv_label_set_text_static(gLabel, "Splash"); // TODO
-    lv_obj_align(gLabel, LV_ALIGN_CENTER, 0, -10);
+    lv_label_set_text_static(gLabel, constsString(SPLASH));
+    lv_obj_set_style_text_font(gLabel, resourcesFont(RESOURCES_FONT_SIZE_NORMAL, RESOURCES_FONT_TYPE_MONOSPACE), 0);
 
     assert(gProgressBar = lv_bar_create(gScreen));
-    lv_obj_align(gProgressBar, LV_ALIGN_CENTER, 0, 10);
     lv_bar_set_mode(gProgressBar, LV_BAR_MODE_NORMAL);
     lv_bar_set_orientation(gProgressBar, LV_BAR_ORIENTATION_HORIZONTAL);
     lv_bar_set_range(gProgressBar, 0, PROGRESS_BAR_MAX);
