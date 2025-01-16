@@ -1,5 +1,4 @@
 
-#include <SDL2/SDL_stdinc.h>
 #include "xlvgl.h"
 #include "defs.h"
 #include "scenes.h"
@@ -9,7 +8,6 @@
 #include "loginScene.h"
 
 static atomic bool gInitialized = false;
-static void* gQuitCheck = nullptr; // ensure that the scene has been quited indeed
 
 static lv_obj_t* gScreen = nullptr;
 static lv_group_t* gGroup = nullptr;
@@ -23,7 +21,6 @@ static lv_obj_t* gSignInLabel = nullptr;
 void loginSceneInit(void) {
     assert(scenesInitialized() && !gInitialized);
     gInitialized = true;
-    assert(gQuitCheck = SDL_malloc(1));
 
     assert(gScreen = lv_obj_create(nullptr));
     scenesLoadScreen(gScreen);
@@ -63,7 +60,6 @@ void loginSceneInit(void) {
 void loginSceneQuit(void) {
     assert(scenesInitialized() && gInitialized);
     gInitialized = false;
-    SDL_free(gQuitCheck);
 
     lv_obj_delete(gSignInLabel);
     lv_obj_delete(gSignInButton);
