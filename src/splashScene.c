@@ -21,7 +21,7 @@ static void progress(void* const) {
     const int value = lv_bar_get_value(gProgressBar) + PROGRESS_BAR_INCREMENT;
 
     if (value <= PROGRESS_BAR_MAX) {
-        lv_bar_set_value(gProgressBar, value, LV_ANIM_OFF);
+        lv_bar_set_value(gProgressBar, value, LV_ANIM_ON);
         lifecycleRunInMainThread(progress, nullptr);
     } else
         scenesSetCurrentScene(SCENES_SCENE_LOGIN);
