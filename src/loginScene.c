@@ -26,7 +26,7 @@ void loginSceneInit(void) {
     assert(gQuitCheck = SDL_malloc(1));
 
     assert(gScreen = lv_obj_create(nullptr));
-    lv_screen_load_anim(gScreen, LV_SCR_LOAD_ANIM_OVER_LEFT, 250, 0, false);
+    scenesLoadScreen(gScreen);
     lv_obj_set_flex_flow(gScreen, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(gScreen, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 

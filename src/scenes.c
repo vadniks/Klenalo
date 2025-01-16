@@ -65,6 +65,10 @@ void scenesSetCurrentScene(const ScenesScene scene) {
     gCurrentScene = scene;
 }
 
+void scenesLoadScreen(lv_obj_t* const screen) {
+    lv_screen_load_anim(screen, LV_SCR_LOAD_ANIM_OVER_LEFT, 250, 0, false);
+}
+
 void scenesQuit(void) {
     assert(videoInitialized() && gInitialized);
 
