@@ -27,6 +27,7 @@ void loginSceneInit(void) {
 
     assert(gScreen = lv_obj_create(nullptr));
     scenesLoadScreen(gScreen);
+    lv_obj_set_layout(gScreen, LV_LAYOUT_FLEX);
     lv_obj_set_flex_flow(gScreen, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(gScreen, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
