@@ -2,6 +2,7 @@
 #include <ifaddrs.h>
 #include <endian.h>
 #include <stdio.h>
+#include <net/if.h>
 #include "defs.h"
 #include "net.h"
 
@@ -33,7 +34,11 @@ void netInit(void) {
             (netAddress & 0xfff00000) != 0xac100000 &&
             (netAddress & 0xffff0000) != 0xc0a80000) continue; // pass only private networks https://www.arin.net/reference/research/statistics/address_filters
 
-        printf("%s %s\n", ifaddr->ifa_name, ifaddr->ifa_addr->sa_family == AF_INET ? "ipv4" : "ipv6");
+        printf("%s\n", ifaddr->ifa_name);
+
+#       define checkFlag(x) (ifaddr->ifa_flags & x) == x
+        printf("\tup %d, ptp %d, running %d\n", checkFlag(IFF_UP), checkFlag(IFF_POINTOPOINT), checkFlag(IFF_RUNNING));
+#       undef checkFlag
 
 #       define dotNotationLEtoBE(x) (x >> 24) & 0xff, (x >> 16) & 0xff, (x >> 8) & 0xff, x & 0xff
         printf("\tnetwork %u.%u.%u.%u/%u\n", dotNotationLEtoBE(netAddress), mask);
