@@ -23,10 +23,10 @@ void netInit(void) {
         const unsigned broadcastAddress = netAddress + ~subnetMask;
         const unsigned hostMinAddress = netAddress + 1u;
         const unsigned hostMaxAddress = broadcastAddress - 1u;
-        const unsigned hostsCount = hostMaxAddress - hostMinAddress + 1;
+        const unsigned hostsCount = hostMaxAddress - hostMinAddress + 1u;
 
         unsigned mask = 0;
-        for (unsigned n = be32toh(subnetMask); n; n /= 2, mask++);
+        for (unsigned n = subnetMask; n; n & 1 ? mask++ : STUB, n >>= 1);
 
         if (hostAddress == 0x7f000001) continue; // loopback
 
