@@ -6,6 +6,7 @@
 #include "input.h"
 #include "resources.h"
 #include "scenes.h"
+#include "net.h"
 #include "list.h"
 #include "lifecycle.h"
 
@@ -66,6 +67,7 @@ void lifecycleInit(void) {
     inputInit();
     resourcesInit();
     scenesInit();
+    netInit();
 }
 
 static void delayThread(const unsigned startMillis) {
@@ -115,7 +117,7 @@ static int backgroundActionsLoop(void* const) {
 }
 
 static void netLoopBody(void) {
-    // TODO
+    netListen();
 }
 
 static int netLoop(void* const) {
@@ -193,6 +195,7 @@ void lifecycleLoop(void) {
 void lifecycleQuit(void) {
     assert(gInitialized);
 
+    netQuit();
     scenesQuit();
     resourcesQuit();
     inputQuit();
