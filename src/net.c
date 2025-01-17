@@ -33,12 +33,9 @@ void netInit(void) {
         if ((netAddress & 0xff000000) != 0x0a000000 &&
             (netAddress & 0xfff00000) != 0xac100000 &&
             (netAddress & 0xffff0000) != 0xc0a80000) continue; // pass only private networks https://www.arin.net/reference/research/statistics/address_filters
+        if ((ifaddr->ifa_flags & IFF_RUNNING) != IFF_RUNNING) continue; // pass only running interface
 
         printf("%s\n", ifaddr->ifa_name);
-
-#       define checkFlag(x) (ifaddr->ifa_flags & x) == x
-        printf("\tup %d, ptp %d, running %d\n", checkFlag(IFF_UP), checkFlag(IFF_POINTOPOINT), checkFlag(IFF_RUNNING));
-#       undef checkFlag
 
 #       define dotNotationLEtoBE(x) (x >> 24) & 0xff, (x >> 16) & 0xff, (x >> 8) & 0xff, x & 0xff
         printf("\tnetwork %u.%u.%u.%u/%u\n", dotNotationLEtoBE(netAddress), mask);
