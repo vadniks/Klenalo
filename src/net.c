@@ -28,7 +28,12 @@ void netInit(void) {
         unsigned mask = 0;
         for (unsigned n = subnetMask; n; n & 1 ? mask++ : STUB, n >>= 1);
 
-        if (hostAddress == 0x7f000001) continue; // loopback
+        if (hostAddress == 0x7f000001) continue; // skip loopback
+        if (
+            (netAddress & 0xff000000) != 0x0a000000 &&
+            (netAddress & 0xfff00000) != 0xac100000 &&
+            (netAddress & 0xffff0000) != 0xc0a80000
+        ) continue; // pass only private networks https://www.arin.net/reference/research/statistics/address_filters
 
         printf("%s %s\n", ifaddr->ifa_name, ifaddr->ifa_addr->sa_family == AF_INET ? "ipv4" : "ipv6");
 
