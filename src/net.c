@@ -15,7 +15,7 @@ void netInit(void) {
     struct ifaddrs* ifaddr;
     assert(!getifaddrs(&ifaddr));
 
-    for (; ifaddr; ifaddr = ifaddr->ifa_next) {
+    for (int i = 0; ifaddr; ifaddr = ifaddr->ifa_next) {
         if (ifaddr->ifa_addr->sa_family != AF_INET) continue;
 
         const unsigned hostAddress = be32toh(*(unsigned*) (ifaddr->ifa_addr->sa_data + 2));
@@ -34,6 +34,8 @@ void netInit(void) {
             (netAddress & 0xfff00000) != 0xac100000 &&
             (netAddress & 0xffff0000) != 0xc0a80000) continue; // pass only private networks https://www.arin.net/reference/research/statistics/address_filters
         if ((ifaddr->ifa_flags & IFF_RUNNING) != IFF_RUNNING) continue; // pass only running interface
+
+        assert(i++ == 0);
 
         printf("%s\n", ifaddr->ifa_name);
 
