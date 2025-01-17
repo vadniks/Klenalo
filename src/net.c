@@ -1,8 +1,8 @@
 
 #include <ifaddrs.h>
+#include <net/if.h>
 #include <endian.h>
 #include <stdio.h>
-#include <net/if.h>
 #include "defs.h"
 #include "net.h"
 
