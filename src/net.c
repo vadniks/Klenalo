@@ -12,10 +12,10 @@ void netInit(void) {
     assert(!gInitialized);
     gInitialized = true;
 
-    struct ifaddrs* ifaddr;
-    assert(!getifaddrs(&ifaddr));
+    struct ifaddrs* ifaddrRoot;
+    assert(!getifaddrs(&ifaddrRoot));
 
-    for (int i = 0; ifaddr; ifaddr = ifaddr->ifa_next) {
+    for (struct ifaddrs* ifaddr = ifaddrRoot; ifaddr; ifaddr = ifaddr->ifa_next) {
         if (ifaddr->ifa_addr->sa_family != AF_INET) continue;
 
         const unsigned hostAddress = be32toh(*(unsigned*) (ifaddr->ifa_addr->sa_data + 2));
@@ -35,8 +35,6 @@ void netInit(void) {
             (netAddress & 0xffff0000) != 0xc0a80000) continue; // pass only private networks https://www.arin.net/reference/research/statistics/address_filters
         if ((ifaddr->ifa_flags & IFF_RUNNING) != IFF_RUNNING) continue; // pass only running interface
 
-        assert(i++ == 0);
-
         printf("%s\n", ifaddr->ifa_name);
 
 #       define dotNotationLEtoBE(x) (x >> 24) & 0xff, (x >> 16) & 0xff, (x >> 8) & 0xff, x & 0xff
@@ -50,7 +48,7 @@ void netInit(void) {
 #       undef dotNotationLEtoBE
     }
 
-    freeifaddrs(ifaddr);
+    freeifaddrs(ifaddrRoot);
 }
 
 bool netInitialized(void) {
