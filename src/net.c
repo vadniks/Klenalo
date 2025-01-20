@@ -29,7 +29,7 @@ void netInit(void) {
         unsigned mask = 0;
         for (unsigned n = subnetMask; n; n & 1 ? mask++ : STUB, n >>= 1);
 
-        if (hostAddress == 0x7f000001) continue; // skip loopback
+        if (hostAddress == 0x7f000001 || (ifaddr->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) continue; // skip loopback
         if ((netAddress & 0xff000000) != 0x0a000000 &&
             (netAddress & 0xfff00000) != 0xac100000 &&
             (netAddress & 0xffff0000) != 0xc0a80000) continue; // pass only private networks https://www.arin.net/reference/research/statistics/address_filters
@@ -47,7 +47,7 @@ void netInit(void) {
         printf("\thosts count %d\n", hostsCount);
 #       undef dotNotationLEtoBE
     }
-
+// TODO: ipv6?
     freeifaddrs(ifaddrRoot);
 }
 
