@@ -26,7 +26,7 @@ bool netInitialized(void) {
     return gInitialized;
 }
 
-void netUpdateNets(const bool update) {
+void netSetUpdateNets(const bool update) {
     assert(lifecycleInitialized() && gInitialized);
     gUpdateNets = update;
 }

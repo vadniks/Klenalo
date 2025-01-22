@@ -170,6 +170,8 @@ void lifecycleLoop(void) {
     AsyncAction* action;
 
     while (true) {
+        lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
+
         assert(startMillis = SDL_GetTicks());
         lv_timer_periodic_handler();
 
@@ -185,6 +187,8 @@ void lifecycleLoop(void) {
             action->function(action->parameter);
             SDL_free(action);
         }
+
+        lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
 
         delayThread(startMillis);
     }

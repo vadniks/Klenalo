@@ -1,10 +1,13 @@
 
+#include <SDL2/SDL.h>
 #include "xlvgl.h"
 #include "defs.h"
 #include "scenes.h"
 #include "consts.h"
 #include "input.h"
 #include "resources.h"
+#include "net.h"
+#include "lifecycle.h"
 #include "loginScene.h"
 
 static atomic bool gInitialized = false;
@@ -12,11 +15,17 @@ static atomic bool gInitialized = false;
 static lv_obj_t* gScreen = nullptr;
 static lv_group_t* gGroup = nullptr;
 static lv_obj_t* gWelcomeLabel = nullptr;
+static lv_obj_t* gNetsDropdown = nullptr;
 static lv_obj_t* gAddressLabel = nullptr;
 static lv_obj_t* gPasswordTextArea = nullptr;
 static lv_obj_t* gRememberCredentialsCheckbox = nullptr;
 static lv_obj_t* gSignInButton = nullptr;
 static lv_obj_t* gSignInLabel = nullptr;
+
+static SDL_TimerID gTimer = 0;
+static List* nullable gNetsList = nullptr; // <NetNet*>
+
+static unsigned update(const unsigned interval, void* const);
 
 void loginSceneInit(void) {
     assert(scenesInitialized() && !gInitialized);
@@ -35,6 +44,9 @@ void loginSceneInit(void) {
     assert(gWelcomeLabel = lv_label_create(gScreen));
     lv_obj_set_style_text_font(gWelcomeLabel, resourcesFont(RESOURCES_FONT_SIZE_LARGE, RESOURCES_FONT_TYPE_REGULAR), 0);
     lv_label_set_text_static(gWelcomeLabel, constsString(WELCOME));
+
+    assert(gNetsDropdown = lv_dropdown_create(gScreen));
+    lv_dropdown_clear_options(gNetsDropdown);
 
     assert(gAddressLabel = lv_label_create(gScreen));
     lv_obj_set_style_text_font(gAddressLabel, resourcesFont(RESOURCES_FONT_SIZE_NORMAL, RESOURCES_FONT_TYPE_BOLD), 0);
@@ -55,17 +67,41 @@ void loginSceneInit(void) {
     assert(gSignInLabel = lv_label_create(gSignInButton));
     lv_label_set_text_static(gSignInLabel, constsString(SIGN_IN));
     lv_obj_center(gSignInLabel);
+
+    assert(gTimer = SDL_AddTimer(500, update, nullptr));
+}
+
+static unsigned update(const unsigned interval, void* const) {
+    if (!gInitialized) return 0;
+    assert(scenesInitialized());
+
+    if (gNetsList) listDestroy(gNetsList);
+    gNetsList = netNets();
+
+    lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
+
+    lv_dropdown_clear_options(gNetsDropdown);
+    for (int i = 0; i < listSize(gNetsList); i++)
+        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
+
+    lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
+
+    return interval;
 }
 
 void loginSceneQuit(void) {
     assert(scenesInitialized() && gInitialized);
     gInitialized = false;
 
+    if (gNetsList) listDestroy(gNetsList);
+    assert(SDL_RemoveTimer(gTimer));
+
     lv_obj_delete(gSignInLabel);
     lv_obj_delete(gSignInButton);
     lv_obj_delete(gRememberCredentialsCheckbox);
     lv_obj_delete(gPasswordTextArea);
     lv_obj_delete(gAddressLabel);
+    lv_obj_delete(gNetsDropdown);
     lv_obj_delete(gWelcomeLabel);
     lv_group_delete(gGroup);
     lv_obj_delete(gScreen);
