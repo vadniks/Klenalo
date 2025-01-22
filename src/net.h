@@ -14,7 +14,7 @@ typedef struct {
     const bool running;
 } NetNet;
 
-extern const int NET_ADDRESS_STRING_SIZE;
+extern const int NET_ADDRESS_STRING_SIZE; // null terminator included
 
 void netInit(void);
 bool netInitialized(void);

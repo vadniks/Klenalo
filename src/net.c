@@ -7,7 +7,7 @@
 #include "lifecycle.h"
 #include "net.h"
 
-const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3; // xxx.xxx.xxx.xxx
+const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
 
 static atomic bool gInitialized = false;
 
@@ -91,7 +91,7 @@ void netAddressToString(char* const buffer, const int address) {
         "%u.%u.%u.%u",
         (address >> 24) & 0xff, (address >> 16) & 0xff, (address >> 8) & 0xff, address & 0xff
     );
-    assert(count > 0 && count <= NET_ADDRESS_STRING_SIZE);
+    assert(count > 0 && count < NET_ADDRESS_STRING_SIZE);
 }
 
 static void ping(void) {
