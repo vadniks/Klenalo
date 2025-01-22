@@ -1,50 +1,41 @@
 
-#include <SDL2/SDL_stdinc.h>
+#include <SDL2/SDL.h>
 #include <ifaddrs.h>
 #include <net/if.h>
 #include <endian.h>
-#include <stdio.h>
 #include "lifecycle.h"
+#include "rwMutex.h"
 #include "net.h"
 
 const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
 
 static atomic bool gInitialized = false;
+static List* gNetsList = nullptr; // <NetNet*>
+static RWMutex* gNetsListRWMutex = nullptr;
+static atomic bool gUpdateNets = true;
 
 void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
     gInitialized = true;
 
-    List* const nets = netScanNets();
-    char address[NET_ADDRESS_STRING_SIZE];
-
-    for (int i = 0; i < listSize(nets); i++) {
-        const NetNet* const net = listGet(nets, i);
-
-        printf("%s\n", net->name);
-
-        netAddressToString(address, net->address);
-        printf("\t%s/%d\n", address, net->mask);
-
-        netAddressToString(address, net->broadcast);
-        printf("\t%s\n", address);
-
-        netAddressToString(address, net->host);
-        printf("\t%s\n", address);
-
-        printf("\t%d %s %s\n", net->hostsCount, boolToStr(net->private), boolToStr(net->running));
-    }
-
-    listDestroy(nets);
+    gNetsList = listCreate(SDL_free);
+    gNetsListRWMutex = rwMutexCreate();
 }
 
 bool netInitialized(void) {
     return gInitialized;
 }
 
-List* netScanNets(void) {
+void netUpdateNets(const bool update) {
     assert(lifecycleInitialized() && gInitialized);
-    List* const list = listCreate(SDL_free);
+    gUpdateNets = update;
+}
+
+static void scanNets(void) {
+    assert(lifecycleInitialized() && gInitialized);
+
+    rwMutexWriteLock(gNetsListRWMutex);
+    listClear(gNetsList);
 
     struct ifaddrs* ifaddrRoot;
     assert(!getifaddrs(&ifaddrRoot));
@@ -76,10 +67,25 @@ List* netScanNets(void) {
         }, sizeof *net);
         SDL_memcpy(net, ifaddr->ifa_name, sizeof(net->name));
 
-        listAddBack(list, net);
+        listAddBack(gNetsList, net);
     }
 
     freeifaddrs(ifaddrRoot);
+
+    rwMutexWriteUnlock(gNetsListRWMutex);
+}
+
+static NetNet* netDuplicator(const NetNet* const old) {
+    NetNet* const new = SDL_malloc(sizeof *new);
+    assert(new);
+    SDL_memcpy(new, old, sizeof *new);
+    return new;
+}
+
+List* netNets(void) {
+    rwMutexWriteLock(gNetsListRWMutex);
+    List* const list = listCopy(gNetsList, (ListItemDuplicator) netDuplicator);
+    rwMutexWriteUnlock(gNetsListRWMutex);
     return list;
 }
 
@@ -101,9 +107,15 @@ static void ping(void) {
 
 void netListen(void) {
     assert(lifecycleInitialized() && gInitialized);
+
+    if (gUpdateNets)
+        scanNets();
 }
 
 void netQuit(void) {
     assert(lifecycleInitialized() && gInitialized);
     gInitialized = false;
+
+    rwMutexDestroy(gNetsListRWMutex);
+    listDestroy(gNetsList);
 }
