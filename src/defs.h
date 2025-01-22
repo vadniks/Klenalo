@@ -11,6 +11,7 @@ typedef unsigned char byte;
 #define atomic _Atomic
 #define fallthrough [[fallthrough]];
 #define nullable // everything that isn't market with nullable is considered to be not null
+#define freeResult [[nodiscard]] // caller of the function market with this must free the result that the function returns
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))

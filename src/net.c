@@ -1,16 +1,45 @@
 
+#include <SDL2/SDL_stdinc.h>
 #include <ifaddrs.h>
 #include <net/if.h>
 #include <endian.h>
 #include <stdio.h>
-#include "defs.h"
+#include "lifecycle.h"
 #include "net.h"
+
+const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3; // xxx.xxx.xxx.xxx
 
 static atomic bool gInitialized = false;
 
 void netInit(void) {
-    assert(!gInitialized);
+    assert(lifecycleInitialized() && !gInitialized);
     gInitialized = true;
+
+    List* const nets = netScanNets();
+    char address[NET_ADDRESS_STRING_SIZE];
+
+    for (int i = 0; i < listSize(nets); i++) {
+        const NetNet* const net = listGet(nets, i);
+
+        netAddressToString(address, net->address);
+        printf("%s/%d\n", address, net->mask);
+
+        netAddressToString(address, net->broadcast);
+        printf("\t%s\n", address);
+
+        printf("\t%d %s %s\n", net->hostsCount, boolToStr(net->private), boolToStr(net->running));
+    }
+
+    listDestroy(nets);
+}
+
+bool netInitialized(void) {
+    return gInitialized;
+}
+
+List* netScanNets(void) {
+    assert(lifecycleInitialized() && gInitialized);
+    List* const list = listCreate(SDL_free);
 
     struct ifaddrs* ifaddrRoot;
     assert(!getifaddrs(&ifaddrRoot));
@@ -22,37 +51,39 @@ void netInit(void) {
         const unsigned subnetMask = be32toh(*(unsigned*) (ifaddr->ifa_netmask->sa_data + 2));
         const unsigned netAddress = hostAddress & subnetMask;
         const unsigned broadcastAddress = netAddress + ~subnetMask;
-        const unsigned hostMinAddress = netAddress + 1u;
-        const unsigned hostMaxAddress = broadcastAddress - 1u;
-        const unsigned hostsCount = hostMaxAddress - hostMinAddress + 1u;
 
-        unsigned mask = 0;
+        byte mask = 0;
         for (unsigned n = subnetMask; n; n & 1 ? mask++ : STUB, n >>= 1);
 
-        if (hostAddress == 0x7f000001 || (ifaddr->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) continue; // skip loopback
-        if ((netAddress & 0xff000000) != 0x0a000000 &&
-            (netAddress & 0xfff00000) != 0xac100000 &&
-            (netAddress & 0xffff0000) != 0xc0a80000) continue; // pass only private networks https://www.arin.net/reference/research/statistics/address_filters
-        if ((ifaddr->ifa_flags & IFF_RUNNING) != IFF_RUNNING) continue; // pass only running interface
+        if (hostAddress == 0x7f000001 || (ifaddr->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) continue;
 
-        printf("%s\n", ifaddr->ifa_name);
+        NetNet* const net = SDL_malloc(sizeof *net);
+        assert(net);
+        SDL_memcpy(net, &(NetNet) {
+            (int) netAddress,
+            mask,
+            (int) broadcastAddress,
+            (int) ((broadcastAddress - 1u) - (netAddress + 1u) + 1u),
+            (netAddress & 0xff000000) == 0x0a000000 || (netAddress & 0xfff00000) == 0xac100000 || (netAddress & 0xffff0000) == 0xc0a80000, // private networks https://www.arin.net/reference/research/statistics/address_filters
+            (ifaddr->ifa_flags & IFF_RUNNING) != IFF_RUNNING
+        }, sizeof *net);
 
-#       define dotNotationLEtoBE(x) (x >> 24) & 0xff, (x >> 16) & 0xff, (x >> 8) & 0xff, x & 0xff
-        printf("\tnetwork %u.%u.%u.%u/%u\n", dotNotationLEtoBE(netAddress), mask);
-        printf("\tsubnet mask %u.%u.%u.%u\n", dotNotationLEtoBE(subnetMask));
-        printf("\tbroadcast %u.%u.%u.%u\n", dotNotationLEtoBE(broadcastAddress));
-        printf("\thost %u.%u.%u.%u\n", dotNotationLEtoBE(hostAddress));
-        printf("\thost min %u.%u.%u.%u\n", dotNotationLEtoBE(hostMinAddress));
-        printf("\thost max %u.%u.%u.%u\n", dotNotationLEtoBE(hostMaxAddress));
-        printf("\thosts count %d\n", hostsCount);
-#       undef dotNotationLEtoBE
+        listAddBack(list, net);
     }
-// TODO: ipv6?
+
     freeifaddrs(ifaddrRoot);
+    return list;
 }
 
-bool netInitialized(void) {
-    return gInitialized;
+void netAddressToString(char* const buffer, const int address) {
+    assert(lifecycleInitialized() && gInitialized);
+    const byte count = SDL_snprintf(
+        buffer,
+        NET_ADDRESS_STRING_SIZE,
+        "%u.%u.%u.%u",
+        (address >> 24) & 0xff, (address >> 16) & 0xff, (address >> 8) & 0xff, address & 0xff
+    );
+    assert(count > 0 && count <= NET_ADDRESS_STRING_SIZE);
 }
 
 static void ping(void) {
@@ -61,10 +92,10 @@ static void ping(void) {
 }
 
 void netListen(void) {
-
+    assert(lifecycleInitialized() && gInitialized);
 }
 
 void netQuit(void) {
-    assert(gInitialized);
+    assert(lifecycleInitialized() && gInitialized);
     gInitialized = false;
 }

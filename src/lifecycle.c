@@ -139,6 +139,7 @@ static void scheduleAction(const LifecycleAsyncActionFunction function, void* nu
     assert(gInitialized);
 
     AsyncAction* const action = SDL_malloc(sizeof *action);
+    assert(action);
     SDL_memcpy(action, &(AsyncAction) {function, parameter, delayMillis}, sizeof *action);
 
     SDL_mutex* const mutex = looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.mutex : gMainActionsLooper.mutex;
