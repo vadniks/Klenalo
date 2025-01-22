@@ -29,6 +29,9 @@ void netInit(void) {
         netAddressToString(address, net->broadcast);
         printf("\t%s\n", address);
 
+        netAddressToString(address, net->host);
+        printf("\t%s\n", address);
+
         printf("\t%d %s %s\n", net->hostsCount, boolToStr(net->private), boolToStr(net->running));
     }
 
@@ -66,6 +69,7 @@ List* netScanNets(void) {
             (int) netAddress,
             mask,
             (int) broadcastAddress,
+            (int) hostAddress,
             (int) ((broadcastAddress - 1u) - (netAddress + 1u) + 1u),
             (netAddress & 0xff000000) == 0x0a000000 || (netAddress & 0xfff00000) == 0xac100000 || (netAddress & 0xffff0000) == 0xc0a80000, // private networks https://www.arin.net/reference/research/statistics/address_filters
             (ifaddr->ifa_flags & IFF_RUNNING) == IFF_RUNNING

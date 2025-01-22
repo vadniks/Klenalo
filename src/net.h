@@ -8,6 +8,7 @@ typedef struct {
     const int address;
     const byte mask; // number of unit bits in a mask
     const int broadcast;
+    const int host; // address of this host
     const int hostsCount;
     const bool private;
     const bool running;
