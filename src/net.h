@@ -4,6 +4,7 @@
 #include "list.h"
 
 typedef struct {
+    const char name[16]; // less than NI_MAXHOST
     const int address;
     const byte mask; // number of unit bits in a mask
     const int broadcast;

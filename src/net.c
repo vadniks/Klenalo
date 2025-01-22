@@ -21,8 +21,10 @@ void netInit(void) {
     for (int i = 0; i < listSize(nets); i++) {
         const NetNet* const net = listGet(nets, i);
 
+        printf("%s\n", net->name);
+
         netAddressToString(address, net->address);
-        printf("%s/%d\n", address, net->mask);
+        printf("\t%s/%d\n", address, net->mask);
 
         netAddressToString(address, net->broadcast);
         printf("\t%s\n", address);
@@ -60,13 +62,15 @@ List* netScanNets(void) {
         NetNet* const net = SDL_malloc(sizeof *net);
         assert(net);
         SDL_memcpy(net, &(NetNet) {
+            {0},
             (int) netAddress,
             mask,
             (int) broadcastAddress,
             (int) ((broadcastAddress - 1u) - (netAddress + 1u) + 1u),
             (netAddress & 0xff000000) == 0x0a000000 || (netAddress & 0xfff00000) == 0xac100000 || (netAddress & 0xffff0000) == 0xc0a80000, // private networks https://www.arin.net/reference/research/statistics/address_filters
-            (ifaddr->ifa_flags & IFF_RUNNING) != IFF_RUNNING
+            (ifaddr->ifa_flags & IFF_RUNNING) == IFF_RUNNING
         }, sizeof *net);
+        SDL_memcpy(net, ifaddr->ifa_name, sizeof(net->name));
 
         listAddBack(list, net);
     }
