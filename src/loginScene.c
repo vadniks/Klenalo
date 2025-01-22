@@ -15,6 +15,8 @@ static atomic bool gInitialized = false;
 static lv_obj_t* gScreen = nullptr;
 static lv_group_t* gGroup = nullptr;
 static lv_obj_t* gWelcomeLabel = nullptr;
+static lv_obj_t* gNetsLayout = nullptr;
+static lv_obj_t* gNetsLabel = nullptr;
 static lv_obj_t* gNetsDropdown = nullptr;
 static lv_obj_t* gAddressLabel = nullptr;
 static lv_obj_t* gPasswordTextArea = nullptr;
@@ -45,8 +47,23 @@ void loginSceneInit(void) {
     lv_obj_set_style_text_font(gWelcomeLabel, resourcesFont(RESOURCES_FONT_SIZE_LARGE, RESOURCES_FONT_TYPE_REGULAR), 0);
     lv_label_set_text_static(gWelcomeLabel, constsString(WELCOME));
 
-    assert(gNetsDropdown = lv_dropdown_create(gScreen));
+    assert(gNetsLayout = lv_obj_create(gScreen));
+    lv_obj_set_layout(gNetsLayout, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(gNetsLayout, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(gNetsLayout, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    assert(gNetsLabel = lv_label_create(gNetsLayout));
+    lv_label_set_text_static(gNetsLabel, "Network: ");
+
+    assert(gNetsDropdown = lv_dropdown_create(gNetsLayout));
     lv_dropdown_clear_options(gNetsDropdown);
+
+    lv_obj_set_width(gNetsLayout, lv_obj_get_width(gNetsLabel) + lv_obj_get_width(gNetsDropdown) + 10);
+    lv_obj_set_height(gNetsLayout, max(lv_obj_get_height(gNetsLabel), lv_obj_get_height(gNetsDropdown)) + 10);
+    lv_obj_remove_flag(gNetsLayout, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_opa(gNetsLayout, 0, 0);
+    lv_obj_set_style_border_opa(gNetsLayout, 0, 0);
+    lv_obj_scroll_to(gNetsLayout, 0, 0, LV_ANIM_OFF);
 
     assert(gAddressLabel = lv_label_create(gScreen));
     lv_obj_set_style_text_font(gAddressLabel, resourcesFont(RESOURCES_FONT_SIZE_NORMAL, RESOURCES_FONT_TYPE_BOLD), 0);
@@ -102,6 +119,8 @@ void loginSceneQuit(void) {
     lv_obj_delete(gPasswordTextArea);
     lv_obj_delete(gAddressLabel);
     lv_obj_delete(gNetsDropdown);
+    lv_obj_delete(gNetsLabel);
+    lv_obj_delete(gNetsLayout);
     lv_obj_delete(gWelcomeLabel);
     lv_group_delete(gGroup);
     lv_obj_delete(gScreen);
