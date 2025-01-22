@@ -60,6 +60,7 @@ void loginSceneInit(void) {
 
     lv_obj_set_width(gNetsLayout, lv_obj_get_width(gNetsLabel) + lv_obj_get_width(gNetsDropdown) + 10);
     lv_obj_set_height(gNetsLayout, max(lv_obj_get_height(gNetsLabel), lv_obj_get_height(gNetsDropdown)) + 10);
+    lv_obj_set_state(gNetsLayout, LV_STATE_DISABLED, true);
     lv_obj_remove_flag(gNetsLayout, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_opa(gNetsLayout, 0, 0);
     lv_obj_set_style_border_opa(gNetsLayout, 0, 0);
