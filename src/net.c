@@ -83,9 +83,9 @@ static NetNet* netDuplicator(const NetNet* const old) {
 }
 
 List* netNets(void) {
-    rwMutexWriteLock(gNetsListRWMutex);
-    List* const list = listCopy(gNetsList, (ListItemDuplicator) netDuplicator);
-    rwMutexWriteUnlock(gNetsListRWMutex);
+    RW_MUTEX_READ_LOCKED(gNetsListRWMutex,
+        List* const list = listCopy(gNetsList, (ListItemDuplicator) netDuplicator);
+    )
     return list;
 }
 

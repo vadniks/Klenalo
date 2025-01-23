@@ -172,24 +172,20 @@ void lifecycleLoop(void) {
     while (true) {
         assert(startMillis = SDL_GetTicks());
 
-        lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
-        lv_timer_periodic_handler();
-        lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
+        RW_MUTEX_WRITE_LOCKED(gUIRWMutex, lv_timer_periodic_handler();)
 
         SDL_Event event;
         while (SDL_PollEvent(&event) == 1) {
             if (event.type == SDL_QUIT) goto end;
 
-            lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
-            videoProcessEvent(&event);
-            inputProcessEvent(&event);
-            lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
+            RW_MUTEX_WRITE_LOCKED(gUIRWMutex,
+                videoProcessEvent(&event);
+                inputProcessEvent(&event);
+            )
         }
 
         if ((action = nextAsyncAction(LOOPER_MAIN))) {
-            lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
-            action->function(action->parameter);
-            lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
+            RW_MUTEX_WRITE_LOCKED(gUIRWMutex, action->function(action->parameter);)
             SDL_free(action);
         }
 
