@@ -10,6 +10,8 @@
 #include "lifecycle.h"
 #include "loginScene.h"
 
+static const int NETS_UPDATE_INTERVAL = 500;
+
 static atomic bool gInitialized = false;
 
 static lv_obj_t* gScreen = nullptr;
@@ -27,7 +29,7 @@ static lv_obj_t* gSignInLabel = nullptr;
 static SDL_TimerID gTimer = 0;
 static List* nullable gNetsList = nullptr; // <NetNet*>
 
-static unsigned update(const unsigned interval, void* const);
+static unsigned updateNets(const unsigned interval, void* const);
 
 void loginSceneInit(void) {
     assert(scenesInitialized() && !gInitialized);
@@ -86,10 +88,10 @@ void loginSceneInit(void) {
     lv_label_set_text_static(gSignInLabel, constsString(SIGN_IN));
     lv_obj_center(gSignInLabel);
 
-    assert(gTimer = SDL_AddTimer(500, update, nullptr));
+    assert(gTimer = SDL_AddTimer(NETS_UPDATE_INTERVAL, updateNets, nullptr));
 }
 
-static unsigned update(const unsigned interval, void* const) {
+static unsigned updateNets(const unsigned interval, void* const) {
     if (!gInitialized) return 0;
     assert(scenesInitialized());
 
