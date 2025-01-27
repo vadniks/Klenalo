@@ -203,10 +203,12 @@ void listClear(List* const list) {
 }
 
 void listDestroy(List* const list) {
-    assert(!rwMutexLocked(list->rwMutex));
+    if (list->rwMutex) {
+        assert(!rwMutexLocked(list->rwMutex));
+        rwMutexDestroy(list->rwMutex);
+    }
 
     destroyValuesIfNotEmpty(list);
-    if (list->rwMutex) rwMutexDestroy(list->rwMutex);
     SDL_free(list->values);
     SDL_free(list);
 }

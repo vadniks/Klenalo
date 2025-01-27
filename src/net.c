@@ -77,7 +77,9 @@ static NetNet* netDuplicator(const NetNet* const old) {
 }
 
 List* netNets(void) {
-    return listCopy(gNetsList, false, (ListItemDuplicator) netDuplicator);
+    return listSize(gNetsList)
+        ? listCopy(gNetsList, false, (ListItemDuplicator) netDuplicator)
+        : listCreate(false,nullptr);
 }
 
 void netAddressToString(char* const buffer, const int address) {
