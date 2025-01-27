@@ -10,6 +10,7 @@
 struct _RWMutex {
     SDL_mutex* mutex;
     SDL_atomic_t counter;
+    atomic bool writeLocked;
 };
 
 RWMutex* rwMutexCreate(void) {
@@ -17,6 +18,7 @@ RWMutex* rwMutexCreate(void) {
     assert(rwMutex);
     assert(rwMutex->mutex = SDL_CreateMutex());
     rwMutex->counter.value = 0;
+    rwMutex->writeLocked = false;
     return rwMutex;
 }
 
@@ -34,16 +36,28 @@ void rwMutexReadLock(RWMutex* const rwMutex) {
 }
 
 void rwMutexReadUnlock(RWMutex* const rwMutex) {
+    assert(SDL_AtomicGet(&rwMutex->counter));
     if (!decrementCounter(&rwMutex->counter))
         assert(!SDL_UnlockMutex(rwMutex->mutex));
 }
 
 void rwMutexWriteLock(RWMutex* const rwMutex) {
     assert(!SDL_LockMutex(rwMutex->mutex));
+    rwMutex->writeLocked = true;
 }
 
 void rwMutexWriteUnlock(RWMutex* const rwMutex) {
     assert(!SDL_UnlockMutex(rwMutex->mutex));
+    rwMutex->writeLocked = false;
+}
+
+void rwMutexForceUnlock(RWMutex* const rwMutex) {
+    SDL_AtomicSet(&rwMutex->counter, 0);
+    assert(!SDL_UnlockMutex(rwMutex->mutex));
+}
+
+bool rwMutexLocked(RWMutex* const rwMutex) {
+    return rwMutex->writeLocked || SDL_AtomicGet(&rwMutex->counter);
 }
 
 void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command) {
@@ -56,6 +70,7 @@ void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command) {
 }
 
 void rwMutexDestroy(RWMutex* const rwMutex) {
+    assert(!rwMutexLocked(rwMutex));
     SDL_DestroyMutex(rwMutex->mutex);
     SDL_free(rwMutex);
 }
