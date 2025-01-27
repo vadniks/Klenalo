@@ -1,43 +1,61 @@
 
 #include <SDL2/SDL_stdinc.h>
+#include "rwMutex.h"
 #include "list.h"
 
 struct _List {
     void** nullable values;
     int size;
+    RWMutex* nullable rwMutex; // const
     ListDeallocator nullable deallocator; // const
 };
 
 static const int MAX_SIZE = 0x7fffffff;
 
-List* listCreate(const ListDeallocator nullable deallocator) {
+List* listCreate(const bool synchronized, const ListDeallocator nullable deallocator) {
     List* const list = SDL_malloc(sizeof *list);
     assert(list);
     list->values = nullptr;
     list->size = 0;
+    list->rwMutex = synchronized ? rwMutexCreate() : nullptr;
     list->deallocator = deallocator;
     return list;
 }
 
-List* listCopy(const List* const old, const ListItemDuplicator itemDuplicator) {
+static inline void deallocateValue(const List* const list, void* const value) {
+    if (list->deallocator) list->deallocator(value);
+}
+
+static inline void listRwMutexCommand(List* const list, const RWMutexCommand command) {
+    if (list->rwMutex) rwMutexCommand(list->rwMutex, command);
+}
+
+List* listCopy(List* const old, const bool synchronized, const ListItemDuplicator itemDuplicator) {
+    listRwMutexCommand(old, RW_MUTEX_COMMAND_READ_LOCK);
     assert(old->size && old->values);
-    List* const new = listCreate(old->deallocator);
+
+    List* const new = listCreate(synchronized, old->deallocator);
 
     assert(new->values = SDL_malloc(old->size * sizeof(void*)));
     new->size = old->size;
     for (int i = 0; i < old->size; new->values[i] = itemDuplicator(old->values[i]), i++);
 
+    listRwMutexCommand(old, RW_MUTEX_COMMAND_READ_UNLOCK);
     return new;
 }
 
 void listAddBack(List* const list, void* const value) {
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(list->size < MAX_SIZE);
 
     assert(list->values = SDL_realloc(list->values, ++list->size * sizeof(void*)));
     list->values[list->size - 1] = value;
+
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
 void listAddFront(List* const list, void* const value) {
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(list->size < MAX_SIZE);
 
     void** const temp = SDL_malloc(++list->size * sizeof(void*));
@@ -47,14 +65,22 @@ void listAddFront(List* const list, void* const value) {
 
     SDL_free(list->values);
     list->values = temp;
+
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
-void* listGet(const List* const list, const int index) {
+void* listGet(List* const list, const int index) {
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_LOCK);
+
     assert(list->size && list->values && index >= 0 && index < list->size);
-    return list->values[index];
+    void* const value = list->values[index];
+
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_UNLOCK);
+    return value;
 }
 
 void* listPopFirst(List* const list) {
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(list->size && list->values);
 
     void* const value = list->values[0];
@@ -63,16 +89,20 @@ void* listPopFirst(List* const list) {
     if (!list->size) {
         SDL_free(list->values);
         list->values = nullptr;
+
+        listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
         return value;
     }
 
     SDL_memmove(list->values, (void*) list->values + sizeof(void*), list->size * sizeof(void*));
     assert(list->values = SDL_realloc(list->values, list->size * sizeof(void*)));
 
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
     return value;
 }
 
 void* listPopLast(List* const list) {
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(list->size && list->values);
 
     list->size--;
@@ -85,13 +115,15 @@ void* listPopLast(List* const list) {
         list->values = nullptr;
     }
 
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
     return value;
 }
 
 void listRemove(List* const list, const int index) {
-    assert(list->size && list->values && index >= 0 && index < list->size && list->deallocator);
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
+    assert(list->size && list->values && index >= 0 && index < list->size);
 
-    list->deallocator(list->values[index]);
+    deallocateValue(list, list->values[index]);
     for (int i = index; i < list->size; list->values[i] = list->values[i + 1], i++);
 
     if (--list->size)
@@ -100,34 +132,56 @@ void listRemove(List* const list, const int index) {
         SDL_free(list->values);
         list->values = nullptr;
     }
+
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
-void* nullable listPeekFirst(const List* const list) {
+void* nullable listPeekFirst(List* const list) {
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_LOCK);
+
     assert(!list->size && !list->values || list->size && list->values);
-    return list->size ? list->values[0] : nullptr;
+    void* const value = list->size ? list->values[0] : nullptr;
+
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_UNLOCK);
+    return value;
 }
 
-void* nullable listPeekLast(const List* const list) {
+void* nullable listPeekLast(List* const list) {
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_LOCK);
+
     assert(!list->size && !list->values || list->size && list->values);
-    return list->size ? list->values[list->size - 1] : nullptr;
+    void* const value = list->size ? list->values[list->size - 1] : nullptr;
+
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_UNLOCK);
+    return value;
 }
 
-int listSize(const List* const list) {
-    return list->size;
+int listSize(List* const list) {
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_LOCK);
+    const int size = list->size;
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_UNLOCK);
+    return size;
 }
 
-void* nullable listBinarySearch(const List* const list, const void* const key, const ListComparator comparator) {
+void* nullable listBinarySearch(List* const list, const void* const key, const ListComparator comparator) {
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_LOCK);
     assert(list->size && list->values);
 
     const unsigned long index =
         (void**) SDL_bsearch(key, list->values, list->size, sizeof(void*), comparator) - list->values;
+    void* const value = (int) index >= list->size ? nullptr : list->values[index];
 
-    return (int) index >= list->size ? nullptr : list->values[index];
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_UNLOCK);
+    return value;
 }
 
 void listQSort(List* const list, const ListComparator comparator) {
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
+
     assert(list->size && list->values);
     SDL_qsort(list->values, list->size, sizeof(void*), comparator);
+
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
 static void destroyValuesIfNotEmpty(List* const list) {
@@ -137,15 +191,22 @@ static void destroyValuesIfNotEmpty(List* const list) {
 }
 
 void listClear(List* const list) {
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
+
     destroyValuesIfNotEmpty(list);
     list->size = 0;
 
     SDL_free(list->values);
     list->values = nullptr;
+
+    listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
 void listDestroy(List* const list) {
+    assert(!rwMutexLocked(list->rwMutex));
+
     destroyValuesIfNotEmpty(list);
+    if (list->rwMutex) rwMutexDestroy(list->rwMutex);
     SDL_free(list->values);
     SDL_free(list);
 }

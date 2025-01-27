@@ -4,22 +4,19 @@
 #include <net/if.h>
 #include <endian.h>
 #include "lifecycle.h"
-#include "rwMutex.h"
 #include "net.h"
 
 const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
 
 static atomic bool gInitialized = false;
 static List* gNetsList = nullptr; // <NetNet*>
-static RWMutex* gNetsListRWMutex = nullptr;
 static atomic bool gUpdateNets = true;
 
 void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
     gInitialized = true;
 
-    gNetsList = listCreate(SDL_free);
-    gNetsListRWMutex = rwMutexCreate();
+    gNetsList = listCreate(true, SDL_free);
 }
 
 bool netInitialized(void) {
@@ -34,7 +31,6 @@ void netSetUpdateNets(const bool update) {
 static void scanNets(void) {
     assert(lifecycleInitialized() && gInitialized);
 
-    rwMutexWriteLock(gNetsListRWMutex);
     listClear(gNetsList);
 
     struct ifaddrs* ifaddrRoot;
@@ -71,8 +67,6 @@ static void scanNets(void) {
     }
 
     freeifaddrs(ifaddrRoot);
-
-    rwMutexWriteUnlock(gNetsListRWMutex);
 }
 
 static NetNet* netDuplicator(const NetNet* const old) {
@@ -83,10 +77,7 @@ static NetNet* netDuplicator(const NetNet* const old) {
 }
 
 List* netNets(void) {
-    RW_MUTEX_READ_LOCKED(gNetsListRWMutex,
-        List* const list = listCopy(gNetsList, (ListItemDuplicator) netDuplicator);
-    )
-    return list;
+    return listCopy(gNetsList, false, (ListItemDuplicator) netDuplicator);
 }
 
 void netAddressToString(char* const buffer, const int address) {
@@ -116,6 +107,5 @@ void netQuit(void) {
     assert(lifecycleInitialized() && gInitialized);
     gInitialized = false;
 
-    rwMutexDestroy(gNetsListRWMutex);
     listDestroy(gNetsList);
 }
