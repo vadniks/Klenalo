@@ -27,18 +27,17 @@ static atomic bool gInitialized = false;
 static atomic bool gRunning = false;
 
 static struct {
-    List* queue; // <AsyncAction*>
+    List* nullable queue; // <AsyncAction*>
     SDL_Thread* nullable thread;
 }
     gBackgroundActionsLooper = {nullptr, nullptr},
+    gNetActionsLooper = {nullptr, nullptr},
     gMainActionsLooper = {nullptr, nullptr};
 
 static RWMutex* gUIRWMutex = nullptr;
 
-static SDL_Thread* gNetThread = nullptr; // TODO: looper?
-
 static int backgroundActionsLoop(void* const);
-static int netLoop(void* const);
+static int netActionsLoop(void* const);
 
 void lifecycleInit(void) {
     assert(!gInitialized);
@@ -50,11 +49,11 @@ void lifecycleInit(void) {
     gBackgroundActionsLooper.queue = listCreate(true, SDL_free);
     assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, "backgroundActions", nullptr));
 
+    gNetActionsLooper.thread = SDL_CreateThread(netActionsLoop, "netActions", nullptr);
+
     gMainActionsLooper.queue = listCreate(true, SDL_free);
 
     gUIRWMutex = rwMutexCreate();
-
-    gNetThread = SDL_CreateThread(netLoop, "net", nullptr);
 
     lv_init();
     lv_tick_set_cb(SDL_GetTicks);
@@ -114,7 +113,7 @@ static void netLoopBody(void) {
     netListen();
 }
 
-static int netLoop(void* const) {
+static int netActionsLoop(void* const) {
     threadLoop(netLoopBody);
     return 0;
 }
@@ -199,11 +198,11 @@ void lifecycleQuit(void) {
 
     lv_deinit();
 
-    SDL_WaitThread(gNetThread, nullptr);
-
     rwMutexDestroy(gUIRWMutex);
 
     listDestroy(gMainActionsLooper.queue);
+
+    SDL_WaitThread(gNetActionsLooper.thread, nullptr);
 
     SDL_WaitThread(gBackgroundActionsLooper.thread, nullptr);
     listDestroy(gBackgroundActionsLooper.queue);

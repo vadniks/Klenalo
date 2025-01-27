@@ -95,16 +95,16 @@ static unsigned updateNets(const unsigned interval, void* const) {
     if (!gInitialized) return 0;
     assert(scenesInitialized());
 
-    if (gNetsList) listDestroy(gNetsList);
-    gNetsList = netNets();
-
-    lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
-
-    lv_dropdown_clear_options(gNetsDropdown);
-    for (int i = 0; i < listSize(gNetsList); i++)
-        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
-
-    lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
+//    if (gNetsList) listDestroy(gNetsList);
+//    gNetsList = netNets();
+//
+//    lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
+//
+//    lv_dropdown_clear_options(gNetsDropdown);
+//    for (int i = 0; i < listSize(gNetsList); i++)
+//        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
+//
+//    lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
 
     return interval;
 }
