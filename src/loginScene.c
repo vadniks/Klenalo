@@ -10,7 +10,7 @@
 #include "lifecycle.h"
 #include "loginScene.h"
 
-static const int NETS_UPDATE_INTERVAL = 500;
+static const int NETS_UPDATE_INTERVAL = 100;
 
 static atomic bool gInitialized = false;
 
@@ -96,7 +96,7 @@ static unsigned updateNets(const unsigned interval, void* const) {
     assert(scenesInitialized());
 
     if (gNetsList) listDestroy(gNetsList);
-    gNetsList = netNets();
+    if (!(gNetsList = netNets())) return interval;
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
 
