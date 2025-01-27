@@ -19,7 +19,6 @@ void rwMutexReadLock(RWMutex* const rwMutex);
 void rwMutexReadUnlock(RWMutex* const rwMutex);
 void rwMutexWriteLock(RWMutex* const rwMutex);
 void rwMutexWriteUnlock(RWMutex* const rwMutex);
-[[deprecated]] void rwMutexForceUnlock(RWMutex* const rwMutex);
 bool rwMutexLocked(RWMutex* const rwMutex);
 void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command);
 void rwMutexDestroy(RWMutex* const rwMutex); // fails if the rwMutex is locked (either write or read)

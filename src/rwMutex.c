@@ -52,11 +52,6 @@ void rwMutexWriteUnlock(RWMutex* const rwMutex) {
     rwMutex->writeLocked = false;
 }
 
-void rwMutexForceUnlock(RWMutex* const rwMutex) {
-    SDL_AtomicSet(&rwMutex->counter, 0);
-    assert(!SDL_UnlockMutex(rwMutex->mutex));
-}
-
 bool rwMutexLocked(RWMutex* const rwMutex) {
     return rwMutex->writeLocked || SDL_AtomicGet(&rwMutex->counter);
 }
