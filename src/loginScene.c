@@ -10,7 +10,7 @@
 #include "lifecycle.h"
 #include "loginScene.h"
 
-static const int NETS_UPDATE_INTERVAL = 100;
+static const int NETS_UPDATE_INTERVAL = 500;
 
 static atomic bool gInitialized = false;
 
@@ -91,6 +91,10 @@ void loginSceneInit(void) {
     assert(gTimer = SDL_AddTimer(NETS_UPDATE_INTERVAL, updateNets, nullptr));
 }
 
+static void updateNetsIteratorAction(NetNet* const net, int* const counter) {
+    lv_dropdown_add_option(gNetsDropdown, net->name, (*counter)++);
+}
+
 static unsigned updateNets(const unsigned interval, void* const) {
     if (!gInitialized) return 0;
     assert(scenesInitialized());
@@ -101,8 +105,14 @@ static unsigned updateNets(const unsigned interval, void* const) {
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
 
     lv_dropdown_clear_options(gNetsDropdown);
-    for (int i = 0; i < listSize(gNetsList); i++)
-        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
+    int counter = 0;
+    listIterate(
+        gNetsList,
+        LIST_ITERATION_MODE_QUEUE,
+        false,
+        (ListIteratorAction) updateNetsIteratorAction,
+        &counter
+    );
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
 

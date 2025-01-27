@@ -8,7 +8,7 @@
 typedef void (* ListDeallocator)(void* const);
 typedef int (* ListComparator)(const void* const, const void* const);
 typedef void* (* ListItemDuplicator)(const void* const);
-typedef void (* ListIteratorAction)(void* const);
+typedef void (* ListIteratorAction)(void* const value, void* nullable const parameter);
 
 typedef enum {
     LIST_ITERATION_MODE_QUEUE,
@@ -29,7 +29,7 @@ void listRemove(List* const list, const int index);
 void* nullable listPeekFirst(List* const list); // queuePeek
 void* nullable listPeekLast(List* const list); // stackPeek
 int listSize(List* const list);
-void listIterate(List* const list, const ListIterationMode mode, const bool popValues, const ListIteratorAction action);
+void listIterate(List* const list, const ListIterationMode mode, const bool popValues, const ListIteratorAction action, void* nullable const parameter);
 void* nullable listBinarySearch(List* const list, const void* const key, const ListComparator comparator);
 void listQSort(List* const list, const ListComparator comparator);
 void listClear(List* const list);
