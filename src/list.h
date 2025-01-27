@@ -23,8 +23,8 @@ List* nullable listCopy(List* const old, const bool synchronized, const ListItem
 void listAddBack(List* const list, void* const value); // listAdd, stackPush
 void listAddFront(List* const list, void* const value); // queuePush
 void* listGet(List* const list, const int index);
-void* listPopFirst(List* const list); // queuePop
-void* listPopLast(List* const list); // stackPop
+void* nullable listPopFirst(List* const list); // queuePop
+void* nullable listPopLast(List* const list); // stackPop
 void listRemove(List* const list, const int index);
 void* nullable listPeekFirst(List* const list); // queuePeek
 void* nullable listPeekLast(List* const list); // stackPeek

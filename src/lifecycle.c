@@ -73,14 +73,7 @@ static void delayThread(const unsigned startMillis) {
 }
 
 static AsyncAction* nullable nextAsyncAction(const Looper looper) {
-    AsyncAction* action = nullptr;
-
-    List* const queue = looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.queue : gMainActionsLooper.queue;
-
-    if (listSize(queue))
-        action = listPopFirst(queue);
-
-    return action;
+    return listPopFirst(looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.queue : gMainActionsLooper.queue);
 }
 
 static void threadLoop(void (* const body)(void)) {

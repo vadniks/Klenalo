@@ -84,9 +84,13 @@ void* listGet(List* const list, const int index) {
     return value;
 }
 
-void* listPopFirst(List* const list) {
+void* nullable listPopFirst(List* const list) {
     listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
-    assert(list->size && list->values);
+
+    if (!list->size || !list->values) {
+        listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+        return nullptr;
+    }
 
     void* const value = list->values[0];
     list->size--;
@@ -106,9 +110,13 @@ void* listPopFirst(List* const list) {
     return value;
 }
 
-void* listPopLast(List* const list) {
+void* nullable listPopLast(List* const list) {
     listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
-    assert(list->size && list->values);
+
+    if (!list->size || !list->values) {
+        listRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+        return nullptr;
+    }
 
     list->size--;
     void* const value = list->values[list->size];
@@ -172,15 +180,16 @@ void listIterate(List* const list, const ListIterationMode mode, const bool popV
     listRwMutexCommand(list, popValues ? RW_MUTEX_COMMAND_WRITE_LOCK : RW_MUTEX_COMMAND_READ_LOCK);
 
     const int size = listSize(list);
+    void* value;
 
     switch (mode) {
         case LIST_ITERATION_MODE_QUEUE:
             if (popValues) for (int i = 0; i < size; action(list->values[i++], parameter));
-            else while (listSize(list)) action(listPopFirst(list), parameter);
+            else while ((value = listPopFirst(list))) action(value, parameter);
             break;
         case LIST_ITERATION_MODE_STACK:
             if (popValues) for (int i = size - 1; i >= 0; action(list->values[i--], parameter));
-            else while (listSize(list)) action(listPopLast(list), parameter);
+            else while ((value = listPopLast(list))) action(value, parameter);
             break;
     }
 
