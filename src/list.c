@@ -30,9 +30,14 @@ static inline void listRwMutexCommand(List* const list, const RWMutexCommand com
     if (list->rwMutex) rwMutexCommand(list->rwMutex, command);
 }
 
-List* listCopy(List* const old, const bool synchronized, const ListItemDuplicator itemDuplicator) {
+List* nullable listCopy(List* const old, const bool synchronized, const ListItemDuplicator itemDuplicator) {
     listRwMutexCommand(old, RW_MUTEX_COMMAND_READ_LOCK);
-    assert(old->size && old->values);
+
+    if (!old->size) {
+        listRwMutexCommand(old, RW_MUTEX_COMMAND_READ_UNLOCK);
+        return nullptr;
+    } else
+        assert(old->values);
 
     List* const new = listCreate(synchronized, old->deallocator);
 

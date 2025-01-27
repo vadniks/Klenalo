@@ -19,7 +19,7 @@ extern const int NET_ADDRESS_STRING_SIZE; // null terminator included
 void netInit(void);
 bool netInitialized(void);
 void netSetUpdateNets(const bool update);
-List* netNets(void); // <NetNet*> caller must destroy the list, the embedded deallocator will free the items
+List* nullable netNets(void); // <NetNet*> caller must destroy the list, the embedded deallocator will free the items
 void netAddressToString(char* const buffer, const int address);
 void netListen(void);
 void netQuit(void);
