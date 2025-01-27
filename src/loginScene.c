@@ -10,7 +10,7 @@
 #include "lifecycle.h"
 #include "loginScene.h"
 
-static const int NETS_UPDATE_INTERVAL = 10;
+static const int NETS_UPDATE_INTERVAL = 500;
 
 static atomic bool gInitialized = false;
 
