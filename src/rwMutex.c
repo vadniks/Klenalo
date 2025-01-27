@@ -47,6 +47,7 @@ void rwMutexWriteLock(RWMutex* const rwMutex) {
 }
 
 void rwMutexWriteUnlock(RWMutex* const rwMutex) {
+    assert(rwMutex->writeLocked);
     assert(!SDL_UnlockMutex(rwMutex->mutex));
     rwMutex->writeLocked = false;
 }

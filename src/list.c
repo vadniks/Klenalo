@@ -236,11 +236,7 @@ void listClear(List* const list) {
 }
 
 void listDestroy(List* const list) {
-    if (list->rwMutex) {
-        assert(!rwMutexLocked(list->rwMutex));
-        rwMutexDestroy(list->rwMutex);
-    }
-
+    if (list->rwMutex) rwMutexDestroy(list->rwMutex);
     destroyValuesIfNotEmpty(list);
     SDL_free(list->values);
     SDL_free(list);

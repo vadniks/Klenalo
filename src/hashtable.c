@@ -1,6 +1,9 @@
 
 #include <SDL2/SDL_stdinc.h>
+#include "rwMutex.h"
 #include "hashtable.h"
+
+// inspired by Java's Hashtable
 
 typedef struct Node {
     int hash; // const
@@ -12,6 +15,7 @@ struct _Hashtable {
     Node* nullable* table;
     int capacity, count, threshold;
     HashtableDeallocator nullable deallocator; // const
+    RWMutex* nullable rwMutex; // const
     bool iterating;
 };
 
@@ -31,15 +35,24 @@ int hashtableHash(const byte* key, int size) {
     return hash;
 }
 
-Hashtable* hashtableCreate(const HashtableDeallocator nullable deallocator) {
+Hashtable* hashtableCreate(const bool synchronized, const HashtableDeallocator nullable deallocator) {
     Hashtable* const hashtable = SDL_malloc(sizeof *hashtable);
     assert(hashtable);
     assert(hashtable->table = SDL_calloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*)));
     hashtable->count = 0;
     hashtable->threshold = (int) ((float) INITIAL_CAPACITY * LOAD_FACTOR);
     hashtable->deallocator = deallocator;
+    hashtable->rwMutex = synchronized ? rwMutexCreate() : nullptr;
     hashtable->iterating = false;
     return hashtable;
+}
+
+static inline void deallocateValue(const Hashtable* const hashtable, void* const value) {
+    if (hashtable->deallocator) hashtable->deallocator(value);
+}
+
+static inline void hashtableRwMutexCommand(Hashtable* const hashtable, const RWMutexCommand command) {
+    if (hashtable->rwMutex) rwMutexCommand(hashtable->rwMutex, command);
 }
 
 static int makeIndex(const int capacity, const int hash) {
@@ -75,6 +88,7 @@ static void rehash(Hashtable* const hashtable) {
 }
 
 void hashtablePut(Hashtable* const hashtable, const int hash, void* const value) {
+    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(
         hashtable->capacity >= INITIAL_CAPACITY &&
         hashtable->capacity < SINT32_MAX &&
@@ -88,10 +102,10 @@ void hashtablePut(Hashtable* const hashtable, const int hash, void* const value)
     for (Node* node = *anchor; node; node = node->next) {
         if (node->hash != hash) continue;
 
-        if (hashtable->deallocator)
-            hashtable->deallocator(node->value);
-
+        deallocateValue(hashtable, node->value);
         node->value = value;
+
+        hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
         return;
     }
 
@@ -103,20 +117,27 @@ void hashtablePut(Hashtable* const hashtable, const int hash, void* const value)
 
     if (hashtable->count >= hashtable->threshold)
         rehash(hashtable);
+
+    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
-void* nullable hashtableGet(const Hashtable* const hashtable, const int hash) {
+void* nullable hashtableGet(Hashtable* const hashtable, const int hash) {
+    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
     assert(hashtable->capacity && hashtable->count && hashtable->table);
 
     for (const Node* node = hashtable->table[makeIndex(hashtable->capacity, hash)]; node; node = node->next) {
-        if (node->hash == hash)
+        if (node->hash == hash) {
+            hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
             return node->value;
+        }
     }
 
+    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
     return nullptr;
 }
 
 void hashtableRemove(Hashtable* const hashtable, const int hash) {
+    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(hashtable->capacity && hashtable->count && hashtable->table && !hashtable->iterating);
 
     Node** const anchor = &hashtable->table[makeIndex(hashtable->capacity, hash)];
@@ -127,24 +148,32 @@ void hashtableRemove(Hashtable* const hashtable, const int hash) {
         if (previous) previous->next = node->next;
         else *anchor = node->next;
 
-        if (hashtable->deallocator)
-            hashtable->deallocator(node->value);
+        deallocateValue(hashtable, node->value);
 
         SDL_free(node);
         hashtable->count--;
         break;
     }
+
+    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
-int hashtableCapacity(const Hashtable* const hashtable) {
-    return hashtable->capacity;
+int hashtableCapacity(Hashtable* const hashtable) {
+    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
+    const int capacity = hashtable->capacity;
+    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
+    return capacity;
 }
 
-int hashtableCount(const Hashtable* const hashtable) {
-    return hashtable->count;
+int hashtableCount(Hashtable* const hashtable) {
+    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
+    const int count = hashtable->count;
+    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
+    return count;
 }
 
 HashtableIterator* hashtableIteratorCreate(Hashtable* const hashtable) {
+    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
     assert(hashtable->count && !hashtable->iterating);
 
     hashtable->iterating = true;
@@ -184,15 +213,17 @@ void hashtableIteratorDestroy(HashtableIterator* const iterator) {
     assert(iterator->hashtable->iterating);
     iterator->hashtable->iterating = false;
     SDL_free(iterator);
+
+    hashtableRwMutexCommand(iterator->hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
 }
 
 void hashtableDestroy(Hashtable* const hashtable) {
+    if (hashtable->rwMutex) rwMutexDestroy(hashtable->rwMutex);
     assert(!hashtable->iterating);
 
     for (int index = 0; index < hashtable->capacity; index++) {
         for (Node* node = hashtable->table[index]; node; node = node->next) {
-            if (hashtable->deallocator)
-                hashtable->deallocator(node->value);
+            deallocateValue(hashtable, node->value);
             SDL_free(node);
         }
     }
