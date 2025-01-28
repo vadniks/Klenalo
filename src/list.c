@@ -91,7 +91,7 @@ void listAddFront(List* const list, void* const value) {
 
 void* nullable listGet(List* const list, const int index) {
     listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_LOCK);
-    void* const value = index >= 0 && index < list->size ? list->values[index] : nullptr;
+    void* const value = index >= 0 && index < list->size && list->values ? list->values[index] : nullptr;
     listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_UNLOCK);
     return value;
 }
