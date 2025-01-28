@@ -12,7 +12,7 @@ typedef struct {
     const int hostsCount;
     const bool private;
     const bool running;
-} NetNet;
+} NetNet; // TODO: maybe rename to NetSubnet or NetNetwork?
 
 extern const int NET_ADDRESS_STRING_SIZE; // null terminator included
 
