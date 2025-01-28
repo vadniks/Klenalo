@@ -13,6 +13,8 @@ struct _List;
 typedef struct _List List;
 
 List* listCreate(const bool synchronized, const ListDeallocator nullable deallocator);
+bool listSynchronized(const List* const list);
+void listSetSynchronized(List* const list, const bool synchronized);
 List* nullable listCopy(List* const old, const bool synchronized, const ListItemDuplicator itemDuplicator);
 void listAddBack(List* const list, void* const value); // listAdd, stackPush
 void listAddFront(List* const list, void* const value); // queuePush

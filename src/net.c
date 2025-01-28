@@ -10,7 +10,6 @@ const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
 
 static atomic bool gInitialized = false;
 static List* gNetsList = nullptr; // <NetNet*>
-static atomic bool gUpdateNets = true;
 
 void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
@@ -23,11 +22,6 @@ bool netInitialized(void) {
     return gInitialized;
 }
 
-void netSetUpdateNets(const bool update) {
-    assert(lifecycleInitialized() && gInitialized);
-    gUpdateNets = update;
-}
-
 static void scanNets(void) {
     assert(lifecycleInitialized() && gInitialized);
 
@@ -36,6 +30,7 @@ static void scanNets(void) {
     struct ifaddrs* ifaddrRoot;
     assert(!getifaddrs(&ifaddrRoot));
 
+    listIteratorScope(gNetsList, true);
     for (struct ifaddrs* ifaddr = ifaddrRoot; ifaddr; ifaddr = ifaddr->ifa_next) {
         if (ifaddr->ifa_addr->sa_family != AF_INET) continue;
 
@@ -65,6 +60,7 @@ static void scanNets(void) {
 
         listAddBack(gNetsList, net);
     }
+    listIteratorScope(gNetsList, false);
 
     freeifaddrs(ifaddrRoot);
 }
@@ -98,9 +94,7 @@ static void ping(void) {
 
 void netListen(void) {
     assert(lifecycleInitialized() && gInitialized);
-
-    if (gUpdateNets)
-        scanNets();
+    scanNets();
 }
 
 void netQuit(void) {

@@ -22,6 +22,21 @@ List* listCreate(const bool synchronized, const ListDeallocator nullable dealloc
     return list;
 }
 
+bool listSynchronized(const List* const list) {
+    return (bool) list->rwMutex;
+}
+
+void listSetSynchronized(List* const list, const bool synchronized) {
+    if (synchronized) {
+        assert(!list->rwMutex);
+        list->rwMutex = rwMutexCreate();
+    } else {
+        assert(list->rwMutex);
+        rwMutexDestroy(list->rwMutex);
+        list->rwMutex = nullptr;
+    }
+}
+
 static inline void deallocateValue(const List* const list, void* const value) {
     if (list->deallocator) list->deallocator(value);
 }

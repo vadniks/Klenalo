@@ -93,7 +93,7 @@ void loginSceneInit(void) {
 
 static unsigned updateNets(const unsigned interval, void* const) {
     if (!gInitialized) return 0;
-    assert(scenesInitialized());
+    assert(scenesInitialized() && netInitialized());
 
     if (gNetsList) listDestroy(gNetsList);
     if (!(gNetsList = netNets())) return interval;
@@ -102,10 +102,8 @@ static unsigned updateNets(const unsigned interval, void* const) {
 
     lv_dropdown_clear_options(gNetsDropdown);
 
-    listIteratorScope(gNetsList, true);
     for (int i = 0; i < listSize(gNetsList); i++)
         lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
-    listIteratorScope(gNetsList, false);
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
 
