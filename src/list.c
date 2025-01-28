@@ -176,24 +176,8 @@ int listSize(List* const list) {
     return size;
 }
 
-void listIterate(List* const list, const ListIterationMode mode, const bool popValues, const ListIteratorAction action, void* nullable const parameter) {
-    listRwMutexCommand(list, popValues ? RW_MUTEX_COMMAND_WRITE_LOCK : RW_MUTEX_COMMAND_READ_LOCK);
-
-    const int size = listSize(list);
-    void* value;
-
-    switch (mode) {
-        case LIST_ITERATION_MODE_QUEUE:
-            if (popValues) for (int i = 0; i < size; action(list->values[i++], parameter));
-            else while ((value = listPopFirst(list))) action(value, parameter);
-            break;
-        case LIST_ITERATION_MODE_STACK:
-            if (popValues) for (int i = size - 1; i >= 0; action(list->values[i--], parameter));
-            else while ((value = listPopLast(list))) action(value, parameter);
-            break;
-    }
-
-    listRwMutexCommand(list, popValues ? RW_MUTEX_COMMAND_WRITE_UNLOCK : RW_MUTEX_COMMAND_READ_UNLOCK);
+void listIteratorScope(List* const list, const bool begin) {
+    listRwMutexCommand(list, begin ? RW_MUTEX_COMMAND_READ_LOCK : RW_MUTEX_COMMAND_READ_UNLOCK);
 }
 
 void* nullable listBinarySearch(List* const list, const void* const key, const ListComparator comparator) {

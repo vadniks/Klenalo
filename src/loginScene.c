@@ -91,10 +91,6 @@ void loginSceneInit(void) {
     assert(gTimer = SDL_AddTimer(NETS_UPDATE_INTERVAL, updateNets, nullptr));
 }
 
-static void updateNetsIteratorAction(NetNet* const net, int* const counter) {
-    lv_dropdown_add_option(gNetsDropdown, net->name, (*counter)++);
-}
-
 static unsigned updateNets(const unsigned interval, void* const) {
     if (!gInitialized) return 0;
     assert(scenesInitialized());
@@ -105,14 +101,11 @@ static unsigned updateNets(const unsigned interval, void* const) {
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
 
     lv_dropdown_clear_options(gNetsDropdown);
-    int counter = 0;
-    listIterate(
-        gNetsList,
-        LIST_ITERATION_MODE_QUEUE,
-        false,
-        (ListIteratorAction) updateNetsIteratorAction,
-        &counter
-    );
+
+    listIteratorScope(gNetsList, true);
+    for (int i = 0; i < listSize(gNetsList); i++)
+        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
+    listIteratorScope(gNetsList, false);
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
 
