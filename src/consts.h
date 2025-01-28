@@ -16,7 +16,8 @@ typedef enum : int {
     WELCOME,
     PASSWORD,
     SIGN_IN,
-    REMEMBER_CREDENTIALS
+    REMEMBER_CREDENTIALS,
+    IP_ADDRESS
 } ConstsString;
 
 void constsSetLanguage(const ConstsLanguage language);

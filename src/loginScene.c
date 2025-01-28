@@ -28,8 +28,10 @@ static lv_obj_t* gSignInLabel = nullptr;
 
 static SDL_TimerID gTimer = 0;
 static List* nullable gNetsList = nullptr; // <NetNet*>
+static NetNet* gSelectedNet = nullptr; // allocated elsewhere
 
 static unsigned updateNets(const unsigned interval, void* const);
+static void netsDropdownValueChangeCallback(lv_event_t* nullable const);
 
 void loginSceneInit(void) {
     assert(scenesInitialized() && !gInitialized);
@@ -59,6 +61,7 @@ void loginSceneInit(void) {
 
     assert(gNetsDropdown = lv_dropdown_create(gNetsLayout));
     lv_dropdown_clear_options(gNetsDropdown);
+    lv_obj_add_event_cb(gNetsDropdown, netsDropdownValueChangeCallback, LV_EVENT_VALUE_CHANGED, nullptr);
 
     lv_obj_set_width(gNetsLayout, lv_obj_get_width(gNetsLabel) + lv_obj_get_width(gNetsDropdown) + 10);
     lv_obj_set_height(gNetsLayout, max(lv_obj_get_height(gNetsLabel), lv_obj_get_height(gNetsDropdown)) + 10);
@@ -71,7 +74,7 @@ void loginSceneInit(void) {
     assert(gAddressLabel = lv_label_create(gScreen));
     lv_obj_set_style_text_font(gAddressLabel, resourcesFont(RESOURCES_FONT_SIZE_NORMAL, RESOURCES_FONT_TYPE_BOLD), 0);
     lv_obj_set_style_text_opa(gAddressLabel, 0xff / 3 * 2, 0);
-    lv_label_set_text_static(gAddressLabel, "IP address: 0.0.0.0"); // TODO: stub
+    lv_label_set_text_static(gAddressLabel, constsString(IP_ADDRESS));
 
     assert(gPasswordTextArea = lv_textarea_create(gScreen));
     lv_textarea_set_one_line(gPasswordTextArea, true);
@@ -95,19 +98,38 @@ static unsigned updateNets(const unsigned interval, void* const) {
     if (!gInitialized) return 0;
     assert(scenesInitialized() && netInitialized());
 
-    if (gNetsList) listDestroy(gNetsList);
-    if (!(gNetsList = netNets())) return interval;
-
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
+
+    if (gNetsList) listDestroy(gNetsList);
+    if (!(gNetsList = netNets())) {
+        lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
+        return interval;
+    }
 
     lv_dropdown_clear_options(gNetsDropdown);
 
-    for (int i = 0; i < listSize(gNetsList); i++)
-        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
+    for (int i = 0; i < listSize(gNetsList); i++) {
+        NetNet* const net = listGet(gNetsList, i);
+        lv_dropdown_add_option(gNetsDropdown, net->name, i);
+
+        if (!gSelectedNet && !i) {
+            gSelectedNet = net;
+            netsDropdownValueChangeCallback(nullptr);
+        }
+    }
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
 
     return interval;
+}
+
+static void netsDropdownValueChangeCallback(lv_event_t* nullable const) {
+    if (!(gSelectedNet = listGet(gNetsList, (int) lv_dropdown_get_selected(gNetsDropdown))))
+        return;
+
+    char address[NET_ADDRESS_STRING_SIZE];
+    netAddressToString(address, gSelectedNet->host);
+    lv_label_set_text_fmt(gAddressLabel, "%s: %s", constsString(IP_ADDRESS), address);
 }
 
 void loginSceneQuit(void) {
