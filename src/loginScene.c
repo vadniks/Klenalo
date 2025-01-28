@@ -61,6 +61,7 @@ void loginSceneInit(void) {
     lv_label_set_text_static(gNetsLabel, "Network: ");
 
     assert(gNetsDropdown = lv_dropdown_create(gNetsLayout));
+//    lv_dropdown_set_text(gNetsDropdown, "Abc"); // TODO
     lv_dropdown_clear_options(gNetsDropdown);
     lv_obj_add_event_cb(gNetsDropdown, netsDropdownValueChangeCallback, LV_EVENT_VALUE_CHANGED, nullptr);
 
@@ -103,16 +104,17 @@ static unsigned updateNets(const unsigned interval, void* const) {
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
 
+    lv_dropdown_clear_options(gNetsDropdown);
+
     if (gNetsList) listDestroy(gNetsList);
     if (!(gNetsList = nets)) {
+        gSelectedNet = nullptr;
         lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
         return interval;
     }
 
     const int previousNetsCount = gNetsCount;
     gNetsCount = listSize(gNetsList);
-
-    lv_dropdown_clear_options(gNetsDropdown);
 
     for (int i = 0; i < gNetsCount; i++)
         lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
@@ -129,8 +131,10 @@ static unsigned updateNets(const unsigned interval, void* const) {
 }
 
 static void netsDropdownValueChangeCallback(lv_event_t* nullable const) {
-    if (!gNetsList || !(gSelectedNet = listGet(gNetsList, (int) lv_dropdown_get_selected(gNetsDropdown))))
+    if (!gNetsList || !(gSelectedNet = listGet(gNetsList, (int) lv_dropdown_get_selected(gNetsDropdown)))) {
+        lv_label_set_text_static(gAddressLabel, constsString(IP_ADDRESS));
         return;
+    }
 
     char address[NET_ADDRESS_STRING_SIZE];
     netAddressToString(address, gSelectedNet->host);
