@@ -1,7 +1,7 @@
 
 #pragma once
 
-#if __STDC_VERSION__ < 202311L /*C23*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) || !defined(__linux__) || !defined(__x86_64__) || !__LITTLE_ENDIAN__
+#if __STDC_VERSION__ < 202311L /*C23*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) || !defined(__linux__) || !defined(__x86_64__) || !__LITTLE_ENDIAN__ || __WORDSIZE != 64
 #   error
 #endif
 
@@ -26,6 +26,5 @@ typedef unsigned char byte;
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
 inline void assert(bool const condition) { if (!condition) asm volatile ("call abort"); }
-inline void* assertNotNull(void* const mem) { assert(mem); return mem; } // TODO: for mallocs
 
 // TODO: malloc realloc calloc free

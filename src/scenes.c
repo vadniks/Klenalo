@@ -1,5 +1,5 @@
 
-#include <lvgl/lvgl.h>
+#include "xlvgl.h"
 #include "defs.h"
 #include "video.h"
 #include "splashScene.h"
