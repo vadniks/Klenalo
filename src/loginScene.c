@@ -29,6 +29,7 @@ static lv_obj_t* gSignInLabel = nullptr;
 static SDL_TimerID gTimer = 0;
 static List* nullable gNetsList = nullptr; // <NetNet*>
 static NetNet* gSelectedNet = nullptr; // allocated elsewhere
+static int gNetsCount = 0;
 
 static unsigned updateNets(const unsigned interval, void* const);
 static void netsDropdownValueChangeCallback(lv_event_t* nullable const);
@@ -63,7 +64,7 @@ void loginSceneInit(void) {
     lv_dropdown_clear_options(gNetsDropdown);
     lv_obj_add_event_cb(gNetsDropdown, netsDropdownValueChangeCallback, LV_EVENT_VALUE_CHANGED, nullptr);
 
-    lv_obj_set_width(gNetsLayout, lv_obj_get_width(gNetsLabel) + lv_obj_get_width(gNetsDropdown) + 10);
+    lv_obj_set_width(gNetsLayout, lv_obj_get_width(gNetsLabel) + lv_obj_get_width(gNetsDropdown) + 30);
     lv_obj_set_height(gNetsLayout, max(lv_obj_get_height(gNetsLabel), lv_obj_get_height(gNetsDropdown)) + 10);
     lv_obj_set_state(gNetsLayout, LV_STATE_DISABLED, true);
     lv_obj_remove_flag(gNetsLayout, LV_OBJ_FLAG_SCROLLABLE);
@@ -108,16 +109,18 @@ static unsigned updateNets(const unsigned interval, void* const) {
         return interval;
     }
 
+    const int previousNetsCount = gNetsCount;
+    gNetsCount = listSize(gNetsList);
+
     lv_dropdown_clear_options(gNetsDropdown);
 
-    for (int i = 0; i < listSize(gNetsList); i++) {
-        NetNet* const net = listGet(gNetsList, i);
-        lv_dropdown_add_option(gNetsDropdown, net->name, i);
+    for (int i = 0; i < gNetsCount; i++)
+        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
 
-        if (!gSelectedNet && !i) {
-            gSelectedNet = net;
-            netsDropdownValueChangeCallback(nullptr);
-        }
+    if (!gSelectedNet || previousNetsCount != gNetsCount) {
+        gSelectedNet = listPeekFirst(gNetsList);
+        lv_dropdown_set_selected(gNetsDropdown, 0);
+        netsDropdownValueChangeCallback(nullptr);
     }
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
@@ -126,7 +129,7 @@ static unsigned updateNets(const unsigned interval, void* const) {
 }
 
 static void netsDropdownValueChangeCallback(lv_event_t* nullable const) {
-    if (!(gSelectedNet = listGet(gNetsList, (int) lv_dropdown_get_selected(gNetsDropdown))))
+    if (!gNetsList || !(gSelectedNet = listGet(gNetsList, (int) lv_dropdown_get_selected(gNetsDropdown))))
         return;
 
     char address[NET_ADDRESS_STRING_SIZE];
