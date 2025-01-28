@@ -98,10 +98,12 @@ static unsigned updateNets(const unsigned interval, void* const) {
     if (!gInitialized) return 0;
     assert(scenesInitialized() && netInitialized());
 
+    List* const nets = netNets();
+
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
 
     if (gNetsList) listDestroy(gNetsList);
-    if (!(gNetsList = netNets())) {
+    if (!(gNetsList = nets)) {
         lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
         return interval;
     }
