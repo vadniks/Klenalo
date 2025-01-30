@@ -23,9 +23,11 @@ int main(void) {
 
     SDL_Quit();
 #else
+    const int allocations = SDL_GetNumAllocations();
     lifecycleInit();
     lifecycleLoop();
     lifecycleQuit();
+    assert(SDL_GetNumAllocations() == allocations);
 #endif
     return 0;
 }

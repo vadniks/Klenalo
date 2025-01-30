@@ -30,7 +30,6 @@ static void scanNets(void) {
     struct ifaddrs* ifaddrRoot;
     assert(!getifaddrs(&ifaddrRoot));
 
-    listIteratorScope(gNetsList, true);
     for (struct ifaddrs* ifaddr = ifaddrRoot; ifaddr; ifaddr = ifaddr->ifa_next) {
         if (ifaddr->ifa_addr->sa_family != AF_INET) continue;
 
@@ -61,7 +60,6 @@ static void scanNets(void) {
 
         listAddBack(gNetsList, net);
     }
-    listIteratorScope(gNetsList, false);
 
     freeifaddrs(ifaddrRoot);
 }
@@ -74,7 +72,7 @@ static NetNet* netDuplicator(const NetNet* const old) {
 }
 
 List* nullable netNets(void) {
-    return listCopy(gNetsList, false, (ListItemDuplicator) netDuplicator);
+    return listCopy(gNetsList, true, (ListItemDuplicator) netDuplicator);
 }
 
 void netAddressToString(char* const buffer, const int address) {

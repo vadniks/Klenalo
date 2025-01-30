@@ -188,10 +188,6 @@ int listSize(List* const list) {
     return size;
 }
 
-void listIteratorScope(List* const list, const bool begin) {
-    listRwMutexCommand(list, begin ? RW_MUTEX_COMMAND_READ_LOCK : RW_MUTEX_COMMAND_READ_UNLOCK);
-}
-
 void* nullable listBinarySearch(List* const list, const void* const key, const ListComparator comparator) {
     listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_LOCK);
     assert(list->size && list->values);

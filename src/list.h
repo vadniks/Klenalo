@@ -25,7 +25,6 @@ void listRemove(List* const list, const int index);
 void* nullable listPeekFirst(List* const list); // queuePeek
 void* nullable listPeekLast(List* const list); // stackPeek
 int listSize(List* const list);
-void listIteratorScope(List* const list, const bool begin);
 void* nullable listBinarySearch(List* const list, const void* const key, const ListComparator comparator);
 void listQSort(List* const list, const ListComparator comparator);
 void listClear(List* const list);
