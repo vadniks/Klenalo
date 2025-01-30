@@ -10,7 +10,7 @@
 #include "lifecycle.h"
 #include "loginScene.h"
 
-static const int NETS_UPDATE_INTERVAL = 500;
+static const int NETS_UPDATE_INTERVAL = 1; // TODO: test
 
 static atomic bool gInitialized = false;
 
@@ -96,38 +96,40 @@ void loginSceneInit(void) {
     assert(gTimer = SDL_AddTimer(NETS_UPDATE_INTERVAL, updateNets, nullptr));
 }
 
+// TODO: create own ticker (timer) in lifecycle that would be synchronized with the rest
+
 static unsigned updateNets(const unsigned interval, void* const) {
     if (!gInitialized) return 0;
     assert(scenesInitialized() && netInitialized());
 
-    // TODO: not working properly - memory corruption somewhere or problems with synchronization
+    // TODO: need a conditional variable - no timers can run quicker (more often) than the main loop
 
-//    List* const nets = netNets();
-//
-//    lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
-//
-//    lv_dropdown_clear_options(gNetsDropdown);
-//
-//    if (gNetsList) listDestroy(gNetsList);
-//    if (!(gNetsList = nets)) {
+    lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
+
+    lv_dropdown_clear_options(gNetsDropdown); // TODO: <-- possibly here too
+
+    if (gNetsList) listDestroy(gNetsList);
+    if (!(gNetsList = netNets())) {
 //        gSelectedNet = nullptr;
-//        lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
-//        return interval;
-//    }
-//
+        lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
+        return interval;
+    }
+
 //    const int previousNetsCount = gNetsCount;
-//    gNetsCount = listSize(gNetsList);
-//
-//    for (int i = 0; i < gNetsCount; i++)
-//        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
-//
+    gNetsCount = listSize(gNetsList);
+
+    for (int i = 0; i < gNetsCount; i++)
+        ;
+//        lv_dropdown_add_option(gNetsDropdown, "test", i);
+//        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i); // TODO: <-- memory corruption - synchronization problems - mutex doesn't help
+
 //    if (!gSelectedNet || previousNetsCount != gNetsCount) {
 //        gSelectedNet = listPeekFirst(gNetsList);
 //        lv_dropdown_set_selected(gNetsDropdown, 0);
 //        netsDropdownValueChangeCallback(nullptr);
 //    }
-//
-//    lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
+
+    lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
 
     return interval;
 }
@@ -148,7 +150,7 @@ void loginSceneQuit(void) {
     gInitialized = false;
 
     if (gNetsList) listDestroy(gNetsList);
-    assert(SDL_RemoveTimer(gTimer));
+    SDL_RemoveTimer(gTimer);
 
     lv_obj_delete(gSignInLabel);
     lv_obj_delete(gSignInButton);
