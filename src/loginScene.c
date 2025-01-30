@@ -98,15 +98,25 @@ void loginSceneInit(void) {
 
 // TODO: create own ticker (timer) in lifecycle that would be synchronized with the rest
 
-static unsigned updateNets(const unsigned interval, void* const) {
+static void y(void* const) {
+    lv_dropdown_clear_options(gNetsDropdown);
+}
+
+static void x(void* const) {
+    lv_dropdown_add_option(gNetsDropdown, "test", 0);
+}
+
+static unsigned updateNets(const unsigned interval, void* const) { // TODO: need to do it differently
     if (!gInitialized) return 0;
     assert(scenesInitialized() && netInitialized());
 
-    // TODO: need a conditional variable - no timers can run quicker (more often) than the main loop
+    // TODO: need a conditional variable - no timers can run quicker (more often) than the main loop // <-----------------------------------
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
 
-    lv_dropdown_clear_options(gNetsDropdown); // TODO: <-- possibly here too
+//    lv_dropdown_clear_options(gNetsDropdown); // TODO: <-- possibly here too
+//    lifecycleRunInMainThread(y, nullptr); // TODO: nope - even worse
+//    SDL_Log("b %p %p", x, y);
 
     if (gNetsList) listDestroy(gNetsList);
     if (!(gNetsList = netNets())) {
@@ -117,6 +127,8 @@ static unsigned updateNets(const unsigned interval, void* const) {
 
 //    const int previousNetsCount = gNetsCount;
     gNetsCount = listSize(gNetsList);
+
+//    lifecycleRunInMainThread(x, nullptr); // TODO: nope - even worse
 
     for (int i = 0; i < gNetsCount; i++)
         ;
