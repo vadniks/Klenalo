@@ -100,36 +100,26 @@ void loginSceneInit(void) {
 
 // TODO: create own ticker (timer) in lifecycle that would be synchronized with the rest
 
-// TODO: iterator for list
-
 static unsigned updateNets(const unsigned interval, void* const) { // TODO: need to do it differently
     if (!gInitialized) return 0;
     assert(!SDL_LockMutex(gm));
     assert(scenesInitialized() && netInitialized());
 
-    // TODO: need a conditional variable - no timers can run quicker (more often) than the main loop // <-----------------------------------
-
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
 
-    if (gInitialized) lv_dropdown_clear_options(gNetsDropdown); // TODO: <-- possibly here too
-//    lifecycleRunInMainThread(y, nullptr); // TODO: nope - even worse
-//    SDL_Log("b %p %p", x, y);
+    if (gInitialized) lv_dropdown_clear_options(gNetsDropdown);
 
     if (gNetsList) listDestroy(gNetsList);
     if (!gInitialized || !(gNetsList = netNets())) {
-        gNetsList = nullptr;
 //        gSelectedNet = nullptr;
-        SDL_Log("a %p", gNetsList);
         lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
         assert(!SDL_UnlockMutex(gm));
         return interval;
     }
-    SDL_Log("c");
+    listSetSynchronized(gNetsList, true);
 
 //    const int previousNetsCount = gNetsCount;
 //    gNetsCount = listSize(gNetsList);
-
-//    lifecycleRunInMainThread(x, nullptr); // TODO: nope - even worse
 
     for (int i = 0; i < 2; i++) {
         if (gInitialized)
@@ -137,7 +127,7 @@ static unsigned updateNets(const unsigned interval, void* const) { // TODO: need
 //        lv_dropdown_set_options_static(gNetsDropdown, "test1\ntest2");
     }
 //        lv_dropdown_add_option(gNetsDropdown, "test", i);
-//        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i); // TODO: <-- memory corruption - synchronization problems - mutex doesn't help
+//        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
 
 //    if (!gSelectedNet || previousNetsCount != gNetsCount) {
 //        gSelectedNet = listPeekFirst(gNetsList);
