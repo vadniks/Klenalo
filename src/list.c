@@ -6,7 +6,7 @@
 struct _List {
     void** nullable values;
     int size;
-    RWMutex* nullable rwMutex; // const
+    RWMutex* nullable rwMutex;
     ListDeallocator nullable deallocator; // const
 };
 
@@ -27,11 +27,10 @@ bool listSynchronized(const List* const list) {
 }
 
 void listSetSynchronized(List* const list, const bool synchronized) {
-    if (synchronized) {
-        assert(!list->rwMutex);
+    assert(synchronized != !!list->rwMutex);
+    if (synchronized)
         list->rwMutex = rwMutexCreate();
-    } else {
-        assert(list->rwMutex);
+    else {
         rwMutexDestroy(list->rwMutex);
         list->rwMutex = nullptr;
     }
@@ -43,6 +42,15 @@ static inline void deallocateValue(const List* const list, void* const value) {
 
 static inline void listRwMutexCommand(List* const list, const RWMutexCommand command) {
     if (list->rwMutex) rwMutexCommand(list->rwMutex, command);
+}
+
+void listSynchronizeIteration(List* const list, const bool write, const bool lock) {
+    assert(list->rwMutex);
+    rwMutexCommand(list->rwMutex,
+        lock
+            ? (write ? RW_MUTEX_COMMAND_WRITE_LOCK : RW_MUTEX_COMMAND_READ_LOCK)
+            : (write ? RW_MUTEX_COMMAND_WRITE_UNLOCK : RW_MUTEX_COMMAND_READ_UNLOCK)
+    );
 }
 
 List* nullable listCopy(List* const old, const bool synchronized, const ListItemDuplicator itemDuplicator) {
@@ -91,6 +99,7 @@ void listAddFront(List* const list, void* const value) {
 
 void* nullable listGet(List* const list, const int index) {
     listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_LOCK);
+    assert(!!list->size == !!list->values);
     void* const value = index >= 0 && index < list->size && list->values ? list->values[index] : nullptr;
     listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_UNLOCK);
     return value;
@@ -183,6 +192,7 @@ void* nullable listPeekLast(List* const list) {
 
 int listSize(List* const list) {
     listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_LOCK);
+    assert(list->size && list->values || !list->size && !list->values);
     const int size = list->size;
     listRwMutexCommand(list, RW_MUTEX_COMMAND_READ_UNLOCK);
     return size;
