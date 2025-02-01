@@ -5,20 +5,20 @@
 #include "defs.h"
 #include "rwMutex.h"
 
-// https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock#Using_two_mutexes
+// Inspired by https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock#Using_two_mutexes
 
 struct _RWMutex {
     SDL_mutex* mutex;
-    SDL_atomic_t counter;
-    atomic bool writeLocked;
+    SDL_atomic_t readers;
+    SDL_atomic_t writers;
 };
 
 RWMutex* rwMutexCreate(void) {
     RWMutex* const rwMutex = SDL_malloc(sizeof *rwMutex);
     assert(rwMutex);
     assert(rwMutex->mutex = SDL_CreateMutex());
-    rwMutex->counter.value = 0;
-    rwMutex->writeLocked = false;
+    rwMutex->readers.value = 0;
+    rwMutex->writers.value = 0;
     return rwMutex;
 }
 
@@ -31,28 +31,28 @@ static inline int decrementCounter(SDL_atomic_t* const counter) {
 }
 
 void rwMutexReadLock(RWMutex* const rwMutex) {
-    if (incrementCounter(&rwMutex->counter))
+    if (incrementCounter(&rwMutex->readers))
         assert(!SDL_LockMutex(rwMutex->mutex));
 }
 
 void rwMutexReadUnlock(RWMutex* const rwMutex) {
-    assert(SDL_AtomicGet(&rwMutex->counter));
-    if (!decrementCounter(&rwMutex->counter))
+    assert(SDL_AtomicGet(&rwMutex->readers));
+    if (!decrementCounter(&rwMutex->readers))
         assert(!SDL_UnlockMutex(rwMutex->mutex));
 }
 
 void rwMutexWriteLock(RWMutex* const rwMutex) {
     assert(!SDL_LockMutex(rwMutex->mutex));
-    rwMutex->writeLocked = true;
+    incrementCounter(&rwMutex->writers);
 }
 
 void rwMutexWriteUnlock(RWMutex* const rwMutex) {
+    assert(decrementCounter(&rwMutex->writers) >= 0);
     assert(!SDL_UnlockMutex(rwMutex->mutex));
-    rwMutex->writeLocked = false;
 }
 
 bool rwMutexLocked(RWMutex* const rwMutex) {
-    return rwMutex->writeLocked || SDL_AtomicGet(&rwMutex->counter);
+    return SDL_AtomicGet(&rwMutex->writers) || SDL_AtomicGet(&rwMutex->readers);
 }
 
 void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command) {
