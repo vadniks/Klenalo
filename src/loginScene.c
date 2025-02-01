@@ -98,15 +98,10 @@ void loginSceneInit(void) {
 
 // TODO: create own ticker (timer) in lifecycle that would be synchronized with the rest
 
-static void y(void* const) {
-    lv_dropdown_clear_options(gNetsDropdown);
-}
-
-static void x(void* const) {
-    lv_dropdown_add_option(gNetsDropdown, "test", 0);
-}
+// TODO: iterator for list
 
 static unsigned updateNets(const unsigned interval, void* const) { // TODO: need to do it differently
+    SDL_Log("c %c", gInitialized ? 't' : 'f');
     if (!gInitialized) return 0;
     assert(scenesInitialized() && netInitialized());
 
@@ -114,24 +109,28 @@ static unsigned updateNets(const unsigned interval, void* const) { // TODO: need
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
 
-//    lv_dropdown_clear_options(gNetsDropdown); // TODO: <-- possibly here too
+    if (gInitialized) lv_dropdown_clear_options(gNetsDropdown); // TODO: <-- possibly here too
 //    lifecycleRunInMainThread(y, nullptr); // TODO: nope - even worse
 //    SDL_Log("b %p %p", x, y);
 
-    if (gNetsList) listDestroy(gNetsList);
-    if (!(gNetsList = netNets())) {
-//        gSelectedNet = nullptr;
-        lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
-        return interval;
-    }
+//    if (gNetsList) listDestroy(gNetsList);
+//    if (!(gNetsList = netNets())) {
+////        gSelectedNet = nullptr;
+//        lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
+//        return interval;
+//    }
 
 //    const int previousNetsCount = gNetsCount;
-    gNetsCount = listSize(gNetsList);
+//    gNetsCount = listSize(gNetsList);
 
 //    lifecycleRunInMainThread(x, nullptr); // TODO: nope - even worse
 
-    for (int i = 0; i < gNetsCount; i++)
-        ;
+    for (int i = 0; i < 2; i++) {
+        SDL_Log("a %c", gInitialized ? 't' : 'f');
+        if (gInitialized)
+        lv_dropdown_add_option(gNetsDropdown, "test", i);
+//        lv_dropdown_set_options_static(gNetsDropdown, "test1\ntest2");
+    }
 //        lv_dropdown_add_option(gNetsDropdown, "test", i);
 //        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i); // TODO: <-- memory corruption - synchronization problems - mutex doesn't help
 
@@ -162,7 +161,8 @@ void loginSceneQuit(void) {
     gInitialized = false;
 
     if (gNetsList) listDestroy(gNetsList);
-    SDL_RemoveTimer(gTimer);
+    SDL_RemoveTimer(gTimer); // TODO: need to wait for the timer thread to stop here <------------------------------
+    SDL_Log("b");
 
     lv_obj_delete(gSignInLabel);
     lv_obj_delete(gSignInButton);

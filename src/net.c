@@ -43,7 +43,7 @@ static void scanNets(void) {
         for (unsigned n = subnetMask; n; n & 1 ? mask++ : STUB, n >>= 1);
 
         if (hostAddress == 0x7f000001 || (ifaddr->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) continue;
-        if ((ifaddr->ifa_flags & IFF_RUNNING) != IFF_RUNNING) continue; // TODO: test
+//        if ((ifaddr->ifa_flags & IFF_RUNNING) != IFF_RUNNING) continue; // TODO: test
 
         NetNet* const net = SDL_malloc(sizeof *net);
         assert(net);
