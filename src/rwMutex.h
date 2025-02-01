@@ -25,6 +25,6 @@ void rwMutexDestroy(RWMutex* const rwMutex); // fails if the rwMutex is locked (
 typedef atomic bool Barrier; // only for one thread which will be watched and only for one thread which will wait for the first one
 #define BARRIER(x) Barrier x = false
 
-bool barrierScopeBegin(Barrier* const barrier);
+bool barrierScopeBegin(Barrier* const barrier); // returns true if current thread loop iteration must be skipped (or even the whole loop must be stopped - depends on the case)
 void barrierScopeEnd(Barrier* const barrier);
 void barrierWait(Barrier* const barrier);
