@@ -119,10 +119,12 @@ static unsigned updateNets(const unsigned interval, void* const) { // TODO: need
     if (!gInitialized || !(gNetsList = netNets())) {
         gNetsList = nullptr;
 //        gSelectedNet = nullptr;
+        SDL_Log("a %p", gNetsList);
         lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
         assert(!SDL_UnlockMutex(gm));
         return interval;
     }
+    SDL_Log("c");
 
 //    const int previousNetsCount = gNetsCount;
 //    gNetsCount = listSize(gNetsList);

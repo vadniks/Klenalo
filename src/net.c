@@ -25,7 +25,7 @@ bool netInitialized(void) {
 static void scanNets(void) {
     assert(lifecycleInitialized() && gInitialized);
 
-    // TODO: listRWMutexCommand begin
+    // TODO: listRWMutexCommand begin <----------------
     listClear(gNetsList);
 
     struct ifaddrs* ifaddrRoot;
@@ -61,7 +61,7 @@ static void scanNets(void) {
 
         listAddBack(gNetsList, net);
     }
-    // TODO: listRWMutexCommand end
+    // TODO: listRWMutexCommand end <---------------
 
     freeifaddrs(ifaddrRoot);
 }
@@ -74,6 +74,7 @@ static NetNet* netDuplicator(const NetNet* const old) {
 }
 
 List* nullable netNets(void) {
+    SDL_Log("b %d", listSize(gNetsList));
     return listCopy(gNetsList, false, (ListItemDuplicator) netDuplicator);
 }
 
