@@ -10,7 +10,7 @@
 #include "lifecycle.h"
 #include "loginScene.h"
 
-static const int NETS_UPDATE_INTERVAL = 1; // TODO: test
+static const int NETS_UPDATE_INTERVAL = 1; // 500 // TODO: test
 
 static atomic bool gInitialized = false;
 
@@ -30,7 +30,7 @@ static SDL_TimerID gTimer = 0;
 static List* nullable gNetsList = nullptr; // <NetNet*>
 static NetNet* gSelectedNet = nullptr; // allocated elsewhere
 static int gNetsCount = 0;
-static SDL_mutex* gm = nullptr; // TODO: test
+[[deprecated]] static SDL_mutex* gm = nullptr; // TODO: test
 
 static unsigned updateNets(const unsigned interval, void* const);
 static void netsDropdownValueChangeCallback(lv_event_t* nullable const);
