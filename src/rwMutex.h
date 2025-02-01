@@ -22,7 +22,7 @@ bool rwMutexLocked(RWMutex* const rwMutex);
 void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command);
 void rwMutexDestroy(RWMutex* const rwMutex); // fails if the rwMutex is locked (either write or read)
 
-typedef atomic bool Barrier;
+typedef atomic bool Barrier; // only for one thread which will be watched and only for one thread which will wait for the first one
 #define BARRIER(x) Barrier x = false
 
 bool barrierScopeBegin(Barrier* const barrier);
