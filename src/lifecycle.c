@@ -184,8 +184,6 @@ void lifecycleLoop(void) {
 void lifecycleQuit(void) {
     assert(gInitialized);
 
-    SDL_WaitThread(gNetActionsLooper.thread, nullptr);
-
     netQuit();
     scenesQuit();
     resourcesQuit();
@@ -199,6 +197,8 @@ void lifecycleQuit(void) {
     rwMutexDestroy(gUIRWMutex);
 
     listDestroy(gMainActionsLooper.queue);
+
+    SDL_WaitThread(gNetActionsLooper.thread, nullptr);
 
     SDL_WaitThread(gBackgroundActionsLooper.thread, nullptr);
     listDestroy(gBackgroundActionsLooper.queue);
