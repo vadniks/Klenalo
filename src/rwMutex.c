@@ -36,8 +36,9 @@ void rwMutexReadLock(RWMutex* const rwMutex) {
 }
 
 void rwMutexReadUnlock(RWMutex* const rwMutex) {
-    assert(SDL_AtomicGet(&rwMutex->readers));
-    if (!decrementCounter(&rwMutex->readers))
+    const int readers = decrementCounter(&rwMutex->readers);
+    assert(readers >= 0);
+    if (!readers)
         assert(!SDL_UnlockMutex(rwMutex->mutex));
 }
 
