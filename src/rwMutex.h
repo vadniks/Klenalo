@@ -14,7 +14,7 @@ typedef enum {
 } RWMutexCommand;
 
 RWMutex* rwMutexCreate(void);
-void rwMutexReadLock(RWMutex* const rwMutex); // (1) can be locked twice or 2n times by the same thread as the underline implementation uses recursive mutex
+void rwMutexReadLock(RWMutex* const rwMutex); // (1) can be locked twice or 2n times by the same thread as the implementation uses recursive mutex
 void rwMutexReadUnlock(RWMutex* const rwMutex); // (2) must be unlocked 2n times if was locked by the same thread
 void rwMutexWriteLock(RWMutex* const rwMutex); // same (1)
 void rwMutexWriteUnlock(RWMutex* const rwMutex); // same (2)
