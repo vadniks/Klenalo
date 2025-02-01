@@ -103,7 +103,6 @@ void loginSceneInit(void) {
 // TODO: iterator for list
 
 static unsigned updateNets(const unsigned interval, void* const) { // TODO: need to do it differently
-    SDL_Log("c %c", gInitialized ? 't' : 'f');
     if (!gInitialized) return 0;
     assert(!SDL_LockMutex(gm));
     assert(scenesInitialized() && netInitialized());
@@ -131,7 +130,6 @@ static unsigned updateNets(const unsigned interval, void* const) { // TODO: need
 //    lifecycleRunInMainThread(x, nullptr); // TODO: nope - even worse
 
     for (int i = 0; i < 2; i++) {
-        SDL_Log("a %c", gInitialized ? 't' : 'f');
         if (gInitialized)
         lv_dropdown_add_option(gNetsDropdown, "test", i);
 //        lv_dropdown_set_options_static(gNetsDropdown, "test1\ntest2");
@@ -167,12 +165,10 @@ void loginSceneQuit(void) {
     gInitialized = false;
 
     SDL_RemoveTimer(gTimer); // TODO: need to wait for the timer thread to stop here <------------------------------
-    SDL_Log("b");
 
     assert(!SDL_LockMutex(gm));
     assert(!SDL_UnlockMutex(gm));
     SDL_DestroyMutex(gm);
-    SDL_Log("d");
 
     if (gNetsList) listDestroy(gNetsList);
 
