@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include "defs.h"
+
 struct _RWMutex;
 typedef struct _RWMutex RWMutex;
 
@@ -18,6 +20,11 @@ void rwMutexWriteLock(RWMutex* const rwMutex); // same (1)
 void rwMutexWriteUnlock(RWMutex* const rwMutex); // same (2)
 bool rwMutexLocked(RWMutex* const rwMutex);
 void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command);
-void rwMutexBarrierScope(RWMutex* const rwMutex, const bool begin); // place in the edges of the body of a thread
-void rwMutexBarrierWait(RWMutex* const rwMutex); // place in another thread so it can safely wait for the first thread to finish its loop iteration
 void rwMutexDestroy(RWMutex* const rwMutex); // fails if the rwMutex is locked (either write or read)
+
+typedef atomic bool Barrier;
+#define BARRIER(x) Barrier x = false
+
+bool barrierScopeBegin(Barrier* const barrier);
+void barrierScopeEnd(Barrier* const barrier);
+void barrierWait(Barrier* const barrier);

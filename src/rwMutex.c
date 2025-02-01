@@ -65,19 +65,23 @@ void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command) {
     }
 }
 
-void rwMutexBarrierScope(RWMutex* const rwMutex, const bool begin) {
-    assert(!SDL_AtomicGet(&rwMutex->readers));
-    begin ? rwMutexWriteLock(rwMutex) : rwMutexWriteUnlock(rwMutex);
-}
-
-void rwMutexBarrierWait(RWMutex* const rwMutex) {
-    assert(!SDL_AtomicGet(&rwMutex->readers));
-    assert(!SDL_LockMutex(rwMutex->mutex));
-    assert(!SDL_UnlockMutex(rwMutex->mutex));
-}
-
 void rwMutexDestroy(RWMutex* const rwMutex) {
     assert(!rwMutexLocked(rwMutex));
     SDL_DestroyMutex(rwMutex->mutex);
     SDL_free(rwMutex);
+}
+
+bool barrierScopeBegin(Barrier* const barrier) {
+    if (*barrier) return true;
+    *barrier = true;
+    return false;
+}
+
+void barrierScopeEnd(Barrier* const barrier) {
+    *barrier = false;
+}
+
+void barrierWait(Barrier* const barrier) {
+    while (*barrier);
+    *barrier = true;
 }
