@@ -23,7 +23,8 @@ void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command);
 void rwMutexDestroy(RWMutex* const rwMutex); // fails if the rwMutex is locked (either write or read)
 
 typedef atomic bool Barrier; // only for one thread which will be watched and only for one thread which will wait for the first one
-#define BARRIER(x) Barrier x = false
+#define BARRIER(x) Barrier x = false // this is a lightweight barrier for watch-n-wait a thread by another thread (not more than 2 threads must be involved)
+// TODO: more than two threads? - with an ordinary mutex
 
 bool barrierScopeBegin(Barrier* const barrier); // returns true if current thread loop iteration must be skipped (or even the whole loop must be stopped - depends on the case)
 void barrierScopeEnd(Barrier* const barrier);
