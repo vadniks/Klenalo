@@ -30,6 +30,7 @@ static SDL_TimerID gTimer = 0;
 static List* nullable gNetsList = nullptr; // <NetNet*>
 static NetNet* gSelectedNet = nullptr; // allocated elsewhere
 static int gNetsCount = 0;
+static SDL_mutex* gm = nullptr; // TODO: test
 
 static unsigned updateNets(const unsigned interval, void* const);
 static void netsDropdownValueChangeCallback(lv_event_t* nullable const);
@@ -93,6 +94,7 @@ void loginSceneInit(void) {
     lv_label_set_text_static(gSignInLabel, constsString(SIGN_IN));
     lv_obj_center(gSignInLabel);
 
+    assert(gm = SDL_CreateMutex());
     assert(gTimer = SDL_AddTimer(NETS_UPDATE_INTERVAL, updateNets, nullptr));
 }
 
@@ -103,6 +105,7 @@ void loginSceneInit(void) {
 static unsigned updateNets(const unsigned interval, void* const) { // TODO: need to do it differently
     SDL_Log("c %c", gInitialized ? 't' : 'f');
     if (!gInitialized) return 0;
+    assert(!SDL_LockMutex(gm));
     assert(scenesInitialized() && netInitialized());
 
     // TODO: need a conditional variable - no timers can run quicker (more often) than the main loop // <-----------------------------------
@@ -113,12 +116,14 @@ static unsigned updateNets(const unsigned interval, void* const) { // TODO: need
 //    lifecycleRunInMainThread(y, nullptr); // TODO: nope - even worse
 //    SDL_Log("b %p %p", x, y);
 
-//    if (gNetsList) listDestroy(gNetsList);
-//    if (!(gNetsList = netNets())) {
-////        gSelectedNet = nullptr;
-//        lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
-//        return interval;
-//    }
+    if (gNetsList) listDestroy(gNetsList);
+    if (!gInitialized || !(gNetsList = netNets())) {
+        gNetsList = nullptr;
+//        gSelectedNet = nullptr;
+        lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
+        assert(!SDL_UnlockMutex(gm));
+        return interval;
+    }
 
 //    const int previousNetsCount = gNetsCount;
 //    gNetsCount = listSize(gNetsList);
@@ -142,6 +147,7 @@ static unsigned updateNets(const unsigned interval, void* const) { // TODO: need
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
 
+    assert(!SDL_UnlockMutex(gm));
     return interval;
 }
 
@@ -160,9 +166,15 @@ void loginSceneQuit(void) {
     assert(scenesInitialized() && gInitialized);
     gInitialized = false;
 
-    if (gNetsList) listDestroy(gNetsList);
     SDL_RemoveTimer(gTimer); // TODO: need to wait for the timer thread to stop here <------------------------------
     SDL_Log("b");
+
+    assert(!SDL_LockMutex(gm));
+    assert(!SDL_UnlockMutex(gm));
+    SDL_DestroyMutex(gm);
+    SDL_Log("d");
+
+    if (gNetsList) listDestroy(gNetsList);
 
     lv_obj_delete(gSignInLabel);
     lv_obj_delete(gSignInButton);
