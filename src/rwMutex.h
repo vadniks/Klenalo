@@ -22,6 +22,7 @@ bool rwMutexLocked(RWMutex* const rwMutex);
 void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command);
 void rwMutexDestroy(RWMutex* const rwMutex); // fails if the rwMutex is locked (either write or read)
 
+// TODO: move to separate module
 typedef atomic bool Barrier; // multiple threads can wait while one another thread is running or looping or running a next iteration of the loop - basically wait for the thread to finish when SDL_WaitThread or similar cannot be used
 #define BARRIER(x) Barrier x = false
 
@@ -29,3 +30,5 @@ bool barrierScopeBegin(Barrier* const barrier); // returns true if current threa
 void barrierScopeEnd(Barrier* const barrier);
 inline void barrierReset(Barrier* const barrier) { barrierScopeEnd(barrier); }
 void barrierWait(Barrier* const barrier);
+
+// TODO: add a ConditionSyncer which would watch on a specified variable and wait for certain result (conditional variable)
