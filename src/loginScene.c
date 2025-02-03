@@ -27,7 +27,7 @@ static lv_obj_t* gRememberCredentialsCheckbox = nullptr;
 static lv_obj_t* gSignInButton = nullptr;
 static lv_obj_t* gSignInLabel = nullptr;
 
-static SDL_TimerID gTimer = 0;
+[[deprecated("need another approach, it's difficult to synchronize finishing of these timers")]] static SDL_TimerID gTimer = 0;
 static BARRIER(gTimerBarrier);
 static List* nullable gNetsList = nullptr; // <NetNet*>
 static NetNet* gSelectedNet = nullptr; // allocated elsewhere
@@ -100,6 +100,7 @@ void loginSceneInit(void) {
 
 // TODO: create own ticker (timer) in lifecycle that would be synchronized with the rest <------------------------------ NEED !!!!!!!!
 
+[[deprecated("buggy")]]
 static unsigned updateNets(const unsigned interval, void* const) { // TODO: need to do it differently
     if (!gInitialized) return 0;
     if (!lifecycleInitialized()) return 0;
@@ -109,11 +110,11 @@ static unsigned updateNets(const unsigned interval, void* const) { // TODO: need
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
 
-    if (gInitialized) lv_dropdown_clear_options(gNetsDropdown);
+    lv_dropdown_clear_options(gNetsDropdown);
 
     if (gNetsList) listDestroy(gNetsList);
     gNetsList = nullptr;
-    if (!gInitialized || !(gNetsList = netNets())) {
+    if (!(gNetsList = netNets())) {
 //        gSelectedNet = nullptr;
         lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
         barrierScopeEnd(&gTimerBarrier);
@@ -125,7 +126,6 @@ static unsigned updateNets(const unsigned interval, void* const) { // TODO: need
 //    gNetsCount = listSize(gNetsList);
 
     for (int i = 0; i < 2; i++) {
-        if (gInitialized)
         lv_dropdown_add_option(gNetsDropdown, "test", i);
 //        lv_dropdown_set_options_static(gNetsDropdown, "test1\ntest2");
     }
