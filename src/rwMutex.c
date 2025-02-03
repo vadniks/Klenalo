@@ -2,7 +2,6 @@
 #include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_atomic.h>
-#include <SDL2/SDL_timer.h>
 #include "defs.h"
 #include "rwMutex.h"
 
@@ -83,6 +82,6 @@ void barrierScopeEnd(Barrier* const barrier) {
 }
 
 void barrierWait(Barrier* const barrier) {
-    while (*barrier) SDL_Delay(10);
+    while (*barrier) asm volatile ("call thrd_yield");
     *barrier = true;
 }
