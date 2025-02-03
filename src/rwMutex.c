@@ -31,7 +31,7 @@ static inline int decrementCounter(SDL_atomic_t* const counter) {
 }
 
 void rwMutexReadLock(RWMutex* const rwMutex) {
-    if (incrementCounter(&rwMutex->readers))
+    if (incrementCounter(&rwMutex->readers) == 1)
         assert(!SDL_LockMutex(rwMutex->mutex));
 }
 
