@@ -69,7 +69,7 @@ const lv_font_t* resourcesFont(const ResourcesFontSize size, const ResourcesFont
 }
 
 void resourcesQuit(void) {
-    assert(videoInitialized() && gInitialized);
+    assert(gInitialized);
     gInitialized = false;
 
     lv_theme_default_deinit();

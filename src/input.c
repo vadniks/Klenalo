@@ -185,7 +185,7 @@ void inputProcessEvent(const SDL_Event* const event) {
 }
 
 void inputQuit(void) {
-    assert(videoInitialized() && gInitialized);
+    assert(gInitialized);
     gInitialized = false;
 
     lv_indev_delete(gMouse);

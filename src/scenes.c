@@ -70,9 +70,8 @@ void scenesLoadScreen(lv_obj_t* const screen) {
 }
 
 void scenesQuit(void) {
-    assert(videoInitialized() && gInitialized);
+    assert(gInitialized);
+    gInitialized = false;
 
     quitCurrentScene();
-
-    gInitialized = false;
 }

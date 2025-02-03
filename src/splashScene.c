@@ -51,7 +51,7 @@ void splashSceneInit(void) {
 }
 
 void splashSceneQuit(void) {
-    assert(scenesInitialized() && gInitialized);
+    assert(gInitialized);
     gInitialized = false;
 
     lv_obj_delete(gProgressBar);

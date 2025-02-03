@@ -98,10 +98,12 @@ void loginSceneInit(void) {
     assert(gTimer = SDL_AddTimer(NETS_UPDATE_INTERVAL, updateNets, nullptr));
 }
 
-// TODO: create own ticker (timer) in lifecycle that would be synchronized with the rest
+// TODO: create own ticker (timer) in lifecycle that would be synchronized with the rest <------------------------------ NEED !!!!!!!!
 
 static unsigned updateNets(const unsigned interval, void* const) { // TODO: need to do it differently
     if (!gInitialized) return 0;
+    if (!lifecycleInitialized()) return 0;
+
     assert(scenesInitialized() && netInitialized());
     if (barrierScopeBegin(&gTimerBarrier)) return 0;
 
@@ -154,7 +156,7 @@ static void netsDropdownValueChangeCallback(lv_event_t* nullable const) {
 }
 
 void loginSceneQuit(void) {
-    assert(scenesInitialized() && gInitialized);
+    assert(gInitialized);
     gInitialized = false;
 
     SDL_RemoveTimer(gTimer);

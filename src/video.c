@@ -117,7 +117,7 @@ void videoProcessEvent(const SDL_Event* const event) {
 }
 
 void videoQuit(void) {
-    assert(lifecycleInitialized() && gInitialized);
+    assert(gInitialized);
     gInitialized = false;
 
     lv_display_delete(gDisplay);

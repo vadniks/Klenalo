@@ -101,7 +101,7 @@ void netListen(void) {
 }
 
 void netQuit(void) {
-    assert(lifecycleInitialized() && gInitialized);
+    assert(gInitialized);
     gInitialized = false;
 
     listDestroy(gNetsList);
