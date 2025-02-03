@@ -4,13 +4,11 @@
 #include <net/if.h>
 #include <endian.h>
 #include "lifecycle.h"
-#include "barrier.h"
 #include "net.h"
 
 const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
 
 static atomic bool gInitialized = false;
-static BARRIER(gThreadBarrier);
 static List* gNetsList = nullptr; // <NetNet*>
 
 void netInit(void) {
@@ -98,19 +96,13 @@ static void ping(void) {
 }
 
 void netListen(void) {
-    if (barrierScopeBegin(&gThreadBarrier)) return;
-
     assert(lifecycleInitialized() && gInitialized);
     scanNets();
-
-    barrierScopeEnd(&gThreadBarrier);
 }
 
 void netQuit(void) {
     assert(lifecycleInitialized() && gInitialized);
     gInitialized = false;
-
-    barrierWait(&gThreadBarrier);
 
     listDestroy(gNetsList);
 }

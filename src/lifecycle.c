@@ -26,15 +26,15 @@ static const int UPDATE_PERIOD = 16; // floorf(1000.0f / 60.0f)
 static atomic bool gInitialized = false;
 static atomic bool gRunning = false;
 
+static RWMutex* gUIRWMutex = nullptr;
+
 static struct {
     List* nullable queue; // <AsyncAction*>
     SDL_Thread* nullable thread;
 }
+    gMainActionsLooper = {nullptr, nullptr},
     gBackgroundActionsLooper = {nullptr, nullptr},
-    gNetActionsLooper = {nullptr, nullptr},
-    gMainActionsLooper = {nullptr, nullptr};
-
-static RWMutex* gUIRWMutex = nullptr;
+    gNetActionsLooper = {nullptr, nullptr};
 
 static int backgroundActionsLoop(void* const);
 static int netActionsLoop(void* const);
@@ -46,24 +46,24 @@ void lifecycleInit(void) {
     assert(SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0"));
     assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER) == 0);
 
-    gBackgroundActionsLooper.queue = listCreate(true, SDL_free);
-    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, "backgroundActions", nullptr));
-
-    gNetActionsLooper.thread = SDL_CreateThread(netActionsLoop, "netActions", nullptr);
-
-    gMainActionsLooper.queue = listCreate(true, SDL_free);
-
-    gUIRWMutex = rwMutexCreate();
-
     lv_init();
     lv_tick_set_cb(SDL_GetTicks);
     lv_delay_set_cb(SDL_Delay);
+
+    gUIRWMutex = rwMutexCreate();
+
+    gMainActionsLooper.queue = listCreate(true, SDL_free);
+
+    gBackgroundActionsLooper.queue = listCreate(true, SDL_free);
+    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, "backgroundActions", nullptr));
 
     videoInit();
     inputInit();
     resourcesInit();
     scenesInit();
     netInit();
+
+    gNetActionsLooper.thread = SDL_CreateThread(netActionsLoop, "netActions", nullptr);
 }
 
 static void delayThread(const unsigned startMillis) {
@@ -184,6 +184,8 @@ void lifecycleLoop(void) {
 void lifecycleQuit(void) {
     assert(gInitialized);
 
+    SDL_WaitThread(gNetActionsLooper.thread, nullptr);
+
     netQuit();
     scenesQuit();
     resourcesQuit();
@@ -192,16 +194,14 @@ void lifecycleQuit(void) {
 
     gInitialized = false;
 
-    lv_deinit();
-
-    rwMutexDestroy(gUIRWMutex);
+    SDL_WaitThread(gBackgroundActionsLooper.thread, nullptr);
+    listDestroy(gBackgroundActionsLooper.queue);
 
     listDestroy(gMainActionsLooper.queue);
 
-    SDL_WaitThread(gNetActionsLooper.thread, nullptr);
+    rwMutexDestroy(gUIRWMutex);
 
-    SDL_WaitThread(gBackgroundActionsLooper.thread, nullptr);
-    listDestroy(gBackgroundActionsLooper.queue);
+    lv_deinit();
 
     SDL_Quit();
 }
