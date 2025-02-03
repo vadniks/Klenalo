@@ -8,6 +8,7 @@
 #include "resources.h"
 #include "net.h"
 #include "lifecycle.h"
+#include "barrier.h"
 #include "loginScene.h"
 
 static const int NETS_UPDATE_INTERVAL = 1; // 500 // TODO: test

@@ -4,6 +4,7 @@
 #include <net/if.h>
 #include <endian.h>
 #include "lifecycle.h"
+#include "barrier.h"
 #include "net.h"
 
 const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
