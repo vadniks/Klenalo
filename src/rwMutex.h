@@ -31,4 +31,17 @@ void barrierScopeEnd(Barrier* const barrier);
 inline void barrierReset(Barrier* const barrier) { barrierScopeEnd(barrier); }
 void barrierWait(Barrier* const barrier);
 
-// TODO: add a ConditionSyncer which would watch on a specified variable and wait for certain result (conditional variable)
+typedef enum : byte {
+    CONDITION_OBSERVER_VARIABLE_TYPE_BYTE = sizeof(byte),
+    CONDITION_OBSERVER_VARIABLE_TYPE_SHORT = sizeof(short),
+    CONDITION_OBSERVER_VARIABLE_TYPE_INT = sizeof(int),
+    CONDITION_OBSERVER_VARIABLE_TYPE_LONG = sizeof(long),
+} ConditionObserverVariableType;
+
+struct _ConditionObserver;
+typedef struct _ConditionObserver ConditionObserver;
+
+ConditionObserver* conditionObserverCreate(void* const variablePointer, const ConditionObserverVariableType variableType);
+void conditionObserverSetVariableValue(ConditionObserver* const observer, void* const value);
+void conditionObserverWaitForVariableValue(ConditionObserver* const observer, void* const value);
+void conditionObserverDestroy(ConditionObserver* const observer);
