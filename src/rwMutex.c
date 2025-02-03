@@ -1,59 +1,67 @@
 
 #include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_atomic.h>
 #include "defs.h"
 #include "rwMutex.h"
 
 // Inspired by https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock#Using_two_mutexes
 
 struct _RWMutex {
-    SDL_mutex* mutex; // const
-    SDL_atomic_t readers;
-    SDL_atomic_t writers;
+    SDL_mutex* mainMutex; // const
+    SDL_mutex* auxiliaryMutex; // const
+    int readers;
+    int writers;
 };
 
 RWMutex* rwMutexCreate(void) {
     RWMutex* const rwMutex = SDL_malloc(sizeof *rwMutex);
     assert(rwMutex);
-    assert(rwMutex->mutex = SDL_CreateMutex());
-    rwMutex->readers.value = 0;
-    rwMutex->writers.value = 0;
+    assert(rwMutex->mainMutex = SDL_CreateMutex());
+    assert(rwMutex->auxiliaryMutex = SDL_CreateMutex());
+    rwMutex->readers = 0;
+    rwMutex->writers = 0;
     return rwMutex;
 }
 
-static inline int incrementCounter(SDL_atomic_t* const counter) {
-    return SDL_AtomicAdd(counter, 1) + 1;
-}
-
-static inline int decrementCounter(SDL_atomic_t* const counter) {
-    return SDL_AtomicAdd(counter, -1) - 1;
-}
-
 void rwMutexReadLock(RWMutex* const rwMutex) {
-    if (incrementCounter(&rwMutex->readers) == 1)
-        assert(!SDL_LockMutex(rwMutex->mutex));
+    assert(!SDL_LockMutex(rwMutex->auxiliaryMutex));
+
+    if (++rwMutex->readers == 1)
+        assert(!SDL_LockMutex(rwMutex->mainMutex));
+
+    assert(!SDL_UnlockMutex(rwMutex->auxiliaryMutex));
 }
 
 void rwMutexReadUnlock(RWMutex* const rwMutex) {
-    const int readers = decrementCounter(&rwMutex->readers);
-    assert(readers >= 0);
-    if (!readers)
-        assert(!SDL_UnlockMutex(rwMutex->mutex));
+    assert(!SDL_LockMutex(rwMutex->auxiliaryMutex));
+
+    assert(rwMutex->readers);
+    if (--rwMutex->readers == 0)
+        assert(!SDL_UnlockMutex(rwMutex->mainMutex));
+
+    assert(!SDL_UnlockMutex(rwMutex->auxiliaryMutex));
 }
 
 void rwMutexWriteLock(RWMutex* const rwMutex) {
-    assert(!SDL_LockMutex(rwMutex->mutex));
-    incrementCounter(&rwMutex->writers);
+    assert(!SDL_LockMutex(rwMutex->mainMutex));
+    rwMutex->writers++;
 }
 
 void rwMutexWriteUnlock(RWMutex* const rwMutex) {
-    assert(decrementCounter(&rwMutex->writers) >= 0);
-    assert(!SDL_UnlockMutex(rwMutex->mutex));
+    assert(--rwMutex->writers >= 0);
+    assert(!SDL_UnlockMutex(rwMutex->mainMutex));
 }
 
 bool rwMutexLocked(RWMutex* const rwMutex) {
-    return SDL_AtomicGet(&rwMutex->writers) || SDL_AtomicGet(&rwMutex->readers);
+    assert(!SDL_LockMutex(rwMutex->mainMutex));
+    const bool writers = rwMutex->writers;
+    assert(!SDL_UnlockMutex(rwMutex->mainMutex));
+
+    assert(!SDL_LockMutex(rwMutex->auxiliaryMutex));
+    const bool readers = rwMutex->readers;
+    assert(!SDL_UnlockMutex(rwMutex->auxiliaryMutex));
+
+    return writers || readers;
 }
 
 void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command) {
@@ -67,7 +75,8 @@ void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command) {
 
 void rwMutexDestroy(RWMutex* const rwMutex) {
     assert(!rwMutexLocked(rwMutex));
-    SDL_DestroyMutex(rwMutex->mutex);
+    SDL_DestroyMutex(rwMutex->mainMutex);
+    SDL_DestroyMutex(rwMutex->auxiliaryMutex);
     SDL_free(rwMutex);
 }
 
