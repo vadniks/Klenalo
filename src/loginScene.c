@@ -11,7 +11,7 @@
 #include "barrier.h"
 #include "loginScene.h"
 
-static const int NETS_UPDATE_INTERVAL = 1; // 500 // TODO: test
+static const int NETS_UPDATE_INTERVAL = 500;
 
 static atomic bool gInitialized = false;
 
@@ -103,7 +103,6 @@ void loginSceneInit(void) {
 static unsigned updateNets(const unsigned interval, void* const) { // TODO: need to do it differently
     if (!gInitialized) return 0;
     if (barrierScopeBegin(&gTimerBarrier)) return 0;
-    SDL_Log("aa 1");
     assert(scenesInitialized() && netInitialized());
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
@@ -115,7 +114,6 @@ static unsigned updateNets(const unsigned interval, void* const) { // TODO: need
     if (!gInitialized || !(gNetsList = netNets())) {
 //        gSelectedNet = nullptr;
         lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
-        SDL_Log("aa 2");
         barrierScopeEnd(&gTimerBarrier);
         return interval;
     }
@@ -140,7 +138,6 @@ static unsigned updateNets(const unsigned interval, void* const) { // TODO: need
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
 
-    SDL_Log("aa 2");
     barrierScopeEnd(&gTimerBarrier);
     return interval;
 }
@@ -160,10 +157,9 @@ void loginSceneQuit(void) {
     assert(scenesInitialized() && gInitialized);
     gInitialized = false;
 
-    SDL_RemoveTimer(gTimer); // TODO: need to wait for the timer thread to stop here <------------------------------
+    SDL_RemoveTimer(gTimer);
 
     barrierWait(&gTimerBarrier);
-    SDL_Log("bb");
 
     if (gNetsList) listDestroy(gNetsList);
 

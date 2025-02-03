@@ -45,7 +45,6 @@ static void scanNets(void) {
         for (unsigned n = subnetMask; n; n & 1 ? mask++ : STUB, n >>= 1);
 
         if (hostAddress == 0x7f000001 || (ifaddr->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) continue;
-//        if ((ifaddr->ifa_flags & IFF_RUNNING) != IFF_RUNNING) continue; // TODO: test
 
         NetNet* const net = SDL_malloc(sizeof *net);
         assert(net);
@@ -60,6 +59,9 @@ static void scanNets(void) {
             (ifaddr->ifa_flags & IFF_RUNNING) == IFF_RUNNING
         }, sizeof *net);
         SDL_memcpy(net, ifaddr->ifa_name, sizeof(net->name));
+
+        assert(hostAddress >= netAddress && hostAddress <= broadcastAddress);
+        assert(net->hostsCount);
 
         listAddBack(gNetsList, net);
     }
@@ -97,12 +99,10 @@ static void ping(void) {
 
 void netListen(void) {
     if (barrierScopeBegin(&gThreadBarrier)) return;
-    SDL_Log("a 1");
 
     assert(lifecycleInitialized() && gInitialized);
     scanNets();
 
-    SDL_Log("a 2");
     barrierScopeEnd(&gThreadBarrier);
 }
 
@@ -111,7 +111,6 @@ void netQuit(void) {
     gInitialized = false;
 
     barrierWait(&gThreadBarrier);
-    SDL_Log("b");
 
     listDestroy(gNetsList);
 }
