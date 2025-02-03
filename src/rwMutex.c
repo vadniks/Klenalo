@@ -104,6 +104,27 @@ ConditionObserver* conditionObserverCreate(void* const variablePointer, const Co
     return observer;
 }
 
+void conditionObserverGetVariableValue(ConditionObserver* const observer, void* const buffer) {
+    assert(!SDL_LockMutex(observer->mutex));
+
+    switch (observer->variableType) {
+        case CONDITION_OBSERVER_VARIABLE_TYPE_BYTE:
+            *(byte*) buffer = *(byte*) observer->variablePointer; // TODO: memcpy?
+            break;
+        case CONDITION_OBSERVER_VARIABLE_TYPE_SHORT:
+            *(short*) buffer = *(short*) observer->variablePointer;
+            break;
+        case CONDITION_OBSERVER_VARIABLE_TYPE_INT:
+            *(int*) buffer = *(int*) observer->variablePointer;
+            break;
+        case CONDITION_OBSERVER_VARIABLE_TYPE_LONG:
+            *(long*) buffer = *(long*) observer->variablePointer;
+            break;
+    }
+
+    assert(!SDL_UnlockMutex(observer->mutex));
+}
+
 void conditionObserverSetVariableValue(ConditionObserver* const observer, const void* const value) {
     assert(!SDL_LockMutex(observer->mutex));
     observer->locked = true;
@@ -150,7 +171,7 @@ void conditionObserverWaitForVariableValue(ConditionObserver* const observer, co
                 break;
         }
 
-        if (condition) break;
+        if (condition) break; // TODO: memcmp?
         assert(!SDL_CondWait(observer->cond, observer->mutex));
     }
 

@@ -45,6 +45,7 @@ struct _ConditionObserver;
 typedef struct _ConditionObserver ConditionObserver;
 
 ConditionObserver* conditionObserverCreate(void* const variablePointer, const ConditionObserverVariableType variableType);
+void conditionObserverGetVariableValue(ConditionObserver* const observer, void* const buffer);
 void conditionObserverSetVariableValue(ConditionObserver* const observer, const void* const value);
 void conditionObserverWaitForVariableValue(ConditionObserver* const observer, const void* const value);
 void conditionObserverDestroy(ConditionObserver* const observer);
