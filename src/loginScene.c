@@ -102,8 +102,8 @@ void loginSceneInit(void) {
 
 static unsigned updateNets(const unsigned interval, void* const) { // TODO: need to do it differently
     if (!gInitialized) return 0;
-    if (barrierScopeBegin(&gTimerBarrier)) return 0;
     assert(scenesInitialized() && netInitialized());
+    if (barrierScopeBegin(&gTimerBarrier)) return 0;
 
     lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
 
