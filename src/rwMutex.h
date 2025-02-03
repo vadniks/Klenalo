@@ -31,6 +31,7 @@ void barrierScopeEnd(Barrier* const barrier);
 inline void barrierReset(Barrier* const barrier) { barrierScopeEnd(barrier); }
 void barrierWait(Barrier* const barrier);
 
+// TODO: move to separate module
 typedef enum : byte {
     CONDITION_OBSERVER_VARIABLE_TYPE_BYTE = sizeof(byte),
     CONDITION_OBSERVER_VARIABLE_TYPE_SHORT = sizeof(short),
