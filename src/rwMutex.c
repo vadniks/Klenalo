@@ -106,22 +106,7 @@ ConditionObserver* conditionObserverCreate(void* const variablePointer, const Co
 
 void conditionObserverGetVariableValue(ConditionObserver* const observer, void* const buffer) {
     assert(!SDL_LockMutex(observer->mutex));
-
-    switch (observer->variableType) {
-        case CONDITION_OBSERVER_VARIABLE_TYPE_BYTE:
-            *(byte*) buffer = *(byte*) observer->variablePointer; // TODO: memcpy?
-            break;
-        case CONDITION_OBSERVER_VARIABLE_TYPE_SHORT:
-            *(short*) buffer = *(short*) observer->variablePointer;
-            break;
-        case CONDITION_OBSERVER_VARIABLE_TYPE_INT:
-            *(int*) buffer = *(int*) observer->variablePointer;
-            break;
-        case CONDITION_OBSERVER_VARIABLE_TYPE_LONG:
-            *(long*) buffer = *(long*) observer->variablePointer;
-            break;
-    }
-
+    SDL_memcpy(buffer, observer->variablePointer, observer->variableType);
     assert(!SDL_UnlockMutex(observer->mutex));
 }
 
@@ -129,21 +114,7 @@ void conditionObserverSetVariableValue(ConditionObserver* const observer, const 
     assert(!SDL_LockMutex(observer->mutex));
     observer->locked = true;
 
-    switch (observer->variableType) {
-        case CONDITION_OBSERVER_VARIABLE_TYPE_BYTE:
-            *(byte*) observer->variablePointer = *(const byte*) value;
-            break;
-        case CONDITION_OBSERVER_VARIABLE_TYPE_SHORT:
-            *(short*) observer->variablePointer = *(const short*) value;
-            break;
-        case CONDITION_OBSERVER_VARIABLE_TYPE_INT:
-            *(int*) observer->variablePointer = *(const int*) value;
-            break;
-        case CONDITION_OBSERVER_VARIABLE_TYPE_LONG:
-            *(long*) observer->variablePointer = *(const long*) value;
-            break;
-    }
-
+    SDL_memcpy(observer->variablePointer, value, observer->variableType);
     assert(!SDL_CondBroadcast(observer->cond));
 
     observer->locked = false;
@@ -154,26 +125,8 @@ void conditionObserverWaitForVariableValue(ConditionObserver* const observer, co
     assert(!SDL_LockMutex(observer->mutex));
     observer->locked = true;
 
-    bool condition;
-    while (true) {
-        switch (observer->variableType) {
-            case CONDITION_OBSERVER_VARIABLE_TYPE_BYTE:
-                condition = *(byte*) observer->variablePointer == *(const byte*) value;
-                break;
-            case CONDITION_OBSERVER_VARIABLE_TYPE_SHORT:
-                condition = *(short*) observer->variablePointer == *(const short*) value;
-                break;
-            case CONDITION_OBSERVER_VARIABLE_TYPE_INT:
-                condition = *(int*) observer->variablePointer == *(const int*) value;
-                break;
-            case CONDITION_OBSERVER_VARIABLE_TYPE_LONG:
-                condition = *(long*) observer->variablePointer == *(const long*) value;
-                break;
-        }
-
-        if (condition) break; // TODO: memcmp?
+    while (SDL_memcmp(observer->variablePointer, value, observer->variableType) != 0)
         assert(!SDL_CondWait(observer->cond, observer->mutex));
-    }
 
     observer->locked = false;
     assert(!SDL_UnlockMutex(observer->mutex));
