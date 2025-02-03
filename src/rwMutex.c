@@ -87,7 +87,7 @@ void barrierWait(Barrier* const barrier) {
 }
 
 struct _ConditionObserver {
-    void* const variablePointer;
+    void* const variablePointer; // allocated elsewhere
     const ConditionObserverVariableType variableType;
     SDL_mutex* const mutex;
     SDL_cond* const cond;
@@ -104,22 +104,22 @@ ConditionObserver* conditionObserverCreate(void* const variablePointer, const Co
     return observer;
 }
 
-void conditionObserverSetVariableValue(ConditionObserver* const observer, void* const value) {
+void conditionObserverSetVariableValue(ConditionObserver* const observer, const void* const value) {
     assert(!SDL_LockMutex(observer->mutex));
     observer->locked = true;
 
     switch (observer->variableType) {
         case CONDITION_OBSERVER_VARIABLE_TYPE_BYTE:
-            *(byte*) observer->variablePointer = *(byte*) value;
+            *(byte*) observer->variablePointer = *(const byte*) value;
             break;
         case CONDITION_OBSERVER_VARIABLE_TYPE_SHORT:
-            *(short*) observer->variablePointer = *(short*) value;
+            *(short*) observer->variablePointer = *(const short*) value;
             break;
         case CONDITION_OBSERVER_VARIABLE_TYPE_INT:
-            *(int*) observer->variablePointer = *(int*) value;
+            *(int*) observer->variablePointer = *(const int*) value;
             break;
         case CONDITION_OBSERVER_VARIABLE_TYPE_LONG:
-            *(long*) observer->variablePointer = *(long*) value;
+            *(long*) observer->variablePointer = *(const long*) value;
             break;
     }
 
@@ -129,7 +129,7 @@ void conditionObserverSetVariableValue(ConditionObserver* const observer, void* 
     assert(!SDL_UnlockMutex(observer->mutex));
 }
 
-void conditionObserverWaitForVariableValue(ConditionObserver* const observer, void* const value) {
+void conditionObserverWaitForVariableValue(ConditionObserver* const observer, const void* const value) {
     assert(!SDL_LockMutex(observer->mutex));
     observer->locked = true;
 
@@ -137,16 +137,16 @@ void conditionObserverWaitForVariableValue(ConditionObserver* const observer, vo
     while (true) {
         switch (observer->variableType) {
             case CONDITION_OBSERVER_VARIABLE_TYPE_BYTE:
-                condition = *(byte*) observer->variablePointer == *(byte*) value;
+                condition = *(byte*) observer->variablePointer == *(const byte*) value;
                 break;
             case CONDITION_OBSERVER_VARIABLE_TYPE_SHORT:
-                condition = *(short*) observer->variablePointer == *(short*) value;
+                condition = *(short*) observer->variablePointer == *(const short*) value;
                 break;
             case CONDITION_OBSERVER_VARIABLE_TYPE_INT:
-                condition = *(int*) observer->variablePointer == *(int*) value;
+                condition = *(int*) observer->variablePointer == *(const int*) value;
                 break;
             case CONDITION_OBSERVER_VARIABLE_TYPE_LONG:
-                condition = *(long*) observer->variablePointer == *(long*) value;
+                condition = *(long*) observer->variablePointer == *(const long*) value;
                 break;
         }
 
