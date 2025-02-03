@@ -11,7 +11,6 @@ typedef unsigned char byte;
 #define atomic _Atomic
 #define fallthrough [[fallthrough]];
 #define nullable // everything that isn't marked with nullable is considered to be not null
-#define freeResult [[nodiscard]] // caller of the function market with this must free the result that the function returns
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
@@ -28,3 +27,5 @@ staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(
 inline void assert(const bool condition) { if (!condition) asm volatile ("call abort"); }
 
 // TODO: malloc realloc calloc free
+
+// TODO: add const marker to everything that is immutable
