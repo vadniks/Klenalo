@@ -10,14 +10,15 @@ typedef enum : char {
     CONSTS_LANGUAGE_EN
 } ConstsLanguage;
 
-typedef enum : int {
+typedef enum : int { // TODO: add prefix to all constants
     SPLASH,
     TITLE,
     WELCOME,
     PASSWORD,
     SIGN_IN,
     REMEMBER_CREDENTIALS,
-    IP_ADDRESS
+    IP_ADDRESS,
+    NETWORK
 } ConstsString;
 
 void constsSetLanguage(const ConstsLanguage language);

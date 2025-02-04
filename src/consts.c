@@ -25,6 +25,8 @@ static const char* enString(const ConstsString string) {
             return u8"Remember credentials";
         case IP_ADDRESS:
             return u8"IP Address";
+        case NETWORK:
+            return u8"Network";
     }
 }
 
