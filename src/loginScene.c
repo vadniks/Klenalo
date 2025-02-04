@@ -1,5 +1,4 @@
 
-#include <SDL2/SDL.h>
 #include "xlvgl.h"
 #include "defs.h"
 #include "scenes.h"
@@ -7,11 +6,7 @@
 #include "input.h"
 #include "resources.h"
 #include "net.h"
-#include "lifecycle.h"
-#include "barrier.h"
 #include "loginScene.h"
-
-static const int NETS_UPDATE_INTERVAL = 500;
 
 static atomic bool gInitialized = false;
 
@@ -27,13 +22,9 @@ static lv_obj_t* gRememberCredentialsCheckbox = nullptr;
 static lv_obj_t* gSignInButton = nullptr;
 static lv_obj_t* gSignInLabel = nullptr;
 
-[[deprecated("need another approach, it's difficult to synchronize finishing of these timers")]] static SDL_TimerID gTimer = 0;
-static BARRIER(gTimerBarrier);
 static List* nullable gNetsList = nullptr; // <NetNet*>
 static NetNet* gSelectedNet = nullptr; // allocated elsewhere
-static int gNetsCount = 0;
 
-static unsigned updateNets(const unsigned interval, void* const);
 static void netsDropdownValueChangeCallback(lv_event_t* nullable const);
 
 void loginSceneInit(void) {
@@ -94,54 +85,6 @@ void loginSceneInit(void) {
     assert(gSignInLabel = lv_label_create(gSignInButton));
     lv_label_set_text_static(gSignInLabel, constsString(SIGN_IN));
     lv_obj_center(gSignInLabel);
-
-    assert(gTimer = SDL_AddTimer(NETS_UPDATE_INTERVAL, updateNets, nullptr));
-}
-
-// TODO: create own ticker (timer) in lifecycle that would be synchronized with the rest <------------------------------ NEED !!!!!!!!
-
-[[deprecated("buggy")]]
-static unsigned updateNets(const unsigned interval, void* const) { // TODO: need to do it differently
-    if (!gInitialized) return 0;
-    if (!lifecycleInitialized()) return 0;
-
-    assert(scenesInitialized() && netInitialized());
-    if (barrierScopeBegin(&gTimerBarrier)) return 0;
-
-    lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_LOCK);
-
-    lv_dropdown_clear_options(gNetsDropdown);
-
-    if (gNetsList) listDestroy(gNetsList);
-    gNetsList = nullptr;
-    if (!(gNetsList = netNets())) {
-//        gSelectedNet = nullptr;
-        lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
-        barrierScopeEnd(&gTimerBarrier);
-        return interval;
-    }
-    listSetSynchronized(gNetsList, true);
-
-//    const int previousNetsCount = gNetsCount;
-//    gNetsCount = listSize(gNetsList);
-
-    for (int i = 0; i < 2; i++) {
-        lv_dropdown_add_option(gNetsDropdown, "test", i);
-//        lv_dropdown_set_options_static(gNetsDropdown, "test1\ntest2");
-    }
-//        lv_dropdown_add_option(gNetsDropdown, "test", i);
-//        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
-
-//    if (!gSelectedNet || previousNetsCount != gNetsCount) {
-//        gSelectedNet = listPeekFirst(gNetsList);
-//        lv_dropdown_set_selected(gNetsDropdown, 0);
-//        netsDropdownValueChangeCallback(nullptr);
-//    }
-
-    lifecycleUIMutexCommand(RW_MUTEX_COMMAND_WRITE_UNLOCK);
-
-    barrierScopeEnd(&gTimerBarrier);
-    return interval;
 }
 
 static void netsDropdownValueChangeCallback(lv_event_t* nullable const) {
@@ -158,10 +101,6 @@ static void netsDropdownValueChangeCallback(lv_event_t* nullable const) {
 void loginSceneQuit(void) {
     assert(gInitialized);
     gInitialized = false;
-
-    SDL_RemoveTimer(gTimer);
-
-    barrierWait(&gTimerBarrier);
 
     if (gNetsList) listDestroy(gNetsList);
 
