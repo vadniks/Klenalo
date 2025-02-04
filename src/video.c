@@ -31,7 +31,7 @@ void videoInit(void) {
     assert(SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1"));
 
     assert(gWindow = SDL_CreateWindow(
-        constsString(TITLE),
+        constsString(CONSTS_STRING_TITLE),
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         gWidth,

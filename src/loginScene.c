@@ -41,10 +41,10 @@ void loginSceneInit(void) {
 
     assert(gWelcomeLabel = lv_label_create(gScreen));
     lv_obj_set_style_text_font(gWelcomeLabel, resourcesFont(RESOURCES_FONT_SIZE_LARGE, RESOURCES_FONT_TYPE_REGULAR), 0);
-    lv_label_set_text_static(gWelcomeLabel, constsString(WELCOME));
+    lv_label_set_text_static(gWelcomeLabel, constsString(CONSTS_STRING_WELCOME));
 
     assert(gNetsDropdown = lv_dropdown_create(gScreen));
-    lv_dropdown_set_text(gNetsDropdown, constsString(NETWORK));
+    lv_dropdown_set_text(gNetsDropdown, constsString(CONSTS_STRING_NETWORK));
 //    lv_dropdown_clear_options(gNetsDropdown);
     lv_dropdown_set_options_static(gNetsDropdown, "One\nTwo\nThree");
     lv_obj_add_event_cb(gNetsDropdown, netsDropdownValueChangeCallback, LV_EVENT_VALUE_CHANGED, nullptr);
@@ -52,21 +52,21 @@ void loginSceneInit(void) {
     assert(gAddressLabel = lv_label_create(gScreen));
     lv_obj_set_style_text_font(gAddressLabel, resourcesFont(RESOURCES_FONT_SIZE_NORMAL, RESOURCES_FONT_TYPE_BOLD), 0);
     lv_obj_set_style_text_opa(gAddressLabel, 0xff / 3 * 2, 0);
-    lv_label_set_text_static(gAddressLabel, constsString(IP_ADDRESS));
+    lv_label_set_text_static(gAddressLabel, constsString(CONSTS_STRING_IP_ADDRESS));
 
     assert(gPasswordTextArea = lv_textarea_create(gScreen));
     lv_textarea_set_one_line(gPasswordTextArea, true);
     lv_textarea_set_max_length(gPasswordTextArea, MAX_PASSWORD_SIZE);
-    lv_textarea_set_placeholder_text(gPasswordTextArea, constsString(PASSWORD));
+    lv_textarea_set_placeholder_text(gPasswordTextArea, constsString(CONSTS_STRING_PASSWORD));
     lv_textarea_set_password_mode(gPasswordTextArea, true);
 
     assert(gRememberCredentialsCheckbox = lv_checkbox_create(gScreen));
-    lv_checkbox_set_text_static(gRememberCredentialsCheckbox, constsString(REMEMBER_CREDENTIALS));
+    lv_checkbox_set_text_static(gRememberCredentialsCheckbox, constsString(CONSTS_STRING_REMEMBER_CREDENTIALS));
 
     assert(gSignInButton = lv_button_create(gScreen));
 
     assert(gSignInLabel = lv_label_create(gSignInButton));
-    lv_label_set_text_static(gSignInLabel, constsString(SIGN_IN));
+    lv_label_set_text_static(gSignInLabel, constsString(CONSTS_STRING_SIGN_IN));
     lv_obj_center(gSignInLabel);
 }
 
@@ -75,13 +75,13 @@ static void netsDropdownValueChangeCallback(lv_event_t* nullable const) {
     lv_dropdown_set_text(gNetsDropdown, selected == 0 ? "One" : selected == 1 ? "Two" : "Three");
 
 //    if (!gNetsList || !(gSelectedNet = listGet(gNetsList, (int) lv_dropdown_get_selected(gNetsDropdown)))) {
-//        lv_label_set_text_static(gAddressLabel, constsString(IP_ADDRESS));
+//        lv_label_set_text_static(gAddressLabel, constsString(CONSTS_STRING_IP_ADDRESS));
 //        return;
 //    }
 //
 //    char address[NET_ADDRESS_STRING_SIZE];
 //    netAddressToString(address, gSelectedNet->host);
-//    lv_label_set_text_fmt(gAddressLabel, "%s: %s", constsString(IP_ADDRESS), address);
+//    lv_label_set_text_fmt(gAddressLabel, "%s: %s", constsString(CONSTS_STRING_IP_ADDRESS), address);
 }
 
 void loginSceneQuit(void) {

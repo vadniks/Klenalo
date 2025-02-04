@@ -38,7 +38,7 @@ void splashSceneInit(void) {
     lv_obj_set_flex_align(gScreen, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
     assert(gLabel = lv_label_create(gScreen));
-    lv_label_set_text_static(gLabel, constsString(SPLASH));
+    lv_label_set_text_static(gLabel, constsString(CONSTS_STRING_SPLASH));
     lv_obj_set_style_text_font(gLabel, resourcesFont(RESOURCES_FONT_SIZE_NORMAL, RESOURCES_FONT_TYPE_MONOSPACE), 0);
 
     assert(gProgressBar = lv_bar_create(gScreen));
