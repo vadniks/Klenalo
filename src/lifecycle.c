@@ -53,9 +53,7 @@ void lifecycleInit(void) {
     gUIRWMutex = rwMutexCreate();
 
     gMainActionsLooper.queue = listCreate(true, SDL_free);
-
     gBackgroundActionsLooper.queue = listCreate(true, SDL_free);
-    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, "backgroundActions", nullptr));
 
     videoInit();
     inputInit();
@@ -63,7 +61,8 @@ void lifecycleInit(void) {
     scenesInit();
     netInit();
 
-    gNetActionsLooper.thread = SDL_CreateThread(netActionsLoop, "netActions", nullptr);
+    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, "backgroundActions", nullptr));
+    assert(gNetActionsLooper.thread = SDL_CreateThread(netActionsLoop, "netActions", nullptr));
 }
 
 static void delayThread(const unsigned startMillis) {
@@ -186,6 +185,7 @@ void lifecycleQuit(void) {
     gInitialized = false;
 
     SDL_WaitThread(gNetActionsLooper.thread, nullptr);
+    SDL_WaitThread(gBackgroundActionsLooper.thread, nullptr);
 
     netQuit();
     scenesQuit();
@@ -193,9 +193,7 @@ void lifecycleQuit(void) {
     inputQuit();
     videoQuit();
 
-    SDL_WaitThread(gBackgroundActionsLooper.thread, nullptr);
     listDestroy(gBackgroundActionsLooper.queue);
-
     listDestroy(gMainActionsLooper.queue);
 
     rwMutexDestroy(gUIRWMutex);
