@@ -17,15 +17,51 @@ typedef unsigned char byte;
 #define boolToStr(x) ((x) ? "true" : "false")
 #define xAlloca(x) (void*) ((byte[x]) {0})
 #define unusedVariableBuffer(x) (x[1]) {0}
-#define xalloc(x) SDL_calloc((x), 1)
-#define USED(x) ((void) x)
+#define USED(x) ((void) (x))
 #define STUB USED(0)
 #define swapValues(x, y) {x ^= y; y ^= x; x ^= y;}
 
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
-inline void assert(const bool condition) { if (!condition) asm volatile ("call abort"); }
+inline void assert(const bool condition) {
+    [[gnu::noreturn]] void abort(void);
+    if (!condition) abort();
+}
 
-// TODO: malloc realloc calloc free
+#define swapBytes(x) _Generic((x), unsigned short: swapShort, unsigned int: swapInt, unsigned long: swapLong) (x)
+inline unsigned short swapShort(unsigned short value) { return __builtin_bswap16(value); }
+inline unsigned int swapInt(unsigned int value) { return __builtin_bswap32(value); }
+inline unsigned long swapLong(unsigned long value) { return __builtin_bswap64(value); }
+
+inline void* xmalloc(const unsigned long size) {
+    void* SDL_malloc(const unsigned long);
+    return SDL_malloc(size);
+}
+
+#define zmalloc(x) xcalloc(x, 1)
+inline void* xcalloc(const unsigned numberOfElements, const unsigned long size) {
+    void* SDL_calloc(const unsigned long, const unsigned long);
+    return SDL_calloc(numberOfElements, size);
+}
+
+inline void* xrealloc(void* const memory, const unsigned long size) {
+    void* SDL_realloc(void* const, const unsigned long);
+    return SDL_realloc(memory, size);
+}
+
+inline void xfree(void* const memory) {
+    void SDL_free(void* const);
+    SDL_free(memory);
+}
+
+inline void xsleep(const unsigned int millis) {
+    void SDL_Delay(unsigned int);
+    SDL_Delay(millis);
+}
+
+inline void xyield(void) {
+    void thrd_yield(void);
+    thrd_yield();
+}
 
 // TODO: add const marker to everything that is immutable

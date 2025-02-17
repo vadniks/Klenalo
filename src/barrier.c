@@ -12,6 +12,6 @@ void barrierScopeEnd(Barrier* const barrier) {
 }
 
 void barrierWait(Barrier* const barrier) {
-    while (*barrier) asm volatile ("call thrd_yield");
+    while (*barrier) xyield();
     *barrier = true;
 }
