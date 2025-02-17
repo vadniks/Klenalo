@@ -44,12 +44,13 @@ inline void* xcalloc(const unsigned numberOfElements, const unsigned long size) 
     return SDL_calloc(numberOfElements, size);
 }
 
-inline void* xrealloc(void* const memory, const unsigned long size) {
+inline void* xrealloc(void* nullable const memory, const unsigned long size) {
+    assert(size);
     void* SDL_realloc(void* const, const unsigned long);
     return SDL_realloc(memory, size);
 }
 
-inline void xfree(void* const memory) {
+static inline void xfree(void* const memory) { // static inline so it can be pointed to as a callback too
     void SDL_free(void* const);
     SDL_free(memory);
 }

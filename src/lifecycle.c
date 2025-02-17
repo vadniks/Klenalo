@@ -52,8 +52,8 @@ void lifecycleInit(void) {
 
     gUIRWMutex = rwMutexCreate();
 
-    gMainActionsLooper.queue = listCreate(true, SDL_free);
-    gBackgroundActionsLooper.queue = listCreate(true, SDL_free);
+    gMainActionsLooper.queue = listCreate(true, xfree);
+    gBackgroundActionsLooper.queue = listCreate(true, xfree);
 
     videoInit();
     inputInit();
@@ -92,7 +92,7 @@ static void backgroundActionsLoopBody(void) {
     if ((action = nextAsyncAction(LOOPER_BACKGROUND))) {
         if (action->delayMillis) SDL_Delay(action->delayMillis);
         if (gRunning) action->function(action->parameter);
-        SDL_free(action);
+        xfree(action);
     }
 }
 
@@ -117,15 +117,15 @@ bool lifecycleInitialized(void) {
 unsigned long lifecycleCurrentTimeMillis(void) {
     struct timespec timespec;
     assert(!clock_gettime(CLOCK_REALTIME, &timespec));
-    return (unsigned long) timespec.tv_sec * 1000ul + (unsigned long) timespec.tv_nsec / 1000000ul;
+    return (unsigned long) timespec.tv_sec * 1'000ul + (unsigned long) timespec.tv_nsec / 1'000'000ul;
 }
 
 static void scheduleAction(const LifecycleAsyncActionFunction function, void* nullable const parameter, const int delayMillis, const Looper looper) {
     assert(gInitialized);
 
-    AsyncAction* const action = SDL_malloc(sizeof *action);
+    AsyncAction* const action = xmalloc(sizeof *action);
     assert(action);
-    SDL_memcpy(action, &(AsyncAction) {function, parameter, delayMillis}, sizeof *action);
+    xmemcpy(action, &(AsyncAction) {function, parameter, delayMillis}, sizeof *action);
 
     listAddFront(looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.queue : gMainActionsLooper.queue, action);
 }
@@ -170,7 +170,7 @@ void lifecycleLoop(void) {
 
         if ((action = nextAsyncAction(LOOPER_MAIN))) {
             action->function(action->parameter);
-            SDL_free(action);
+            xfree(action);
         }
 
         delayThread(startMillis);

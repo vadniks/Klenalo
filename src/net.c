@@ -2,7 +2,6 @@
 #include <SDL2/SDL.h>
 #include <ifaddrs.h>
 #include <net/if.h>
-#include <endian.h>
 #include "lifecycle.h"
 #include "net.h"
 
@@ -15,7 +14,7 @@ void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
     gInitialized = true;
 
-    gNetsList = listCreate(true, SDL_free);
+    gNetsList = listCreate(true, xfree);
 }
 
 bool netInitialized(void) {
@@ -44,9 +43,9 @@ static void scanNets(void) {
 
         if (hostAddress == 0x7f000001 || (ifaddr->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) continue;
 
-        NetNet* const net = SDL_malloc(sizeof *net);
+        NetNet* const net = xmalloc(sizeof *net);
         assert(net);
-        SDL_memcpy(net, &(NetNet) {
+        xmemcpy(net, &(NetNet) {
             {0},
             (int) netAddress,
             mask,
@@ -56,7 +55,7 @@ static void scanNets(void) {
             (netAddress & 0xff000000) == 0x0a000000 || (netAddress & 0xfff00000) == 0xac100000 || (netAddress & 0xffff0000) == 0xc0a80000, // private networks https://www.arin.net/reference/research/statistics/address_filters
             (ifaddr->ifa_flags & IFF_RUNNING) == IFF_RUNNING
         }, sizeof *net);
-        SDL_memcpy(net, ifaddr->ifa_name, sizeof(net->name));
+        xmemcpy(net, ifaddr->ifa_name, sizeof(net->name));
 
         assert(hostAddress >= netAddress && hostAddress <= broadcastAddress);
         assert(net->hostsCount);
@@ -69,9 +68,9 @@ static void scanNets(void) {
 }
 
 static NetNet* netDuplicator(const NetNet* const old) {
-    NetNet* const new = SDL_malloc(sizeof *new);
+    NetNet* const new = xmalloc(sizeof *new);
     assert(new);
-    SDL_memcpy(new, old, sizeof *new);
+    xmemcpy(new, old, sizeof *new);
     return new;
 }
 

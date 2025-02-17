@@ -1,5 +1,4 @@
 
-#include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_mutex.h>
 #include "conditionObserver.h"
 
@@ -12,7 +11,7 @@ struct _ConditionObserver {
 };
 
 ConditionObserver* conditionObserverCreate(void* const variablePointer, const ConditionObserverVariableType variableType) {
-    ConditionObserver* const observer = SDL_malloc(sizeof *observer);
+    ConditionObserver* const observer = xmalloc(sizeof *observer);
     *(void**) &observer->variablePointer = variablePointer;
     *(int*) &observer->variableType = variableType;
     assert(*(SDL_mutex**) &observer->mutex = SDL_CreateMutex());
@@ -23,7 +22,7 @@ ConditionObserver* conditionObserverCreate(void* const variablePointer, const Co
 
 void conditionObserverGetVariableValue(ConditionObserver* const observer, void* const buffer) {
     assert(!SDL_LockMutex(observer->mutex));
-    SDL_memcpy(buffer, observer->variablePointer, observer->variableType);
+    xmemcpy(buffer, observer->variablePointer, observer->variableType);
     assert(!SDL_UnlockMutex(observer->mutex));
 }
 
@@ -31,7 +30,7 @@ void conditionObserverSetVariableValue(ConditionObserver* const observer, const 
     assert(!SDL_LockMutex(observer->mutex));
     observer->locked = true;
 
-    SDL_memcpy(observer->variablePointer, value, observer->variableType);
+    xmemcpy(observer->variablePointer, value, observer->variableType);
     assert(!SDL_CondBroadcast(observer->cond));
 
     observer->locked = false;
@@ -42,7 +41,7 @@ void conditionObserverWaitForVariableValue(ConditionObserver* const observer, co
     assert(!SDL_LockMutex(observer->mutex));
     observer->locked = true;
 
-    while (SDL_memcmp(observer->variablePointer, value, observer->variableType) != 0)
+    while (xmemcmp(observer->variablePointer, value, observer->variableType) != 0)
         assert(!SDL_CondWait(observer->cond, observer->mutex));
 
     observer->locked = false;
@@ -56,5 +55,5 @@ void conditionObserverDestroy(ConditionObserver* const observer) {
 
     SDL_DestroyCond(observer->cond);
     SDL_DestroyMutex(observer->mutex);
-    SDL_free(observer);
+    xfree(observer);
 }

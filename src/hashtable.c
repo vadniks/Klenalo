@@ -1,5 +1,4 @@
 
-#include <SDL2/SDL_stdinc.h>
 #include "rwMutex.h"
 #include "hashtable.h"
 
@@ -36,9 +35,9 @@ int hashtableHash(const byte* key, int size) {
 }
 
 Hashtable* hashtableCreate(const bool synchronized, const HashtableDeallocator nullable deallocator) {
-    Hashtable* const hashtable = SDL_malloc(sizeof *hashtable);
+    Hashtable* const hashtable = xmalloc(sizeof *hashtable);
     assert(hashtable);
-    assert(hashtable->table = SDL_calloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*)));
+    assert(hashtable->table = xcalloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*)));
     hashtable->count = 0;
     hashtable->threshold = (int) ((float) INITIAL_CAPACITY * LOAD_FACTOR);
     hashtable->deallocator = deallocator;
@@ -67,7 +66,7 @@ static void rehash(Hashtable* const hashtable) {
     const int newCapacity = oldCapacity * 2 + 1;
     if (newCapacity < oldCapacity) return;
 
-    Node** newTable = SDL_calloc(newCapacity, sizeof(void*));
+    Node** newTable = xcalloc(newCapacity, sizeof(void*));
     assert(newTable);
 
     for (int index = 0; index < oldCapacity; index++) {
@@ -82,7 +81,7 @@ static void rehash(Hashtable* const hashtable) {
     }
 
     hashtable->threshold = (int) ((float) newCapacity * LOAD_FACTOR);
-    SDL_free(hashtable->table);
+    xfree(hashtable->table);
     hashtable->table = newTable;
     hashtable->capacity = newCapacity;
 }
@@ -109,7 +108,7 @@ void hashtablePut(Hashtable* const hashtable, const int hash, void* const value)
         return;
     }
 
-    Node* const new = SDL_malloc(sizeof *new);
+    Node* const new = xmalloc(sizeof *new);
     assert(new);
     *new = (Node) {hash, value, *anchor};
     *anchor = new;
@@ -150,7 +149,7 @@ void hashtableRemove(Hashtable* const hashtable, const int hash) {
 
         deallocateValue(hashtable, node->value);
 
-        SDL_free(node);
+        xfree(node);
         hashtable->count--;
         break;
     }
@@ -178,7 +177,7 @@ HashtableIterator* hashtableIteratorCreate(Hashtable* const hashtable) {
 
     hashtable->iterating = true;
 
-    HashtableIterator* const iterator = SDL_malloc(sizeof *iterator);
+    HashtableIterator* const iterator = xmalloc(sizeof *iterator);
     assert(iterator);
     iterator->hashtable = hashtable;
     iterator->index = 0;
@@ -212,7 +211,7 @@ void* nullable hashtableIterate(HashtableIterator* const iterator) {
 void hashtableIteratorDestroy(HashtableIterator* const iterator) {
     assert(iterator->hashtable->iterating);
     iterator->hashtable->iterating = false;
-    SDL_free(iterator);
+    xfree(iterator);
 
     hashtableRwMutexCommand(iterator->hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
 }
@@ -224,12 +223,12 @@ void hashtableDestroy(Hashtable* const hashtable) {
     for (int index = 0; index < hashtable->capacity; index++) {
         for (Node* node = hashtable->table[index]; node; node = node->next) {
             deallocateValue(hashtable, node->value);
-            SDL_free(node);
+            xfree(node);
         }
     }
 
-    SDL_free(hashtable->table);
-    SDL_free(hashtable);
+    xfree(hashtable->table);
+    xfree(hashtable);
 }
 
 

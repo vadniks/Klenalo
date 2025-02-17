@@ -1,5 +1,4 @@
 
-#include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_mutex.h>
 #include "rwMutex.h"
 
@@ -13,7 +12,7 @@ struct _RWMutex {
 };
 
 RWMutex* rwMutexCreate(void) {
-    RWMutex* const rwMutex = SDL_malloc(sizeof *rwMutex);
+    RWMutex* const rwMutex = xmalloc(sizeof *rwMutex);
     assert(rwMutex);
     assert(rwMutex->mainMutex = SDL_CreateMutex());
     assert(rwMutex->auxiliaryMutex = SDL_CreateMutex());
@@ -76,5 +75,5 @@ void rwMutexDestroy(RWMutex* const rwMutex) {
     assert(!rwMutexLocked(rwMutex));
     SDL_DestroyMutex(rwMutex->mainMutex);
     SDL_DestroyMutex(rwMutex->auxiliaryMutex);
-    SDL_free(rwMutex);
+    xfree(rwMutex);
 }
