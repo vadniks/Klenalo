@@ -6,6 +6,7 @@
 #include "input.h"
 #include "resources.h"
 #include "net.h"
+#include "lifecycle.h"
 #include "loginScene.h"
 
 static atomic bool gInitialized = false;
@@ -24,6 +25,7 @@ static List* nullable gNetsList = nullptr; // <NetNet*>
 static NetNet* gSelectedNet = nullptr; // allocated elsewhere
 
 static void netsDropdownValueChangeCallback(lv_event_t* nullable const);
+static void updateNets(void* nullable const);
 
 void loginSceneInit(void) {
     assert(scenesInitialized() && !gInitialized);
@@ -45,8 +47,7 @@ void loginSceneInit(void) {
 
     assert(gNetsDropdown = lv_dropdown_create(gScreen));
     lv_dropdown_set_text(gNetsDropdown, constsString(CONSTS_STRING_NETWORK));
-//    lv_dropdown_clear_options(gNetsDropdown);
-    lv_dropdown_set_options_static(gNetsDropdown, "One\nTwo\nThree");
+    lv_dropdown_clear_options(gNetsDropdown);
     lv_obj_add_event_cb(gNetsDropdown, netsDropdownValueChangeCallback, LV_EVENT_VALUE_CHANGED, nullptr);
 
     assert(gAddressLabel = lv_label_create(gScreen));
@@ -68,20 +69,40 @@ void loginSceneInit(void) {
     assert(gSignInLabel = lv_label_create(gSignInButton));
     lv_label_set_text_static(gSignInLabel, constsString(CONSTS_STRING_SIGN_IN));
     lv_obj_center(gSignInLabel);
+
+    lifecycleRunInMainThread(updateNets, nullptr);
+}
+
+static int gUpdateNetsCounter = 0;
+
+static void updateNets(void* nullable const) {
+    if (++gUpdateNetsCounter < 100)
+        goto end;
+    else
+        gUpdateNetsCounter = 0;
+
+    lv_dropdown_close(gNetsDropdown);
+    lv_dropdown_clear_options(gNetsDropdown);
+
+    if (gNetsList) listDestroy(gNetsList);
+    if (!(gNetsList = netNets())) goto end;
+
+    for (int i = 0; i < listSize(gNetsList); i++)
+        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
+
+    end:
+    lifecycleRunInMainThread(updateNets, nullptr);
 }
 
 static void netsDropdownValueChangeCallback(lv_event_t* nullable const) {
-    const int selected = (int) lv_dropdown_get_selected(gNetsDropdown);
-    lv_dropdown_set_text(gNetsDropdown, selected == 0 ? "One" : selected == 1 ? "Two" : "Three");
+    if (!gNetsList || !(gSelectedNet = listGet(gNetsList, (int) lv_dropdown_get_selected(gNetsDropdown)))) {
+        lv_label_set_text_static(gAddressLabel, constsString(CONSTS_STRING_IP_ADDRESS));
+        return;
+    }
 
-//    if (!gNetsList || !(gSelectedNet = listGet(gNetsList, (int) lv_dropdown_get_selected(gNetsDropdown)))) {
-//        lv_label_set_text_static(gAddressLabel, constsString(CONSTS_STRING_IP_ADDRESS));
-//        return;
-//    }
-//
-//    char address[NET_ADDRESS_STRING_SIZE];
-//    netAddressToString(address, gSelectedNet->host);
-//    lv_label_set_text_fmt(gAddressLabel, "%s: %s", constsString(CONSTS_STRING_IP_ADDRESS), address);
+    char address[NET_ADDRESS_STRING_SIZE];
+    netAddressToString(address, gSelectedNet->host);
+    lv_label_set_text_fmt(gAddressLabel, "%s: %s", constsString(CONSTS_STRING_IP_ADDRESS), address);
 }
 
 void loginSceneQuit(void) {
