@@ -74,11 +74,6 @@ inline int xmemcmp(const void* const source1, const void* const source2, const u
     return SDL_memcmp(source1, source2, length);
 }
 
-inline void xsleep(const unsigned int millis) {
-    void SDL_Delay(unsigned int);
-    SDL_Delay(millis);
-}
-
 inline void xyield(void) {
     void thrd_yield(void);
     thrd_yield();
