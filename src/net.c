@@ -24,12 +24,12 @@ bool netInitialized(void) {
 static void scanNets(void) {
     assert(lifecycleInitialized() && gInitialized);
 
+    listSynchronizeIteration(gNetsList, true, true);
     listClear(gNetsList);
 
     struct ifaddrs* ifaddrRoot;
     assert(!getifaddrs(&ifaddrRoot));
 
-    listSynchronizeIteration(gNetsList, true, true);
     for (struct ifaddrs* ifaddr = ifaddrRoot; ifaddr; ifaddr = ifaddr->ifa_next) {
         if (ifaddr->ifa_addr->sa_family != AF_INET) continue;
 
