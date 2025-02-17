@@ -24,12 +24,12 @@ bool netInitialized(void) {
 static void scanNets(void) {
     assert(lifecycleInitialized() && gInitialized);
 
-    listSynchronizeIteration(gNetsList, true, true);
     listClear(gNetsList);
 
     struct ifaddrs* ifaddrRoot;
     assert(!getifaddrs(&ifaddrRoot));
 
+    listSynchronizeIteration(gNetsList, true, true);
     for (struct ifaddrs* ifaddr = ifaddrRoot; ifaddr; ifaddr = ifaddr->ifa_next) {
         if (ifaddr->ifa_addr->sa_family != AF_INET) continue;
 
@@ -67,7 +67,7 @@ static void scanNets(void) {
     freeifaddrs(ifaddrRoot);
 }
 
-static NetNet* netDuplicator(const NetNet* const old) {
+static void* netDuplicator(const void* const old) {
     NetNet* const new = xmalloc(sizeof *new);
     assert(new);
     xmemcpy(new, old, sizeof *new);
@@ -75,7 +75,7 @@ static NetNet* netDuplicator(const NetNet* const old) {
 }
 
 List* nullable netNets(void) {
-    return listCopy(gNetsList, false, (ListItemDuplicator) netDuplicator);
+    return listCopy(gNetsList, false, netDuplicator);
 }
 
 void netAddressToString(char* const buffer, const int address) {
