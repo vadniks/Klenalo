@@ -79,5 +79,3 @@ inline void xyield(void) {
     void thrd_yield(void);
     thrd_yield();
 }
-
-// TODO: add const marker to everything that is immutable

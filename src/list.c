@@ -6,7 +6,7 @@ struct _List {
     void** nullable values;
     int size;
     RWMutex* nullable rwMutex;
-    ListDeallocator nullable deallocator; // const
+    const ListDeallocator nullable deallocator;
 };
 
 static const int MAX_SIZE = 0x7fffffff;
@@ -17,7 +17,7 @@ List* listCreate(const bool synchronized, const ListDeallocator nullable dealloc
     list->values = nullptr;
     list->size = 0;
     list->rwMutex = synchronized ? rwMutexCreate() : nullptr;
-    list->deallocator = deallocator;
+    *(ListDeallocator*) &list->deallocator = deallocator;
     return list;
 }
 

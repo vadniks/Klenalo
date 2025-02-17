@@ -5,7 +5,7 @@
 // inspired by Java's Hashtable
 
 typedef struct Node {
-    int hash; // const
+    const int hash;
     void* value;
     struct Node* nullable next;
 } Node;
@@ -13,13 +13,13 @@ typedef struct Node {
 struct _Hashtable {
     Node* nullable* table;
     int capacity, count, threshold;
-    HashtableDeallocator nullable deallocator; // const
-    RWMutex* nullable rwMutex; // const
+    const HashtableDeallocator nullable deallocator;
+    RWMutex* const nullable rwMutex;
     bool iterating;
 };
 
 struct _HashtableIterator {
-    Hashtable* hashtable; // const
+    Hashtable* const hashtable;
     int index;
     Node* nullable node;
 };
@@ -40,8 +40,8 @@ Hashtable* hashtableCreate(const bool synchronized, const HashtableDeallocator n
     assert(hashtable->table = xcalloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*)));
     hashtable->count = 0;
     hashtable->threshold = (int) ((float) INITIAL_CAPACITY * LOAD_FACTOR);
-    hashtable->deallocator = deallocator;
-    hashtable->rwMutex = synchronized ? rwMutexCreate() : nullptr;
+    *(HashtableDeallocator*) &hashtable->deallocator = deallocator;
+    *(RWMutex**) &hashtable->rwMutex = synchronized ? rwMutexCreate() : nullptr;
     hashtable->iterating = false;
     return hashtable;
 }
@@ -110,7 +110,7 @@ void hashtablePut(Hashtable* const hashtable, const int hash, void* const value)
 
     Node* const new = xmalloc(sizeof *new);
     assert(new);
-    *new = (Node) {hash, value, *anchor};
+    xmemcpy(new, &(Node) {hash, value, *anchor}, sizeof(Node));
     *anchor = new;
     hashtable->count++;
 
@@ -179,7 +179,7 @@ HashtableIterator* hashtableIteratorCreate(Hashtable* const hashtable) {
 
     HashtableIterator* const iterator = xmalloc(sizeof *iterator);
     assert(iterator);
-    iterator->hashtable = hashtable;
+    *(Hashtable**) &iterator->hashtable = hashtable;
     iterator->index = 0;
     iterator->node = nullptr;
     return iterator;

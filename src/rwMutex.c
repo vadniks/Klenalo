@@ -5,8 +5,8 @@
 // Inspired by https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock#Using_two_mutexes
 
 struct _RWMutex {
-    SDL_mutex* mainMutex; // const
-    SDL_mutex* auxiliaryMutex; // const
+    SDL_mutex* const mainMutex;
+    SDL_mutex* const auxiliaryMutex;
     int readers;
     int writers;
 };
@@ -14,8 +14,8 @@ struct _RWMutex {
 RWMutex* rwMutexCreate(void) {
     RWMutex* const rwMutex = xmalloc(sizeof *rwMutex);
     assert(rwMutex);
-    assert(rwMutex->mainMutex = SDL_CreateMutex());
-    assert(rwMutex->auxiliaryMutex = SDL_CreateMutex());
+    assert(*(SDL_mutex**) &rwMutex->mainMutex = SDL_CreateMutex());
+    assert(*(SDL_mutex**) &rwMutex->auxiliaryMutex = SDL_CreateMutex());
     rwMutex->readers = 0;
     rwMutex->writers = 0;
     return rwMutex;
