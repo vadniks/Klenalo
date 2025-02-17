@@ -54,6 +54,26 @@ inline void xfree(void* const memory) {
     SDL_free(memory);
 }
 
+inline void* xmemset(void* const destination, const int value, const unsigned long length) {
+    void* SDL_memset(void* const, const int, const unsigned long);
+    return SDL_memset(destination, value, length);
+}
+
+inline void* xmemcpy(void* const destination, const void* const source, const unsigned long length) {
+    void* SDL_memcpy(void* const, const void* const, const unsigned long);
+    return SDL_memcpy(destination, source, length);
+}
+
+inline void* xmemmove(void* const destination, const void* const source, const unsigned long length) {
+    void* SDL_memmove(void* const, const void* const, const unsigned long);
+    return SDL_memmove(destination, source, length);
+}
+
+inline int xmemcmp(const void* const source1, const void* const source2, const unsigned long length) {
+    int SDL_memcmp(const void* const, const void* const, const unsigned long);
+    return SDL_memcmp(source1, source2, length);
+}
+
 inline void xsleep(const unsigned int millis) {
     void SDL_Delay(unsigned int);
     SDL_Delay(millis);
