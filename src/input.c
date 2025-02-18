@@ -1,5 +1,5 @@
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include "xlvgl.h"
 #include "defs.h"
 #include "video.h"
@@ -96,12 +96,12 @@ static void processMouseButton(const SDL_Event* const event, bool const down) {
 static void processKeyDown(const SDL_Event* const event) {
     unsigned key = 0;
 
-    switch (event->key.keysym.sym) {
-        case SDLK_RIGHT:
+    switch (event->key.key) {
+        case SDLK_RIGHT: fallthrough
         case SDLK_KP_PLUS:
             key = LV_KEY_RIGHT;
             break;
-        case SDLK_LEFT:
+        case SDLK_LEFT: fallthrough
         case SDLK_KP_MINUS:
             key = LV_KEY_LEFT;
             break;
@@ -120,11 +120,11 @@ static void processKeyDown(const SDL_Event* const event) {
         case SDLK_DELETE:
             key = LV_KEY_DEL;
             break;
-        case SDLK_KP_ENTER:
+        case SDLK_KP_ENTER: fallthrough
         case SDLK_RETURN:
             key = LV_KEY_ENTER;
             break;
-        case SDLK_TAB:
+        case SDLK_TAB: fallthrough
         case SDLK_PAGEDOWN:
             key = LV_KEY_NEXT;
             break;
@@ -147,18 +147,19 @@ static void processKeyDown(const SDL_Event* const event) {
 void inputProcessEvent(const SDL_Event* const event) {
     assert(videoInitialized() && gInitialized);
     switch (event->type) {
-        case SDL_MOUSEMOTION:
-            gMouseX = event->motion.x;
-            gMouseY = event->motion.y;
+        case SDL_EVENT_MOUSE_MOTION:
+            gMouseX = (int) event->motion.x;
+            gMouseY = (int) event->motion.y;
             lv_indev_read(gMouse);
             break;
-        case SDL_MOUSEBUTTONDOWN:
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
             processMouseButton(event, true);
             break;
-        case SDL_MOUSEBUTTONUP:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
             processMouseButton(event, false);
             break;
-        case SDL_WINDOWEVENT:
+        case SDL_EVENT_WINDOW_MOUSE_ENTER: fallthrough
+        case SDL_EVENT_WINDOW_FOCUS_GAINED:
             gMousePressed = false;
             gMouseWheelPressed = false;
             gKeyboardInput = 0;
@@ -166,19 +167,19 @@ void inputProcessEvent(const SDL_Event* const event) {
             lv_indev_read(gMouseWheel);
             lv_indev_read(gKeyboard);
             break;
-        case SDL_MOUSEWHEEL:
+        case SDL_EVENT_MOUSE_WHEEL:
             gMouseWheelDiff = (short) -(event->wheel.y);
             lv_indev_read(gMouseWheel);
             break;
-        case SDL_KEYDOWN:
+        case SDL_EVENT_KEY_DOWN:
             processKeyDown(event);
             break;
-        case SDL_KEYUP:
+        case SDL_EVENT_KEY_UP:
             gKeyboardInput = 0;
             lv_indev_read(gKeyboard);
             break;
-        case SDL_TEXTINPUT:
-            gKeyboardInput = *((unsigned*) event->text.text);
+        case SDL_EVENT_TEXT_INPUT:
+            strncpy((char*) &gKeyboardInput, event->text.text, sizeof(int));
             lv_indev_read(gKeyboard);
             break;
     }

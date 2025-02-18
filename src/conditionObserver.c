@@ -1,12 +1,12 @@
 
-#include <SDL2/SDL_mutex.h>
+#include <SDL3/SDL_mutex.h>
 #include "conditionObserver.h"
 
 struct _ConditionObserver {
     void* const variablePointer; // allocated elsewhere
     const ConditionObserverVariableType variableType;
-    SDL_mutex* const mutex;
-    SDL_cond* const cond;
+    SDL_Mutex* const mutex;
+    SDL_Condition* const condition;
     bool locked;
 };
 
@@ -14,46 +14,46 @@ ConditionObserver* conditionObserverCreate(void* const variablePointer, const Co
     ConditionObserver* const observer = xmalloc(sizeof *observer);
     *(void**) &observer->variablePointer = variablePointer;
     *(int*) &observer->variableType = variableType;
-    assert(*(SDL_mutex**) &observer->mutex = SDL_CreateMutex());
-    assert(*(SDL_cond**) &observer->cond = SDL_CreateCond());
+    assert(*(SDL_Mutex**) &observer->mutex = SDL_CreateMutex());
+    assert(*(SDL_Condition**) &observer->condition = SDL_CreateCondition());
     observer->locked = false;
     return observer;
 }
 
 void conditionObserverGetVariableValue(ConditionObserver* const observer, void* const buffer) {
-    assert(!SDL_LockMutex(observer->mutex));
+    SDL_LockMutex(observer->mutex);
     xmemcpy(buffer, observer->variablePointer, observer->variableType);
-    assert(!SDL_UnlockMutex(observer->mutex));
+    SDL_UnlockMutex(observer->mutex);
 }
 
 void conditionObserverSetVariableValue(ConditionObserver* const observer, const void* const value) {
-    assert(!SDL_LockMutex(observer->mutex));
+    SDL_LockMutex(observer->mutex);
     observer->locked = true;
 
     xmemcpy(observer->variablePointer, value, observer->variableType);
-    assert(!SDL_CondBroadcast(observer->cond));
+    SDL_BroadcastCondition(observer->condition);
 
     observer->locked = false;
-    assert(!SDL_UnlockMutex(observer->mutex));
+    SDL_UnlockMutex(observer->mutex);
 }
 
 void conditionObserverWaitForVariableValue(ConditionObserver* const observer, const void* const value) {
-    assert(!SDL_LockMutex(observer->mutex));
+    SDL_LockMutex(observer->mutex);
     observer->locked = true;
 
     while (xmemcmp(observer->variablePointer, value, observer->variableType) != 0)
-        assert(!SDL_CondWait(observer->cond, observer->mutex));
+        SDL_WaitCondition(observer->condition, observer->mutex);
 
     observer->locked = false;
-    assert(!SDL_UnlockMutex(observer->mutex));
+    SDL_UnlockMutex(observer->mutex);
 }
 
 void conditionObserverDestroy(ConditionObserver* const observer) {
-    assert(!SDL_LockMutex(observer->mutex));
+    SDL_LockMutex(observer->mutex);
     assert(!observer->locked);
-    assert(!SDL_UnlockMutex(observer->mutex));
+    SDL_UnlockMutex(observer->mutex);
 
-    SDL_DestroyCond(observer->cond);
+    SDL_DestroyCondition(observer->condition);
     SDL_DestroyMutex(observer->mutex);
     xfree(observer);
 }

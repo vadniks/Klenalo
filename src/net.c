@@ -1,5 +1,5 @@
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <ifaddrs.h>
 #include <net/if.h>
 #include "lifecycle.h"
@@ -24,7 +24,7 @@ bool netInitialized(void) {
 static void scanNets(void) {
     assert(lifecycleInitialized() && gInitialized);
 
-    listSynchronizeIteration(gNetsList, true, true);
+//    listSynchronizeIteration(gNetsList, true, true);
     listClear(gNetsList);
 
     struct ifaddrs* ifaddrRoot;
@@ -62,7 +62,7 @@ static void scanNets(void) {
 
         listAddBack(gNetsList, net);
     }
-    listSynchronizeIteration(gNetsList, true, false);
+//    listSynchronizeIteration(gNetsList, true, false);
 
     freeifaddrs(ifaddrRoot);
 }

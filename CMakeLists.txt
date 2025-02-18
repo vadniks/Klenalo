@@ -36,6 +36,8 @@ add_compile_options(-fPIE)
 add_link_options(-pie -z relro)
 # linker (man ld) -rpath=dir # gdb info symbol <addr>
 
+# TODO: try leak sanitizer with sdl3
+
 add_compile_options(-Wno-language-extension-token)
 add_compile_options(-Wno-gnu-folding-constant)
 add_compile_options(-Wno-logical-op-parentheses)
@@ -47,7 +49,7 @@ file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h src/*/*.c src/*/*.h)
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
 include_directories(lib/lvgl/include)
-target_link_libraries(${PROJECT_NAME} c m SDL2 ${PROJECT_SOURCE_DIR}/lib/lvgl/bin/liblvgl.a freetype SDL2_net)
+target_link_libraries(${PROJECT_NAME} c m SDL3 ${PROJECT_SOURCE_DIR}/lib/lvgl/bin/liblvgl.a freetype) # SDL3_net) TODO
 
 file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
 

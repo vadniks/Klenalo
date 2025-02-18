@@ -1,6 +1,5 @@
 
-#include <SDL2/SDL.h>
-#include <time.h>
+#include <SDL3/SDL.h>
 #include "xlvgl.h"
 #include "video.h"
 #include "input.h"
@@ -36,6 +35,7 @@ static struct {
     gBackgroundActionsLooper = {nullptr, nullptr},
     gNetActionsLooper = {nullptr, nullptr};
 
+static unsigned int getTicks(void);
 static int backgroundActionsLoop(void* const);
 static int netActionsLoop(void* const);
 
@@ -43,11 +43,10 @@ void lifecycleInit(void) {
     assert(!gInitialized);
     gInitialized = true;
 
-    assert(SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0"));
-    assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) == 0);
+    assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS));
 
     lv_init();
-    lv_tick_set_cb(SDL_GetTicks);
+    lv_tick_set_cb(getTicks);
     lv_delay_set_cb(SDL_Delay);
 
     gUIRWMutex = rwMutexCreate();
@@ -63,6 +62,10 @@ void lifecycleInit(void) {
 
     assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, "backgroundActions", nullptr));
     assert(gNetActionsLooper.thread = SDL_CreateThread(netActionsLoop, "netActions", nullptr));
+}
+
+static unsigned int getTicks(void) {
+    return SDL_GetTicks() & 0xffffffff;
 }
 
 static void delayThread(const unsigned startMillis) {
@@ -115,9 +118,9 @@ bool lifecycleInitialized(void) {
 }
 
 unsigned long lifecycleCurrentTimeMillis(void) {
-    struct timespec timespec;
-    assert(!clock_gettime(CLOCK_REALTIME, &timespec));
-    return (unsigned long) timespec.tv_sec * 1'000ul + (unsigned long) timespec.tv_nsec / 1'000'000ul;
+    SDL_Time ticks;
+    assert(SDL_GetCurrentTime(&ticks));
+    return ticks / 1'000'000ul;
 }
 
 static void scheduleAction(const LifecycleAsyncActionFunction function, void* nullable const parameter, const int delayMillis, const Looper looper) {
@@ -158,7 +161,7 @@ void lifecycleLoop(void) {
 
         SDL_Event event;
         while (SDL_PollEvent(&event) == 1) {
-            if (event.type == SDL_QUIT) {
+            if (event.type == SDL_EVENT_QUIT) {
                 rwMutexWriteUnlock(gUIRWMutex);
                 goto end;
             }

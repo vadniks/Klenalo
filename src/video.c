@@ -1,5 +1,5 @@
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include "xlvgl.h"
 #include "defs.h"
 #include "lifecycle.h"
@@ -24,37 +24,29 @@ void videoInit(void) {
     gInitialized = true;
 
     assert(SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl"));
-    assert(SDL_SetHint(SDL_HINT_RENDER_BATCHING, "1"));
+    assert(SDL_SetHint(SDL_HINT_RENDER_GPU_LOW_POWER, "1"));
     assert(SDL_SetHint(SDL_HINT_RENDER_LINE_METHOD, "3"));
-    assert(SDL_SetHint(SDL_HINT_RENDER_OPENGL_SHADERS, "1"));
-    assert(SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2"));
     assert(SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1"));
 
-    assert(gWindow = SDL_CreateWindow(
+    assert(SDL_CreateWindowAndRenderer(
         constsString(CONSTS_STRING_TITLE),
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
         gWidth,
         gHeight,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI
+        SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY,
+        &gWindow,
+        &gRenderer
     ));
-    SDL_SetWindowMinimumSize(gWindow, gWidth, gHeight);
-
-    assert(gRenderer = SDL_CreateRenderer(
-        gWindow,
-        0,
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
-    ));
-    assert(!SDL_RenderSetScale(gRenderer, 1.0f, 1.0f));
+    assert(gWindow && gRenderer);
+    assert(SDL_SetWindowPosition(gWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED));
+    assert(SDL_SetWindowMinimumSize(gWindow, gWidth, gHeight));
+    assert(SDL_SetRenderVSync(gRenderer, 1));
+    assert(SDL_SetRenderScale(gRenderer, 1.0f, 1.0f));
+    assert(SDL_StartTextInput(gWindow));
 
     assert(gDisplay = lv_display_create(gWidth, gHeight));
     lv_display_set_color_format(gDisplay, LV_COLOR_FORMAT_ARGB8888);
     lv_display_set_antialiasing(gDisplay, true);
     lv_display_set_flush_cb(gDisplay, render);
-
-    float hdpi, vdpi;
-    assert(!SDL_GetDisplayDPI(0, nullptr, &hdpi, &vdpi));
-    lv_display_set_dpi(gDisplay, (int) min(hdpi, vdpi));
 
     resizeBuffer(gDisplay);
 }
@@ -72,7 +64,7 @@ static void resizeBuffer(lv_display_t* const display) {
     ));
 
     void* buffer = nullptr;
-    assert(!SDL_LockTexture(gTexture, nullptr, &buffer, unusedVariableBuffer(int)));
+    assert(SDL_LockTexture(gTexture, nullptr, &buffer, unusedVariableBuffer(int)));
     assert(buffer);
     SDL_UnlockTexture(gTexture);
 
@@ -91,10 +83,10 @@ static void render(lv_display_t* const display, const lv_area_t* const, byte* co
 
     SDL_UnlockTexture(gTexture); // upload changes to video memory
 
-    assert(!SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0));
-    assert(!SDL_RenderClear(gRenderer));
-    assert(!SDL_RenderCopy(gRenderer, gTexture, nullptr, nullptr));
-    SDL_RenderPresent(gRenderer);
+    assert(SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 0));
+    assert(SDL_RenderClear(gRenderer));
+    assert(SDL_RenderTexture(gRenderer, gTexture, nullptr, nullptr));
+    assert(SDL_RenderPresent(gRenderer));
 
     lv_display_flush_ready(display);
 }
@@ -110,15 +102,17 @@ lv_display_t* videoDisplay(void) {
 
 void videoProcessEvent(const SDL_Event* const event) {
     assert(lifecycleInitialized() && gInitialized);
-    if (event->type != SDL_WINDOWEVENT || event->window.event != SDL_WINDOWEVENT_SIZE_CHANGED) return;
+    if (event->type != SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) return;
 
-    SDL_GetRendererOutputSize(gRenderer, &gWidth, &gHeight);
+    assert(SDL_GetRenderOutputSize(gRenderer, &gWidth, &gHeight));
     resizeBuffer(gDisplay);
 }
 
 void videoQuit(void) {
     assert(gInitialized);
     gInitialized = false;
+
+    assert(SDL_StopTextInput(gWindow));
 
     lv_display_delete(gDisplay);
 

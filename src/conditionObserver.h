@@ -10,6 +10,7 @@ typedef enum : byte {
     CONDITION_OBSERVER_VARIABLE_TYPE_SHORT = sizeof(short),
     CONDITION_OBSERVER_VARIABLE_TYPE_INT = sizeof(int),
     CONDITION_OBSERVER_VARIABLE_TYPE_LONG = sizeof(long),
+    CONDITION_OBSERVER_VARIABLE_TYPE_POINTER = CONDITION_OBSERVER_VARIABLE_TYPE_LONG
 } ConditionObserverVariableType;
 
 struct _ConditionObserver;
