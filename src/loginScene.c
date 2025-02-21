@@ -76,12 +76,13 @@ void loginSceneInit(void) {
 static int gUpdateNetsCounter = 0;
 
 static void updateNets(void* nullable const) {
+    const bool wasOpened = lv_dropdown_is_open(gNetsDropdown);
+
     if (++gUpdateNetsCounter < 100)
         goto end;
     else
         gUpdateNetsCounter = 0;
 
-    lv_dropdown_close(gNetsDropdown);
     lv_dropdown_clear_options(gNetsDropdown);
 
     if (gNetsList) listDestroy(gNetsList);
@@ -89,6 +90,9 @@ static void updateNets(void* nullable const) {
 
     for (int i = 0; i < listSize(gNetsList); i++)
         lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
+
+    if (wasOpened)
+        lv_dropdown_open(gNetsDropdown);
 
     end:
     lifecycleRunInMainThread(updateNets, nullptr);
