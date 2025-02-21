@@ -33,8 +33,10 @@ add_compile_options(-fsanitize-trap=all)
 add_compile_options(-fcf-protection=full)
 #add_compile_options(-fhardened)
 add_compile_options(-fPIE)
-add_link_options(-pie -z relro)
+add_link_options(-pie -Wl,-z,relro,-z,now) #add_link_options(-pie -z relro)
 # linker (man ld) -rpath=dir # gdb info symbol <addr>
+
+set(CMAKE_EXE_LINKER_FLAGS "-Wl,--wrap=lv_malloc_core,--wrap=lv_realloc_core,--wrap=lv_free_core")
 
 # TODO: try leak sanitizer with sdl3
 

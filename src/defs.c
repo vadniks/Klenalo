@@ -35,3 +35,11 @@ void xfree(void* nullable const memory) {
     free(memory);
     if (memory) gAllocations--;
 }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection" // CLion doesn't fully support new C23's attributes syntax
+[[gnu::used]] void* nullable __wrap_lv_malloc_core(const unsigned long size) { return xmalloc(size); }
+[[gnu::used]] void* nullable __wrap_lv_realloc_core(void* nullable const pointer, const unsigned long size) { return xrealloc(pointer, size); }
+[[gnu::used]] void __wrap_lv_free_core(void* nullable const memory) { xfree(memory); }
+#pragma clang diagnostic pop
