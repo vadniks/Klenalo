@@ -77,3 +77,9 @@ inline void xyield(void) {
     void thrd_yield(void);
     thrd_yield();
 }
+
+[[deprecated("debug only")]] inline void printMemory(void* const memory, const int size) {
+    int printf(const char* const, ...);
+    for (int i = 0; i < size; printf("%x", ((byte*) memory)[i++]));
+    printf("\n");
+}

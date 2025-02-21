@@ -8,13 +8,18 @@
 const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
 
 static atomic bool gInitialized = false;
-static List* gNetsList = nullptr; // <NetNet*>
+
+static struct {
+    List* list; // <NetNet*>
+    SDL_Mutex* mutex;
+} gNetsList = {nullptr, nullptr};
 
 void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
     gInitialized = true;
 
-    gNetsList = listCreate(true, xfree);
+    gNetsList.list = listCreate(false, xfree);
+    assert(gNetsList.mutex = SDL_CreateMutex());
 }
 
 bool netInitialized(void) {
@@ -24,7 +29,8 @@ bool netInitialized(void) {
 static void scanNets(void) {
     assert(lifecycleInitialized() && gInitialized);
 
-    listClear(gNetsList);
+    SDL_LockMutex(gNetsList.mutex);
+    listClear(gNetsList.list);
 
     struct ifaddrs* ifaddrRoot;
     assert(!getifaddrs(&ifaddrRoot));
@@ -54,13 +60,14 @@ static void scanNets(void) {
             (netAddress & 0xff000000) == 0x0a000000 || (netAddress & 0xfff00000) == 0xac100000 || (netAddress & 0xffff0000) == 0xc0a80000, // private networks https://www.arin.net/reference/research/statistics/address_filters
             (ifaddr->ifa_flags & IFF_RUNNING) == IFF_RUNNING
         }, sizeof *net);
-        xmemcpy(net, ifaddr->ifa_name, sizeof(net->name));
+        strncpy((char*) net->name, ifaddr->ifa_name, sizeof(net->name));
 
         assert(hostAddress >= netAddress && hostAddress <= broadcastAddress);
         assert(net->hostsCount);
 
-        listAddBack(gNetsList, net);
+        listAddBack(gNetsList.list, net);
     }
+    SDL_UnlockMutex(gNetsList.mutex);
 
     freeifaddrs(ifaddrRoot);
 }
@@ -73,7 +80,10 @@ static void* netDuplicator(const void* const old) {
 }
 
 List* nullable netNets(void) {
-    return listCopy(gNetsList, false, netDuplicator);
+    SDL_LockMutex(gNetsList.mutex);
+    List* const new = listCopy(gNetsList.list, false, netDuplicator);
+    SDL_UnlockMutex(gNetsList.mutex);
+    return new;
 }
 
 void netAddressToString(char* const buffer, const int address) {
@@ -101,5 +111,6 @@ void netQuit(void) {
     assert(gInitialized);
     gInitialized = false;
 
-    listDestroy(gNetsList);
+    SDL_DestroyMutex(gNetsList.mutex);
+    listDestroy(gNetsList.list);
 }
