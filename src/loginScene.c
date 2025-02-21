@@ -61,7 +61,7 @@ void loginSceneInit(void) {
     lv_textarea_set_placeholder_text(gPasswordTextArea, constsString(CONSTS_STRING_PASSWORD));
     lv_textarea_set_password_mode(gPasswordTextArea, true);
 
-    assert(gRememberCredentialsCheckbox = lv_checkbox_create(gScreen));
+    assert(gRememberCredentialsCheckbox = lv_checkbox_create(gScreen)); // TODO: change font to one that supports unicode symbols
     lv_checkbox_set_text_static(gRememberCredentialsCheckbox, constsString(CONSTS_STRING_REMEMBER_CREDENTIALS));
 
     assert(gSignInButton = lv_button_create(gScreen));

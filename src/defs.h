@@ -10,12 +10,20 @@ typedef unsigned char byte;
 #define staticAssert(x) static_assert(x)
 #define atomic _Atomic
 #define fallthrough [[fallthrough]];
-#define nullable // everything that isn't marked with nullable is considered to be not null
+
+// everything that isn't marked with nullable is considered to be not null
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wnullability-extension"
+#pragma clang diagnostic ignored "-Wnullability-completeness"
+#define nullable _Nullable
+#else
+#define nullable
+#endif
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
 #define boolToStr(x) ((x) ? "true" : "false")
-#define xAlloca(x) (void*) ((byte[x]) {0})
+#define xAlloca(x) xmemset((byte[x]) {0}, 0, x)
 #define unusedVariableBuffer(x) (x[1]) {0}
 #define USED(x) ((void) (x))
 #define STUB USED(0)
@@ -28,51 +36,41 @@ inline void assert(const bool condition) {
     if (!condition) abort();
 }
 
+#ifdef __clang__
+[[clang::overloadable]] inline unsigned short swapBytes(unsigned short value) { return __builtin_bswap16(value); }
+[[clang::overloadable]] inline unsigned int swapBytes(unsigned int value) { return __builtin_bswap32(value); }
+[[clang::overloadable]] inline unsigned long swapBytes(unsigned long value) { return __builtin_bswap64(value); }
+#else
 #define swapBytes(x) _Generic((x), unsigned short: swapShort, unsigned int: swapInt, unsigned long: swapLong) (x)
 inline unsigned short swapShort(unsigned short value) { return __builtin_bswap16(value); }
 inline unsigned int swapInt(unsigned int value) { return __builtin_bswap32(value); }
 inline unsigned long swapLong(unsigned long value) { return __builtin_bswap64(value); }
+#endif
 
-inline void* xmalloc(const unsigned long size) {
-    void* SDL_malloc(const unsigned long);
-    return SDL_malloc(size);
-}
-
-#define zmalloc(x) xcalloc(x, 1)
-inline void* xcalloc(const unsigned numberOfElements, const unsigned long size) {
-    void* SDL_calloc(const unsigned long, const unsigned long);
-    return SDL_calloc(numberOfElements, size);
-}
-
-inline void* xrealloc(void* nullable const memory, const unsigned long size) {
-    assert(size);
-    void* SDL_realloc(void* const, const unsigned long);
-    return SDL_realloc(memory, size);
-}
-
-static inline void xfree(void* const memory) { // static inline so it can be pointed to as a callback too
-    void SDL_free(void* const);
-    SDL_free(memory);
-}
+unsigned long xallocations(void);
+void* nullable xmalloc(const unsigned long size);
+void* nullable xcalloc(const unsigned long elements, const unsigned long size);
+void* nullable xrealloc(void* nullable const pointer, const unsigned long size);
+void xfree(void* nullable const memory);
 
 inline void* xmemset(void* const destination, const int value, const unsigned long length) {
-    void* SDL_memset(void* const, const int, const unsigned long);
-    return SDL_memset(destination, value, length);
+    void* memset(void* const, const int, const unsigned long);
+    return memset(destination, value, length);
 }
 
 inline void* xmemcpy(void* const destination, const void* const source, const unsigned long length) {
-    void* SDL_memcpy(void* const, const void* const, const unsigned long);
-    return SDL_memcpy(destination, source, length);
+    void* memcpy(void* const, const void* const, const unsigned long);
+    return memcpy(destination, source, length);
 }
 
 inline void* xmemmove(void* const destination, const void* const source, const unsigned long length) {
-    void* SDL_memmove(void* const, const void* const, const unsigned long);
-    return SDL_memmove(destination, source, length);
+    void* memmove(void* const, const void* const, const unsigned long);
+    return memmove(destination, source, length);
 }
 
 inline int xmemcmp(const void* const source1, const void* const source2, const unsigned long length) {
-    int SDL_memcmp(const void* const, const void* const, const unsigned long);
-    return SDL_memcmp(source1, source2, length);
+    int memcmp(const void* const, const void* const, const unsigned long);
+    return memcmp(source1, source2, length);
 }
 
 inline void xyield(void) {

@@ -43,6 +43,8 @@ void lifecycleInit(void) {
     assert(!gInitialized);
     gInitialized = true;
 
+    // lvgl memory functions? TODO
+    assert(SDL_SetMemoryFunctions(xmalloc, xcalloc, xrealloc, xfree));
     assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS));
 
     lv_init();
