@@ -36,8 +36,8 @@ static struct {
     gNetActionsLooper = {nullptr, nullptr};
 
 static unsigned int getTicks(void);
-static int backgroundActionsLoop(void* const);
-static int netActionsLoop(void* const);
+static int backgroundActionsLoop(void* nullable const);
+static int netActionsLoop(void* nullable const);
 
 void lifecycleInit(void) {
     assert(!gInitialized);
@@ -100,7 +100,7 @@ static void backgroundActionsLoopBody(void) {
     }
 }
 
-static int backgroundActionsLoop(void* const) {
+static int backgroundActionsLoop(void* nullable const) {
     threadLoop(backgroundActionsLoopBody);
     return 0;
 }
@@ -109,7 +109,7 @@ static void netLoopBody(void) {
     netListen();
 }
 
-static int netActionsLoop(void* const) {
+static int netActionsLoop(void* nullable const) {
     threadLoop(netLoopBody);
     return 0;
 }
