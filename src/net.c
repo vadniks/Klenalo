@@ -24,7 +24,6 @@ bool netInitialized(void) {
 static void scanNets(void) {
     assert(lifecycleInitialized() && gInitialized);
 
-//    listSynchronizeIteration(gNetsList, true, true); // TODO: recursive rw lock for both read and write
     listClear(gNetsList);
 
     struct ifaddrs* ifaddrRoot;
@@ -62,7 +61,6 @@ static void scanNets(void) {
 
         listAddBack(gNetsList, net);
     }
-//    listSynchronizeIteration(gNetsList, true, false);
 
     freeifaddrs(ifaddrRoot);
 }

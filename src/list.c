@@ -43,15 +43,6 @@ static inline void listRwMutexCommand(List* const list, const RWMutexCommand com
     if (list->rwMutex) rwMutexCommand(list->rwMutex, command);
 }
 
-void listSynchronizeIteration(List* const list, const bool write, const bool lock) {
-    assert(list->rwMutex);
-    rwMutexCommand(list->rwMutex,
-        lock
-            ? (write ? RW_MUTEX_COMMAND_WRITE_LOCK : RW_MUTEX_COMMAND_READ_LOCK)
-            : (write ? RW_MUTEX_COMMAND_WRITE_UNLOCK : RW_MUTEX_COMMAND_READ_UNLOCK)
-    );
-}
-
 List* nullable listCopy(List* const old, const bool synchronized, const ListItemDuplicator itemDuplicator) {
     listRwMutexCommand(old, RW_MUTEX_COMMAND_READ_LOCK);
 
