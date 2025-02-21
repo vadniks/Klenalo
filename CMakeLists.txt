@@ -17,7 +17,7 @@ add_compile_options("-O3")
 
 add_compile_options(-g)
 add_compile_options(-fstack-protector-all)
-add_compile_options(-fstack-check)
+#add_compile_options(-fstack-check)
 add_compile_options(-fstack-clash-protection)
 add_compile_options(-fsanitize=address) # abort_on_error=1:detect_leaks=0 as SDL has memory leaks
 add_link_options(-fsanitize=address)
