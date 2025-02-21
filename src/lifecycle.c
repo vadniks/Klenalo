@@ -43,7 +43,6 @@ void lifecycleInit(void) {
     assert(!gInitialized);
     gInitialized = true;
 
-    // lvgl memory functions? TODO
     assert(SDL_SetMemoryFunctions(xmalloc, xcalloc, xrealloc, xfree));
     assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS));
 
@@ -67,7 +66,7 @@ void lifecycleInit(void) {
 }
 
 static unsigned int getTicks(void) {
-    return SDL_GetTicks() & 0xffffffff;
+    return SDL_GetTicks() & ~0;
 }
 
 static void delayThread(const unsigned startMillis) {
