@@ -37,7 +37,7 @@ void videoInit(void) {
         &gRenderer
     ));
     assert(gWindow && gRenderer);
-    assert(SDL_SetWindowPosition(gWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED));
+    SDL_SetWindowPosition(gWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED); // no assert as it can fail on wayland
     assert(SDL_SetWindowMinimumSize(gWindow, gWidth, gHeight));
     assert(SDL_SetRenderVSync(gRenderer, 1));
     assert(SDL_SetRenderScale(gRenderer, 1.0f, 1.0f));

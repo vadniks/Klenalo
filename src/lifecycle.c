@@ -44,6 +44,7 @@ void lifecycleInit(void) {
     gInitialized = true;
 
     assert(SDL_SetMemoryFunctions(xmalloc, xcalloc, xrealloc, xfree));
+    assert(SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "wayland,x11"));
     assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS));
 
     lv_init();
