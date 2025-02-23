@@ -92,7 +92,7 @@ static void updateNets(void* nullable const) {
         lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
 
     if (wasOpened)
-        lv_dropdown_open(gNetsDropdown);
+        lv_dropdown_open(gNetsDropdown); // to update the visual representation of dropdown's options while it's being opened
 
     end:
     lifecycleRunInMainThread(updateNets, nullptr);
