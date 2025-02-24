@@ -23,6 +23,7 @@ static lv_obj_t* gSignInLabel = nullptr;
 
 static List* nullable gNetsList = nullptr; // <NetNet*>
 static NetNet* gSelectedNet = nullptr; // allocated elsewhere
+static int gUpdateNetsTicker = 0;
 
 static void netsDropdownValueChangeCallback(lv_event_t* nullable const);
 static void updateNets(void* nullable const);
@@ -74,15 +75,13 @@ void loginSceneInit(void) {
     lifecycleRunInMainThread(updateNets, nullptr);
 }
 
-static int gUpdateNetsCounter = 0;
-
 static void updateNets(void* nullable const) {
     const bool wasOpened = lv_dropdown_is_open(gNetsDropdown);
 
-    if (++gUpdateNetsCounter < 100)
+    if (++gUpdateNetsTicker < 100)
         goto end;
     else
-        gUpdateNetsCounter = 0;
+        gUpdateNetsTicker = 0;
 
     lv_dropdown_clear_options(gNetsDropdown);
 
