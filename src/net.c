@@ -104,7 +104,7 @@ static void ping(void) {
 }
 
 void netListen(void) {
-    if (!lifecycleInitialized() || !gInitialized) return;
+    assert(lifecycleInitialized() && gInitialized);
     scanNets();
 }
 
