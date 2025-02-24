@@ -37,6 +37,7 @@ static void scanNets(void) {
 
     for (struct ifaddrs* ifaddr = ifaddrRoot; ifaddr; ifaddr = ifaddr->ifa_next) {
         if (ifaddr->ifa_addr->sa_family != AF_INET) continue;
+        if ((ifaddr->ifa_flags & IFF_UP) != IFF_UP) continue;
 
         const unsigned hostAddress = swapBytes(*(unsigned*) (ifaddr->ifa_addr->sa_data + 2));
         const unsigned subnetMask = swapBytes(*(unsigned*) (ifaddr->ifa_netmask->sa_data + 2));

@@ -88,8 +88,11 @@ static void updateNets(void* nullable const) {
     if (gNetsList) listDestroy(gNetsList);
     if (!(gNetsList = netNets())) goto end;
 
-    for (int i = 0; i < listSize(gNetsList); i++)
-        lv_dropdown_add_option(gNetsDropdown, ((NetNet*) listGet(gNetsList, i))->name, i);
+    for (int i = 0; i < listSize(gNetsList); i++) {
+        NetNet* const net = listGet(gNetsList, i);
+        if (!net->running) continue;
+        lv_dropdown_add_option(gNetsDropdown, net->name, i);
+    }
 
     if (wasOpened)
         lv_dropdown_open(gNetsDropdown); // to update the visual representation of dropdown's options while it's being opened
