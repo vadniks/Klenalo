@@ -74,8 +74,8 @@ void scenesLoadScreen(lv_obj_t* const screen) {
 }
 
 static void textareaFocusEventsHandler(lv_event_t* const event) {
-//    SDL_Window* window = videoWindow();
-//    lv_event_get_code(event) == LV_EVENT_FOCUSED ? SDL_StartTextInput(window) : SDL_StopTextInput(window);
+    SDL_Window* window = videoWindow();
+    lv_event_get_code(event) == LV_EVENT_FOCUSED ? SDL_StartTextInput(window) : SDL_StopTextInput(window);
 }
 
 void scenesAddInputFocusEventsHandlerToTextarea(struct _lv_obj_t* const textarea) {

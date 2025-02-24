@@ -115,7 +115,6 @@ static void netsDropdownValueChangeCallback(lv_event_t* nullable const) {
 
 void loginSceneQuit(void) {
     assert(gInitialized);
-    gInitialized = false;
 
     if (gNetsList) listDestroy(gNetsList);
 
@@ -128,4 +127,6 @@ void loginSceneQuit(void) {
     lv_obj_delete(gWelcomeLabel);
     lv_group_delete(gGroup);
     lv_obj_delete(gScreen);
+
+    gInitialized = false;
 }

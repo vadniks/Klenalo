@@ -187,7 +187,6 @@ void lifecycleLoop(void) {
 
 void lifecycleQuit(void) {
     assert(gInitialized);
-    gInitialized = false;
 
     SDL_WaitThread(gNetActionsLooper.thread, nullptr);
     SDL_WaitThread(gBackgroundActionsLooper.thread, nullptr);
@@ -197,6 +196,8 @@ void lifecycleQuit(void) {
     resourcesQuit();
     inputQuit();
     videoQuit();
+
+    gInitialized = false;
 
     listDestroy(gBackgroundActionsLooper.queue);
     listDestroy(gMainActionsLooper.queue);

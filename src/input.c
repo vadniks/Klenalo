@@ -187,9 +187,10 @@ void inputProcessEvent(const SDL_Event* const event) {
 
 void inputQuit(void) {
     assert(gInitialized);
-    gInitialized = false;
 
     lv_indev_delete(gMouse);
     lv_indev_delete(gMouseWheel);
     lv_indev_delete(gKeyboard);
+
+    gInitialized = false;
 }
