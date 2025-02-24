@@ -83,7 +83,9 @@ static void render(lv_display_t* const display, const lv_area_t* const, byte* co
 
     SDL_UnlockTexture(gTexture); // upload changes to video memory
 
-    assert(SDL_SetRenderDrawColor(gRenderer, 20, 22, 25, 0));
+    assert(SDL_GetSystemTheme() != SDL_SYSTEM_THEME_LIGHT
+        ? SDL_SetRenderDrawColor(gRenderer, 20, 22, 25, 0)
+        : SDL_SetRenderDrawColor(gRenderer, 245, 245, 245, 0));
     assert(SDL_RenderClear(gRenderer));
     assert(SDL_RenderTexture(gRenderer, gTexture, nullptr, nullptr));
     assert(SDL_RenderPresent(gRenderer));

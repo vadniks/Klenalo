@@ -1,4 +1,5 @@
 
+#include <SDL3/SDL.h>
 #include "xlvgl.h"
 #include "defs.h"
 #include "video.h"
@@ -34,7 +35,7 @@ void resourcesInit(void) {
         videoDisplay(),
         (lv_color_t) {0xff, 0x79, 0x29},
         (lv_color_t) {0xff, 0xe5, 0x00},
-        true,
+        SDL_GetSystemTheme() != SDL_SYSTEM_THEME_LIGHT,
         gFonts[fontIndex(RESOURCES_FONT_SIZE_NORMAL, RESOURCES_FONT_TYPE_REGULAR)]
     ));
 }
