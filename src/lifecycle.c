@@ -62,8 +62,8 @@ void lifecycleInit(void) {
     scenesInit();
     netInit();
 
-    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, "backgroundActions", nullptr));
-    assert(gNetActionsLooper.thread = SDL_CreateThread(netActionsLoop, "netActions", nullptr));
+    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, "Klenalo:bg", nullptr));
+    assert(gNetActionsLooper.thread = SDL_CreateThread(netActionsLoop, "Klenalo:net", nullptr));
 }
 
 static unsigned int getTicks(void) {
