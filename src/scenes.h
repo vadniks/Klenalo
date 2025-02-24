@@ -14,4 +14,5 @@ bool scenesInitialized(void);
 ScenesScene scenesCurrentScene(void);
 void scenesSetCurrentScene(const ScenesScene scene);
 void scenesLoadScreen(struct _lv_obj_t* const screen);
+void scenesAddInputFocusEventsHandlerToTextarea(struct _lv_obj_t* const textarea); // to enable text input for that textarea
 void scenesQuit(void);

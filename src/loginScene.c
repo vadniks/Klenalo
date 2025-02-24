@@ -56,6 +56,7 @@ void loginSceneInit(void) {
     lv_label_set_text_static(gAddressLabel, constsString(CONSTS_STRING_IP_ADDRESS));
 
     assert(gPasswordTextArea = lv_textarea_create(gScreen));
+    scenesAddInputFocusEventsHandlerToTextarea(gPasswordTextArea);
     lv_textarea_set_one_line(gPasswordTextArea, true);
     lv_textarea_set_max_length(gPasswordTextArea, MAX_PASSWORD_SIZE);
     lv_textarea_set_placeholder_text(gPasswordTextArea, constsString(CONSTS_STRING_PASSWORD));

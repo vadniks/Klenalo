@@ -41,7 +41,6 @@ void videoInit(void) {
     assert(SDL_SetWindowMinimumSize(gWindow, gWidth, gHeight));
     assert(SDL_SetRenderVSync(gRenderer, 1));
     assert(SDL_SetRenderScale(gRenderer, 1.0f, 1.0f));
-    assert(SDL_StartTextInput(gWindow));
 
     assert(gDisplay = lv_display_create(gWidth, gHeight));
     lv_display_set_color_format(gDisplay, LV_COLOR_FORMAT_ARGB8888);
@@ -97,6 +96,11 @@ bool videoInitialized(void) {
     return gInitialized;
 }
 
+SDL_Window* videoWindow(void) {
+    assert(lifecycleInitialized() && gInitialized);
+    return gWindow;
+}
+
 lv_display_t* videoDisplay(void) {
     assert(lifecycleInitialized() && gInitialized);
     return gDisplay;
@@ -113,8 +117,6 @@ void videoProcessEvent(const SDL_Event* const event) {
 void videoQuit(void) {
     assert(gInitialized);
     gInitialized = false;
-
-    assert(SDL_StopTextInput(gWindow));
 
     lv_display_delete(gDisplay);
 
