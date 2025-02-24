@@ -119,6 +119,10 @@ bool lifecycleInitialized(void) {
     return gInitialized;
 }
 
+bool lifecycleRunning(void) {
+    return gRunning;
+}
+
 unsigned long lifecycleCurrentTimeMillis(void) {
     SDL_Time ticks;
     assert(SDL_GetCurrentTime(&ticks));
