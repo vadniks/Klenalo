@@ -45,7 +45,7 @@ static void scanNets(void) {
         const unsigned broadcastAddress = netAddress + ~subnetMask;
 
         byte mask = 0;
-        for (unsigned n = subnetMask; n; n & 1 ? mask++ : STUB, n >>= 1);
+        for (unsigned n = subnetMask; n; n & 1 ? mask++ : 0, n >>= 1);
 
         if (hostAddress == 0x7f000001 || (ifaddr->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) continue;
 
