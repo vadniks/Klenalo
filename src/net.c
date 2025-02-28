@@ -151,10 +151,11 @@ void netLoop(void) {
 
 void netQuit(void) {
     assert(gInitialized);
-    gInitialized = false;
 
     if (gSelectedNet && gNetListenerSocket)
         netStopListeningNet();
+
+    gInitialized = false;
 
     listDestroy(gNetsList);
 
