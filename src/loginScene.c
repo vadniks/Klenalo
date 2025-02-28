@@ -78,7 +78,7 @@ void loginSceneInit(void) {
 static void updateNets(void* nullable const) {
     const bool wasOpened = lv_dropdown_is_open(gNetsDropdown);
 
-    if (++gUpdateNetsTicker < 100)
+    if (++gUpdateNetsTicker < 100) // TODO: refactor
         goto end;
     else
         gUpdateNetsTicker = 0;
