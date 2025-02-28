@@ -106,6 +106,8 @@ void netAddressToString(char* const buffer, const int address) {
 
 void netStartListeningNet(const NetNet* const net) {
     assert(lifecycleInitialized() && gInitialized);
+
+    SDL_LockMutex(gMutex);
     assert(!gSelectedNet && !gNetListenerSocket);
 
     gSelectedNet = netDuplicator(net);
@@ -118,10 +120,14 @@ void netStartListeningNet(const NetNet* const net) {
     assert(SDLNet_WaitUntilResolved(addr, -1) == 1);
 
     assert(gNetListenerSocket = SDLNet_CreateDatagramSocket(addr, NET_LISTENER_SOCKET_PORT));
+
+    SDL_UnlockMutex(gMutex);
 }
 
 void netStopListeningNet(void) {
     assert(lifecycleInitialized() && gInitialized);
+
+    SDL_LockMutex(gMutex);
     assert(gSelectedNet && gNetListenerSocket);
 
     xfree(gSelectedNet);
@@ -129,6 +135,8 @@ void netStopListeningNet(void) {
 
     SDLNet_DestroyDatagramSocket(gNetListenerSocket);
     gNetListenerSocket = nullptr;
+
+    SDL_UnlockMutex(gMutex);
 }
 
 static void ping(void) {
