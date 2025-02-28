@@ -10,11 +10,9 @@ const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
 static const short NET_LISTENER_SOCKET_PORT = 8080;
 
 static atomic bool gInitialized = false;
+static SDL_Mutex* gMutex = nullptr;
 
-static struct {
-    List* list; // <NetNet*>
-    SDL_Mutex* mutex;
-} gNetsList = {nullptr, nullptr};
+static List* gNetsList = nullptr; // <NetNet*>
 
 static NetNet* gSelectedNet = nullptr;
 static SDLNet_DatagramSocket* gNetListenerSocket = nullptr;
@@ -25,8 +23,9 @@ void netInit(void) {
 
     assert(SDLNet_Init());
 
-    gNetsList.list = listCreate(false, xfree);
-    assert(gNetsList.mutex = SDL_CreateMutex());
+    assert(gMutex = SDL_CreateMutex());
+
+    gNetsList = listCreate(false, xfree);
 }
 
 bool netInitialized(void) {
@@ -36,8 +35,8 @@ bool netInitialized(void) {
 static void scanNets(void) {
     assert(lifecycleInitialized() && gInitialized);
 
-    SDL_LockMutex(gNetsList.mutex);
-    listClear(gNetsList.list);
+    SDL_LockMutex(gMutex);
+    listClear(gNetsList);
 
     struct ifaddrs* ifaddrRoot;
     assert(!getifaddrs(&ifaddrRoot));
@@ -73,9 +72,9 @@ static void scanNets(void) {
         assert(hostAddress >= netAddress && hostAddress <= broadcastAddress);
         assert(net->hostsCount);
 
-        listAddBack(gNetsList.list, net);
+        listAddBack(gNetsList, net);
     }
-    SDL_UnlockMutex(gNetsList.mutex);
+    SDL_UnlockMutex(gMutex);
 
     freeifaddrs(ifaddrRoot);
 }
@@ -88,9 +87,9 @@ static void* netDuplicator(const void* const old) {
 }
 
 List* nullable netNets(void) {
-    SDL_LockMutex(gNetsList.mutex);
-    List* const new = listCopy(gNetsList.list, false, netDuplicator);
-    SDL_UnlockMutex(gNetsList.mutex);
+    SDL_LockMutex(gMutex);
+    List* const new = listCopy(gNetsList, false, netDuplicator);
+    SDL_UnlockMutex(gMutex);
     return new;
 }
 
@@ -149,8 +148,9 @@ void netQuit(void) {
     if (gSelectedNet && gNetListenerSocket)
         netStopListeningNet();
 
-    SDL_DestroyMutex(gNetsList.mutex);
-    listDestroy(gNetsList.list);
+    listDestroy(gNetsList);
+
+    SDL_DestroyMutex(gMutex);
 
     SDLNet_Quit();
 }
