@@ -32,7 +32,7 @@ typedef unsigned char byte;
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
 inline void assert(const bool condition) {
-    [[gnu::noreturn]] void abort(void);
+    [[gnu::noreturn]] void abort(void); // TODO: add stacktrace/backtrace printing
     if (!condition) abort();
 }
 
