@@ -1,11 +1,13 @@
 
 #include <SDL3/SDL.h>
+#include <SDL3_net/SDL_net.h>
 #include <ifaddrs.h>
 #include <net/if.h>
 #include "lifecycle.h"
 #include "net.h"
 
 const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
+static const short NET_LISTENER_SOCKET_PORT = 8080;
 
 static atomic bool gInitialized = false;
 
@@ -14,9 +16,14 @@ static struct {
     SDL_Mutex* mutex;
 } gNetsList = {nullptr, nullptr};
 
+static NetNet* gSelectedNet = nullptr;
+static SDLNet_DatagramSocket* gNetListenerSocket = nullptr;
+
 void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
     gInitialized = true;
+
+    assert(SDLNet_Init());
 
     gNetsList.list = listCreate(false, xfree);
     assert(gNetsList.mutex = SDL_CreateMutex());
@@ -98,6 +105,33 @@ void netAddressToString(char* const buffer, const int address) {
     assert(count > 0 && count < NET_ADDRESS_STRING_SIZE);
 }
 
+void netStartListeningNet(const NetNet* const net) {
+    assert(lifecycleInitialized() && gInitialized);
+    assert(!gSelectedNet && !gNetListenerSocket);
+
+    gSelectedNet = netDuplicator(net);
+
+    char host[NET_ADDRESS_STRING_SIZE];
+    netAddressToString(host, gSelectedNet->host);
+
+    SDLNet_Address* const addr = SDLNet_ResolveHostname(host);
+    assert(addr);
+    assert(SDLNet_WaitUntilResolved(addr, -1) == 1);
+
+    assert(gNetListenerSocket = SDLNet_CreateDatagramSocket(addr, NET_LISTENER_SOCKET_PORT));
+}
+
+void netStopListeningNet(void) {
+    assert(lifecycleInitialized() && gInitialized);
+    assert(gSelectedNet && gNetListenerSocket);
+
+    xfree(gSelectedNet);
+    gSelectedNet = nullptr;
+
+    SDLNet_DestroyDatagramSocket(gNetListenerSocket);
+    gNetListenerSocket = nullptr;
+}
+
 static void ping(void) {
 
 
@@ -112,6 +146,11 @@ void netQuit(void) {
     assert(gInitialized);
     gInitialized = false;
 
+    if (gSelectedNet && gNetListenerSocket)
+        netStopListeningNet();
+
     SDL_DestroyMutex(gNetsList.mutex);
     listDestroy(gNetsList.list);
+
+    SDLNet_Quit();
 }
