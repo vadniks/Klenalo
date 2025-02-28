@@ -106,12 +106,8 @@ static int backgroundActionsLoop(void* nullable const) {
     return 0;
 }
 
-static void netLoopBody(void) {
-    netListen();
-}
-
 static int netActionsLoop(void* nullable const) {
-    threadLoop(netLoopBody);
+    threadLoop(netLoop);
     return 0;
 }
 

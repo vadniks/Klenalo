@@ -20,5 +20,5 @@ void netInit(void);
 bool netInitialized(void);
 List* nullable netNets(void); // <NetNet*> caller must destroy the list, the embedded deallocator will free the items
 void netAddressToString(char* const buffer, const int address);
-void netListen(void);
+void netLoop(void);
 void netQuit(void);

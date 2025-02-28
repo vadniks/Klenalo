@@ -103,7 +103,7 @@ static void ping(void) {
 
 }
 
-void netListen(void) {
+void netLoop(void) {
     assert(lifecycleInitialized() && gInitialized);
     scanNets();
 }

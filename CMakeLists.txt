@@ -49,8 +49,11 @@ file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h src/*/*.c src/*/*.h)
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
 include_directories(lib/lvgl/include)
-target_link_libraries(${PROJECT_NAME} c m SDL3 ${PROJECT_SOURCE_DIR}/lib/lvgl/bin/liblvgl.a freetype sodium) # SDL3_net) TODO
+include_directories(lib/sdl3net/include)
+target_link_libraries(${PROJECT_NAME} c m SDL3 ${PROJECT_SOURCE_DIR}/lib/lvgl/bin/liblvgl.a freetype sodium ${PROJECT_SOURCE_DIR}/lib/sdl3net/bin/libSDL3_net.so) # SDL3_net) TODO
 
 file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
 
 #add_compile_definitions(TESTING)
+
+# mkdir build && (cd build; cmake .. && cd .. && cmake --build build -j 18)
