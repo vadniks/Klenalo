@@ -120,6 +120,7 @@ void netStartListeningNet(const NetNet* const net) {
     assert(SDLNet_WaitUntilResolved(addr, -1) == 1);
 
     assert(gNetListenerSocket = SDLNet_CreateDatagramSocket(addr, NET_LISTENER_SOCKET_PORT));
+    SDLNet_UnrefAddress(addr);
 
     SDL_UnlockMutex(gMutex);
 }
