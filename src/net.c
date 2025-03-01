@@ -117,23 +117,6 @@ static SDLNet_Address* resolveAddress(const int address) {
 }
 
 void netStartListeningNet(const NetNet* const net) { // TODO: rename to listeningAndBroadcasting
-    typedef enum {_} SDLNet_SocketType;
-    typedef int Socket;
-
-    typedef struct {
-        SDLNet_SocketType socktype;
-        SDLNet_Address *addr;  // bound to this address (NULL for any).
-        Uint16 port;
-        Socket handle;
-        int percent_loss;
-        Uint8 recv_buffer[64*1024];
-        SDLNet_Datagram **pending_output;
-        int pending_output_len;
-        int pending_output_allocation;
-        SDLNet_Address *latest_recv_addrs[64];
-        int latest_recv_addrs_idx;
-    } XSDLNet_DatagramSocket;
-
     assert(lifecycleInitialized() && gInitialized);
 
     SDL_LockMutex(gMutex);
@@ -146,7 +129,7 @@ void netStartListeningNet(const NetNet* const net) { // TODO: rename to listenin
     SDLNet_UnrefAddress(addr);
 
     assert(!setsockopt(
-        ((XSDLNet_DatagramSocket*) gNetListenerSocket)->handle,
+        *(int*) ((void*) gNetListenerSocket + 20),
         SOL_SOCKET,
         SO_BROADCAST,
         (int[1]){1},
@@ -180,7 +163,7 @@ static void broadcastNetForHosts(void) {
     const int bufferSize = 1024;
     byte buffer[bufferSize] = {0}; // TODO
 
-    SDLNet_Address* const addr = resolveAddress(gSelectedNet->broadcast);
+    SDLNet_Address* const addr = resolveAddress(gSelectedNet->broadcast); // can be changed to 0xffffffff (INADDR_BROADCAST) and therefore there's no need to use each subnet's mask and therefore there's no need to use getifaddrs as it can be replaced with SDLNet_GetLocalAddresses
     assert(SDLNet_SendDatagram(gNetListenerSocket, addr, NET_LISTENER_SOCKET_PORT, buffer, bufferSize));
     SDLNet_UnrefAddress(addr);
 
