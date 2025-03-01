@@ -22,7 +22,7 @@ static lv_obj_t* gSignInButton = nullptr;
 static lv_obj_t* gSignInLabel = nullptr;
 
 static List* nullable gNetsList = nullptr; // <NetNet*>
-static NetNet* gSelectedNet = nullptr; // allocated elsewhere
+static const NetNet* gSelectedNet = nullptr;
 static int gUpdateNetsTicker = 0;
 
 static void netsDropdownValueChangeCallback(lv_event_t* nullable const);
@@ -110,6 +110,8 @@ static void netsDropdownValueChangeCallback(lv_event_t* nullable const) {
     char address[NET_ADDRESS_STRING_SIZE];
     netAddressToString(address, gSelectedNet->host);
     lv_label_set_text_fmt(gAddressLabel, "%s: %s", constsString(CONSTS_STRING_IP_ADDRESS), address);
+
+    netStartListeningNet(gSelectedNet); // TODO: test only
 }
 
 void loginSceneQuit(void) {
