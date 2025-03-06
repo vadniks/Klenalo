@@ -36,6 +36,8 @@ inline void assert(const bool condition) {
     if (!condition) abort();
 }
 
+// TODO: add a 'generic' copy/duplicate function
+
 #ifdef __clang__
 [[clang::overloadable]] inline unsigned short swapBytes(unsigned short value) { return __builtin_bswap16(value); }
 [[clang::overloadable]] inline unsigned int swapBytes(unsigned int value) { return __builtin_bswap32(value); }
