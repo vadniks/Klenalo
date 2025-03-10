@@ -6,7 +6,7 @@
 #include "net.h"
 
 const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
-static const short NET_BROADCAST_LISTENER_SOCKET_PORT = 8080;
+static const short NET_BROADCAST_SOCKET_PORT = 8080;
 
 static atomic bool gInitialized = false;
 static SDL_Mutex* gMutex = nullptr;
@@ -14,7 +14,7 @@ static SDL_Mutex* gMutex = nullptr;
 static List* gSubnetsList = nullptr; // <NetSubnet*>
 
 static NetSubnet* gSelectedSubnet = nullptr;
-static SDLNet_DatagramSocket* gNetBroadcastListenerSocket = nullptr;
+static SDLNet_DatagramSocket* gSubnetBroadcastSocket = nullptr;
 static atomic bool gBroadcastingAndListeningSubnet = false; // TODO: remove as we have gSelectedSubnet
 static int gBroadcastTicker = 0;
 
@@ -119,16 +119,16 @@ void netStartBroadcastingAndListeningSubnet(const NetSubnet* const subnet) {
     assert(lifecycleInitialized() && gInitialized);
 
     SDL_LockMutex(gMutex);
-    assert(!gSelectedSubnet && !gNetBroadcastListenerSocket && !gBroadcastingAndListeningSubnet);
+    assert(!gSelectedSubnet && !gSubnetBroadcastSocket && !gBroadcastingAndListeningSubnet);
 
     gSelectedSubnet = subnetDuplicator(subnet);
 
     SDLNet_Address* const addr = resolveAddress(gSelectedSubnet->host);
-    assert(gNetBroadcastListenerSocket = SDLNet_CreateDatagramSocket(addr, NET_BROADCAST_LISTENER_SOCKET_PORT));
+    assert(gSubnetBroadcastSocket = SDLNet_CreateDatagramSocket(addr, NET_BROADCAST_SOCKET_PORT));
     SDLNet_UnrefAddress(addr);
 
     assert(!setsockopt(
-        *(int*) ((void*) gNetBroadcastListenerSocket + 20),
+        *(int*) ((void*) gSubnetBroadcastSocket + 20),
         SOL_SOCKET,
         SO_BROADCAST,
         (int[1]){1},
@@ -143,13 +143,13 @@ void netStopBroadcastingAndListeningSubnet(void) {
     assert(lifecycleInitialized() && gInitialized);
 
     SDL_LockMutex(gMutex);
-    assert(gSelectedSubnet && gNetBroadcastListenerSocket && gBroadcastingAndListeningSubnet);
+    assert(gSelectedSubnet && gSubnetBroadcastSocket && gBroadcastingAndListeningSubnet);
 
     xfree(gSelectedSubnet);
     gSelectedSubnet = nullptr;
 
-    SDLNet_DestroyDatagramSocket(gNetBroadcastListenerSocket);
-    gNetBroadcastListenerSocket = nullptr;
+    SDLNet_DestroyDatagramSocket(gSubnetBroadcastSocket);
+    gSubnetBroadcastSocket = nullptr;
 
     gBroadcastingAndListeningSubnet = false;
     SDL_UnlockMutex(gMutex);
@@ -157,13 +157,13 @@ void netStopBroadcastingAndListeningSubnet(void) {
 
 static void broadcastSubnetForHosts(void) {
     SDL_LockMutex(gMutex);
-    assert(gSelectedSubnet && gNetBroadcastListenerSocket && gBroadcastingAndListeningSubnet);
+    assert(gSelectedSubnet && gSubnetBroadcastSocket && gBroadcastingAndListeningSubnet);
 
     const int bufferSize = 1024;
     byte buffer[bufferSize] = {0}; // TODO
 
     SDLNet_Address* const addr = resolveAddress(gSelectedSubnet->broadcast); // can be changed to 0xffffffff (INADDR_BROADCAST) and therefore there's no need to use each subnet's mask and therefore there's no need to use getifaddrs as it can be replaced with SDLNet_GetLocalAddresses
-    assert(SDLNet_SendDatagram(gNetBroadcastListenerSocket, addr, NET_BROADCAST_LISTENER_SOCKET_PORT, buffer, bufferSize));
+    assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, addr, NET_BROADCAST_SOCKET_PORT, buffer, bufferSize));
     SDLNet_UnrefAddress(addr);
 
     SDL_UnlockMutex(gMutex);
