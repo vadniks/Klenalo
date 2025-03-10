@@ -21,8 +21,8 @@ static lv_obj_t* gRememberCredentialsCheckbox = nullptr;
 static lv_obj_t* gSignInButton = nullptr;
 static lv_obj_t* gSignInLabel = nullptr;
 
-static List* nullable gSubnetsList = nullptr; // <NetSubnet*>
-static const NetSubnet* gSelectedSubnet = nullptr;
+static List* nullable gSubnetsList = nullptr; // <int>
+static int gSelectedSubnet = 0;
 static int gFetchSubnetsTicker = 0;
 
 static void subnetsDropdownValueChangeCallback(lv_event_t* nullable const);
@@ -89,9 +89,12 @@ static void fetchSubnets(void* nullable const) {
     if (!(gSubnetsList = netSubnets())) goto end;
 
     for (int i = 0; i < listSize(gSubnetsList); i++) {
-        NetSubnet* const subnet = listGet(gSubnetsList, i);
-        if (!subnet->running) continue;
-        lv_dropdown_add_option(gSubnetsDropdown, subnet->name, i);
+        const int subnet = (int) (long) listGet(gSubnetsList, i);
+
+        char address[NET_ADDRESS_STRING_SIZE];
+        netAddressToString(address, subnet);
+
+        lv_dropdown_add_option(gSubnetsDropdown, address, i);
     }
 
     if (wasOpened)
@@ -102,14 +105,14 @@ static void fetchSubnets(void* nullable const) {
 }
 
 static void subnetsDropdownValueChangeCallback(lv_event_t* nullable const) {
-    if (!gSubnetsList || !(gSelectedSubnet = listGet(gSubnetsList, (int) lv_dropdown_get_selected(gSubnetsDropdown)))) {
+    if (!gSubnetsList || !(gSelectedSubnet = (int) (long) listGet(gSubnetsList, (int) lv_dropdown_get_selected(gSubnetsDropdown)))) {
         lv_label_set_text_static(gAddressLabel, constsString(CONSTS_STRING_IP_ADDRESS));
         return;
     }
 
     char address[NET_ADDRESS_STRING_SIZE];
-    netAddressToString(address, gSelectedSubnet->host);
-    lv_label_set_text_fmt(gAddressLabel, "%s: %s", constsString(CONSTS_STRING_IP_ADDRESS), address);
+    netAddressToString(address, gSelectedSubnet);
+    lv_label_set_text_fmt(/*TODO: remove as unnecessary*/gAddressLabel, "%s: %s", constsString(CONSTS_STRING_IP_ADDRESS), address);
 
     netStartBroadcastingAndListeningSubnet(gSelectedSubnet); // TODO: test only
 }

@@ -11,11 +11,10 @@ static const short NET_BROADCAST_SOCKET_PORT = 8080;
 static atomic bool gInitialized = false;
 static SDL_Mutex* gMutex = nullptr;
 
-static List* gSubnetsList = nullptr; // <NetSubnet*>
+static List* gSubnetsList = nullptr; // <int>
 
-static NetSubnet* gSelectedSubnet = nullptr;
+static atomic int gSelectedSubnet = 0;
 static SDLNet_DatagramSocket* gSubnetBroadcastSocket = nullptr;
-static atomic bool gBroadcastingAndListeningSubnet = false; // TODO: remove as we have gSelectedSubnet
 static int gBroadcastTicker = 0;
 
 void netInit(void) {
@@ -81,10 +80,7 @@ static void fetchSubnets(void) {
 }
 
 static void* subnetDuplicator(const void* const old) {
-    NetSubnet* const new = xmalloc(sizeof *new);
-    assert(new);
-    xmemcpy(new, old, sizeof *new);
-    return new;
+    return (void*) old; // addresses themselves are values
 }
 
 List* nullable netSubnets(void) {
@@ -96,6 +92,7 @@ List* nullable netSubnets(void) {
 
 void netAddressToString(char* const buffer, const int address) {
     assert(lifecycleInitialized() && gInitialized);
+    xmemset(buffer, 0, NET_ADDRESS_STRING_SIZE);
     const byte count = SDL_snprintf(
         buffer,
         NET_ADDRESS_STRING_SIZE,
@@ -115,15 +112,16 @@ static SDLNet_Address* resolveAddress(const int address) {
     return addr;
 }
 
-void netStartBroadcastingAndListeningSubnet(const NetSubnet* const subnet) {
+void netStartBroadcastingAndListeningSubnet(const int subnet) {
     assert(lifecycleInitialized() && gInitialized);
+    assert(subnet);
 
     SDL_LockMutex(gMutex);
-    assert(!gSelectedSubnet && !gSubnetBroadcastSocket && !gBroadcastingAndListeningSubnet);
+    assert(!gSelectedSubnet && !gSubnetBroadcastSocket);
 
-    gSelectedSubnet = subnetDuplicator(subnet);
+    gSelectedSubnet = subnet;
 
-    SDLNet_Address* const addr = resolveAddress(gSelectedSubnet->host);
+    SDLNet_Address* const addr = resolveAddress(gSelectedSubnet);
     assert(gSubnetBroadcastSocket = SDLNet_CreateDatagramSocket(addr, NET_BROADCAST_SOCKET_PORT));
     SDLNet_UnrefAddress(addr);
 
@@ -135,7 +133,6 @@ void netStartBroadcastingAndListeningSubnet(const NetSubnet* const subnet) {
         sizeof(int)
     ));
 
-    gBroadcastingAndListeningSubnet = true;
     SDL_UnlockMutex(gMutex);
 }
 
@@ -143,26 +140,24 @@ void netStopBroadcastingAndListeningSubnet(void) {
     assert(lifecycleInitialized() && gInitialized);
 
     SDL_LockMutex(gMutex);
-    assert(gSelectedSubnet && gSubnetBroadcastSocket && gBroadcastingAndListeningSubnet);
+    assert(gSelectedSubnet && gSubnetBroadcastSocket);
 
-    xfree(gSelectedSubnet);
-    gSelectedSubnet = nullptr;
+    gSelectedSubnet = 0;
 
     SDLNet_DestroyDatagramSocket(gSubnetBroadcastSocket);
     gSubnetBroadcastSocket = nullptr;
 
-    gBroadcastingAndListeningSubnet = false;
     SDL_UnlockMutex(gMutex);
 }
 
 static void broadcastSubnetForHosts(void) {
     SDL_LockMutex(gMutex);
-    assert(gSelectedSubnet && gSubnetBroadcastSocket && gBroadcastingAndListeningSubnet);
+    assert(gSelectedSubnet && gSubnetBroadcastSocket);
 
     const int bufferSize = 1024;
     byte buffer[bufferSize] = {0}; // TODO
 
-    SDLNet_Address* const addr = resolveAddress(gSelectedSubnet->broadcast); // can be changed to 0xffffffff (INADDR_BROADCAST) and therefore there's no need to use each subnet's mask and therefore there's no need to use getifaddrs as it can be replaced with SDLNet_GetLocalAddresses
+    SDLNet_Address* const addr = resolveAddress(~0);
     assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, addr, NET_BROADCAST_SOCKET_PORT, buffer, bufferSize));
     SDLNet_UnrefAddress(addr);
 
@@ -176,7 +171,7 @@ void netLoop(void) {
 
     fetchSubnets();
 
-    if (gBroadcastingAndListeningSubnet && ++gBroadcastTicker == 100) {
+    if (gSelectedSubnet && ++gBroadcastTicker == /*TODO: extract*/100) {
         gBroadcastTicker = 0;
         broadcastSubnetForHosts();
     }
@@ -185,7 +180,7 @@ void netLoop(void) {
 void netQuit(void) {
     assert(gInitialized);
 
-    if (gBroadcastingAndListeningSubnet) netStopBroadcastingAndListeningSubnet();
+    if (gSelectedSubnet) netStopBroadcastingAndListeningSubnet();
 
     gInitialized = false;
 
