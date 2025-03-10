@@ -14,19 +14,19 @@ static atomic bool gInitialized = false;
 static lv_obj_t* gScreen = nullptr;
 static lv_group_t* gGroup = nullptr;
 static lv_obj_t* gWelcomeLabel = nullptr;
-static lv_obj_t* gNetsDropdown = nullptr;
+static lv_obj_t* gSubnetsDropdown = nullptr;
 static lv_obj_t* gAddressLabel = nullptr;
 static lv_obj_t* gPasswordTextArea = nullptr;
 static lv_obj_t* gRememberCredentialsCheckbox = nullptr;
 static lv_obj_t* gSignInButton = nullptr;
 static lv_obj_t* gSignInLabel = nullptr;
 
-static List* nullable gNetsList = nullptr; // <NetNet*>
-static const NetNet* gSelectedNet = nullptr;
-static int gUpdateNetsTicker = 0;
+static List* nullable gSubnetsList = nullptr; // <NetSubnet*>
+static const NetSubnet* gSelectedSubnet = nullptr;
+static int gFetchSubnetsTicker = 0;
 
-static void netsDropdownValueChangeCallback(lv_event_t* nullable const);
-static void updateNets(void* nullable const);
+static void subnetsDropdownValueChangeCallback(lv_event_t* nullable const);
+static void fetchSubnets(void* nullable const);
 
 void loginSceneInit(void) {
     assert(scenesInitialized() && !gInitialized);
@@ -46,10 +46,10 @@ void loginSceneInit(void) {
     lv_obj_set_style_text_font(gWelcomeLabel, resourcesFont(RESOURCES_FONT_SIZE_LARGE, RESOURCES_FONT_TYPE_REGULAR), 0);
     lv_label_set_text_static(gWelcomeLabel, constsString(CONSTS_STRING_WELCOME));
 
-    assert(gNetsDropdown = lv_dropdown_create(gScreen));
-    lv_dropdown_set_text(gNetsDropdown, constsString(CONSTS_STRING_NETWORK));
-    lv_dropdown_clear_options(gNetsDropdown);
-    lv_obj_add_event_cb(gNetsDropdown, netsDropdownValueChangeCallback, LV_EVENT_VALUE_CHANGED, nullptr);
+    assert(gSubnetsDropdown = lv_dropdown_create(gScreen));
+    lv_dropdown_set_text(gSubnetsDropdown, constsString(CONSTS_STRING_NETWORK));
+    lv_dropdown_clear_options(gSubnetsDropdown);
+    lv_obj_add_event_cb(gSubnetsDropdown, subnetsDropdownValueChangeCallback, LV_EVENT_VALUE_CHANGED, nullptr);
 
     assert(gAddressLabel = lv_label_create(gScreen));
     lv_obj_set_style_text_font(gAddressLabel, resourcesFont(RESOURCES_FONT_SIZE_NORMAL, RESOURCES_FONT_TYPE_BOLD), 0);
@@ -72,59 +72,59 @@ void loginSceneInit(void) {
     lv_label_set_text_static(gSignInLabel, constsString(CONSTS_STRING_SIGN_IN));
     lv_obj_center(gSignInLabel);
 
-    lifecycleRunInMainThread(updateNets, nullptr);
+    lifecycleRunInMainThread(fetchSubnets, nullptr);
 }
 
-static void updateNets(void* nullable const) {
-    const bool wasOpened = lv_dropdown_is_open(gNetsDropdown);
+static void fetchSubnets(void* nullable const) {
+    const bool wasOpened = lv_dropdown_is_open(gSubnetsDropdown);
 
-    if (++gUpdateNetsTicker < 100) // TODO: refactor
+    if (++gFetchSubnetsTicker < 100) // TODO: refactor
         goto end;
     else
-        gUpdateNetsTicker = 0;
+        gFetchSubnetsTicker = 0;
 
-    lv_dropdown_clear_options(gNetsDropdown);
+    lv_dropdown_clear_options(gSubnetsDropdown);
 
-    if (gNetsList) listDestroy(gNetsList);
-    if (!(gNetsList = netNets())) goto end;
+    if (gSubnetsList) listDestroy(gSubnetsList);
+    if (!(gSubnetsList = netSubnets())) goto end;
 
-    for (int i = 0; i < listSize(gNetsList); i++) {
-        NetNet* const net = listGet(gNetsList, i);
-        if (!net->running) continue;
-        lv_dropdown_add_option(gNetsDropdown, net->name, i);
+    for (int i = 0; i < listSize(gSubnetsList); i++) {
+        NetSubnet* const subnet = listGet(gSubnetsList, i);
+        if (!subnet->running) continue;
+        lv_dropdown_add_option(gSubnetsDropdown, subnet->name, i);
     }
 
     if (wasOpened)
-        lv_dropdown_open(gNetsDropdown); // to update the visual representation of dropdown's options while it's being opened
+        lv_dropdown_open(gSubnetsDropdown); // to update the visual representation of dropdown's options while it's being opened
 
     end:
-    lifecycleRunInMainThread(updateNets, nullptr);
+    lifecycleRunInMainThread(fetchSubnets, nullptr);
 }
 
-static void netsDropdownValueChangeCallback(lv_event_t* nullable const) {
-    if (!gNetsList || !(gSelectedNet = listGet(gNetsList, (int) lv_dropdown_get_selected(gNetsDropdown)))) {
+static void subnetsDropdownValueChangeCallback(lv_event_t* nullable const) {
+    if (!gSubnetsList || !(gSelectedSubnet = listGet(gSubnetsList, (int) lv_dropdown_get_selected(gSubnetsDropdown)))) {
         lv_label_set_text_static(gAddressLabel, constsString(CONSTS_STRING_IP_ADDRESS));
         return;
     }
 
     char address[NET_ADDRESS_STRING_SIZE];
-    netAddressToString(address, gSelectedNet->host);
+    netAddressToString(address, gSelectedSubnet->host);
     lv_label_set_text_fmt(gAddressLabel, "%s: %s", constsString(CONSTS_STRING_IP_ADDRESS), address);
 
-    netStartListeningNet(gSelectedNet); // TODO: test only
+    netStartBroadcastingAndListeningSubnet(gSelectedSubnet); // TODO: test only
 }
 
 void loginSceneQuit(void) {
     assert(gInitialized);
 
-    if (gNetsList) listDestroy(gNetsList);
+    if (gSubnetsList) listDestroy(gSubnetsList);
 
     lv_obj_delete(gSignInLabel);
     lv_obj_delete(gSignInButton);
     lv_obj_delete(gRememberCredentialsCheckbox);
     lv_obj_delete(gPasswordTextArea);
     lv_obj_delete(gAddressLabel);
-    lv_obj_delete(gNetsDropdown);
+    lv_obj_delete(gSubnetsDropdown);
     lv_obj_delete(gWelcomeLabel);
     lv_group_delete(gGroup);
     lv_obj_delete(gScreen);
