@@ -107,7 +107,7 @@ void netStartBroadcastingAndListeningSubnet(const int subnet) {
         *(int*) ((void*) gSubnetBroadcastSocket + 20),
         SOL_SOCKET,
         SO_BROADCAST,
-        (int[1]){1},
+        (int[1]) {1},
         sizeof(int)
     ));
 
