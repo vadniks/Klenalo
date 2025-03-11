@@ -10,6 +10,7 @@ typedef unsigned char byte;
 #define staticAssert(x) static_assert(x)
 #define atomic _Atomic
 #define fallthrough [[fallthrough]];
+#define packed [[gnu::packed]]
 
 // everything that isn't marked with nullable is considered to be not null
 #ifdef __clang__
