@@ -66,8 +66,8 @@ void lifecycleInit(void) {
     assert(gNetActionsLooper.thread = SDL_CreateThread(netActionsLoop, "Klenalo:net", nullptr));
 }
 
-static unsigned int getTicks(void) {
-    return SDL_GetTicks() & ~0;
+static unsigned getTicks(void) {
+    return (unsigned) SDL_GetTicks();
 }
 
 static void delayThread(const unsigned startMillis) {
