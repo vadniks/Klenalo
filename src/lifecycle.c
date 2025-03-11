@@ -35,7 +35,7 @@ static struct {
     gBackgroundActionsLooper = {nullptr, nullptr},
     gNetActionsLooper = {nullptr, nullptr};
 
-static unsigned int getTicks(void);
+static unsigned getTicks(void);
 static int backgroundActionsLoop(void* nullable const);
 static int netActionsLoop(void* nullable const);
 
