@@ -44,10 +44,13 @@ static void fetchSubnets(void) { // TODO: this actually fetches hosts' addresses
     assert(numAddrs && addrs);
 
     for (int i = 0; i < numAddrs; i++) {
-        struct addrinfo* const info = *(struct addrinfo**) ((void*) addrs[i] + 32);
-        if (info->ai_addr->sa_family != AF_INET) continue;
+        const struct addrinfo* const info = *(struct addrinfo**) ((void*) addrs[i] + 32);
+        const int addr = (int) swapBytes(*(unsigned*) (info->ai_addr->sa_data + 2));
 
-        listAddBack(gSubnetsList, (void*) (long) swapBytes(*(unsigned*) (info->ai_addr->sa_data + 2)));
+        if (info->ai_addr->sa_family != AF_INET) continue;
+        if (addr == INADDR_LOOPBACK) continue;
+
+        listAddBack(gSubnetsList, (void*) (long) addr);
     }
 
     SDLNet_FreeLocalAddresses(addrs);
