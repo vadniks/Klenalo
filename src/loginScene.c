@@ -78,7 +78,7 @@ void loginSceneInit(void) {
 static void fetchSubnets(void* nullable const) {
     const bool wasOpened = lv_dropdown_is_open(gSubnetsDropdown);
 
-    if (++gFetchSubnetsTicker < 100) // TODO: refactor
+    if (++gFetchSubnetsTicker < /*TODO: extract*/100) // TODO: refactor
         goto end;
     else
         gFetchSubnetsTicker = 0;

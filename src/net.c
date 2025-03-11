@@ -121,7 +121,7 @@ void netStartBroadcastingAndListeningSubnet(const int subnet) {
 
     gSelectedSubnet = subnet;
 
-    SDLNet_Address* const addr = resolveAddress(gSelectedSubnet);
+    SDLNet_Address* const addr = resolveAddress(gSelectedSubnet/*TODO: probably won't work as it's not the host address but a subnet address*/);
     assert(gSubnetBroadcastSocket = SDLNet_CreateDatagramSocket(addr, NET_BROADCAST_SOCKET_PORT));
     SDLNet_UnrefAddress(addr);
 
