@@ -43,7 +43,7 @@ static inline void listRwMutexCommand(List* const list, const RWMutexCommand com
     if (list->rwMutex) rwMutexCommand(list->rwMutex, command);
 }
 
-List* nullable listCopy(List* const old, const bool synchronized, const ListItemDuplicator itemDuplicator) {
+List* nullable listCopy(List* const old, const bool synchronized, const ListItemDuplicator nullable itemDuplicator) {
     listRwMutexCommand(old, RW_MUTEX_COMMAND_READ_LOCK);
 
     if (!old->size) {
@@ -56,7 +56,7 @@ List* nullable listCopy(List* const old, const bool synchronized, const ListItem
 
     assert(new->values = xmalloc(old->size * sizeof(void*)));
     new->size = old->size;
-    for (int i = 0; i < old->size; new->values[i] = itemDuplicator(old->values[i]), i++);
+    for (int i = 0; i < old->size; new->values[i] = itemDuplicator ? itemDuplicator(old->values[i]) : old->values[i], i++);
 
     listRwMutexCommand(old, RW_MUTEX_COMMAND_READ_UNLOCK);
     return new;

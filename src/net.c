@@ -57,13 +57,9 @@ static void fetchSubnetsHostsAddresses(void) {
     SDL_UnlockMutex(gMutex);
 }
 
-static void* subnetHostAddressDuplicator(const void* const address) { // TODO: make itemDuplicator optional in List
-    return (void*) address; // addresses themselves are values
-}
-
 List* nullable netSubnetsHostsAddresses(void) {
     SDL_LockMutex(gMutex);
-    List* const new = listCopy(gSubnetsHostsAddressesList, false, subnetHostAddressDuplicator);
+    List* const new = listCopy(gSubnetsHostsAddressesList, false, nullptr);
     SDL_UnlockMutex(gMutex);
     return new;
 }
