@@ -1,8 +1,32 @@
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <execinfo.h>
 #include "defs.h"
 
 static atomic unsigned long gAllocations = 0;
+
+static void printStackTrace(void) {
+    const int size = 0xf;
+    void* array[size];
+
+    const int actualSize = backtrace(array, size);
+    char** const strings = backtrace_symbols(array, actualSize);
+    if (!strings) return;
+
+    for (int i = 3; i < actualSize; i++)
+        fprintf(stderr, "%s\n", strings[i]);
+
+    free(strings);
+}
+
+void assert(const bool condition) {
+    if (!condition) {
+        fputs("Assert failed\n", stderr);
+        printStackTrace();
+        abort();
+    }
+}
 
 unsigned long xallocations(void) {
     return gAllocations;

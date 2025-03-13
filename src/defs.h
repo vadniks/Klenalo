@@ -32,10 +32,7 @@ typedef unsigned char byte;
 
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
-inline void assert(const bool condition) {
-    [[gnu::noreturn]] void abort(void); // TODO: add stacktrace/backtrace printing
-    if (!condition) abort();
-}
+void assert(const bool condition);
 
 // TODO: add a 'generic' copy/duplicate function
 
@@ -82,8 +79,3 @@ inline void xyield(void) {
 }
 
 int printf(const char* const, ...);
-
-[[deprecated("debug only")]] inline void printMemory(void* const memory, const int size) {
-    for (int i = 0; i < size; printf("%x", ((byte*) memory)[i++]));
-    printf("\n");
-}
