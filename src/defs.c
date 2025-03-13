@@ -21,11 +21,10 @@ static void printStackTrace(void) {
 }
 
 void assert(const bool condition) {
-    if (!condition) {
-        fputs("Assert failed\n", stderr);
-        printStackTrace();
-        abort();
-    }
+    if (condition) return;
+    fputs("Assert failed\n", stderr);
+    printStackTrace();
+    abort();
 }
 
 unsigned long xallocations(void) {
