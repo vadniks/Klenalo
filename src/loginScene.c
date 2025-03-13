@@ -107,6 +107,8 @@ static void subnetsHostsAddressesDropdownValueChangeCallback(lv_event_t* nullabl
     );
     if (!gSelectedSubnetHostAddress) return;
 
+    lv_dropdown_set_text(gSubnetsHostsAddressesDropdown, nullptr);
+
     netStartBroadcastingAndListeningSubnet(gSelectedSubnetHostAddress); // TODO: test only
 }
 
