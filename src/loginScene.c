@@ -14,19 +14,19 @@ static atomic bool gInitialized = false;
 static lv_obj_t* gScreen = nullptr;
 static lv_group_t* gGroup = nullptr;
 static lv_obj_t* gWelcomeLabel = nullptr;
-static lv_obj_t* gSubnetsDropdown = nullptr;
-static lv_obj_t* gAddressLabel = nullptr;
+static lv_obj_t* gSubnetsHostsAddressesDropdown = nullptr;
+static lv_obj_t* gAddressLabel = nullptr; // TODO: remove
 static lv_obj_t* gPasswordTextArea = nullptr;
 static lv_obj_t* gRememberCredentialsCheckbox = nullptr;
 static lv_obj_t* gSignInButton = nullptr;
 static lv_obj_t* gSignInLabel = nullptr;
 
-static List* nullable gSubnetsList = nullptr; // <int>
-static int gSelectedSubnet = 0;
-static int gFetchSubnetsTicker = 0;
+static List* nullable gSubnetsHostsAddressesList = nullptr; // <int>
+static int gSelectedSubnetHostAddress = 0;
+static int gFetchSubnetsHostsAddressesTicker = 0;
 
-static void subnetsDropdownValueChangeCallback(lv_event_t* nullable const);
-static void fetchSubnets(void* nullable const);
+static void subnetsHostsAddressesDropdownValueChangeCallback(lv_event_t* nullable const);
+static void fetchSubnetsHostsAddresses(void* nullable const);
 
 void loginSceneInit(void) {
     assert(scenesInitialized() && !gInitialized);
@@ -46,10 +46,10 @@ void loginSceneInit(void) {
     lv_obj_set_style_text_font(gWelcomeLabel, resourcesFont(RESOURCES_FONT_SIZE_LARGE, RESOURCES_FONT_TYPE_REGULAR), 0);
     lv_label_set_text_static(gWelcomeLabel, constsString(CONSTS_STRING_WELCOME));
 
-    assert(gSubnetsDropdown = lv_dropdown_create(gScreen));
-    lv_dropdown_set_text(gSubnetsDropdown, constsString(CONSTS_STRING_NETWORK));
-    lv_dropdown_clear_options(gSubnetsDropdown);
-    lv_obj_add_event_cb(gSubnetsDropdown, subnetsDropdownValueChangeCallback, LV_EVENT_VALUE_CHANGED, nullptr);
+    assert(gSubnetsHostsAddressesDropdown = lv_dropdown_create(gScreen));
+    lv_dropdown_set_text(gSubnetsHostsAddressesDropdown, constsString(CONSTS_STRING_NETWORK));
+    lv_dropdown_clear_options(gSubnetsHostsAddressesDropdown);
+    lv_obj_add_event_cb(gSubnetsHostsAddressesDropdown, subnetsHostsAddressesDropdownValueChangeCallback, LV_EVENT_VALUE_CHANGED, nullptr);
 
     assert(gAddressLabel = lv_label_create(gScreen));
     lv_obj_set_style_text_font(gAddressLabel, resourcesFont(RESOURCES_FONT_SIZE_NORMAL, RESOURCES_FONT_TYPE_BOLD), 0);
@@ -72,62 +72,62 @@ void loginSceneInit(void) {
     lv_label_set_text_static(gSignInLabel, constsString(CONSTS_STRING_SIGN_IN));
     lv_obj_center(gSignInLabel);
 
-    lifecycleRunInMainThread(fetchSubnets, nullptr);
+    lifecycleRunInMainThread(fetchSubnetsHostsAddresses, nullptr);
 }
 
-static void fetchSubnets(void* nullable const) {
-    const bool wasOpened = lv_dropdown_is_open(gSubnetsDropdown);
+static void fetchSubnetsHostsAddresses(void* nullable const) {
+    const bool wasOpened = lv_dropdown_is_open(gSubnetsHostsAddressesDropdown);
 
-    if (++gFetchSubnetsTicker < /*TODO: extract*/100) // TODO: refactor
+    if (++gFetchSubnetsHostsAddressesTicker < /*TODO: extract*/100) // TODO: refactor
         goto end;
     else
-        gFetchSubnetsTicker = 0;
+        gFetchSubnetsHostsAddressesTicker = 0;
 
-    lv_dropdown_clear_options(gSubnetsDropdown);
+    lv_dropdown_clear_options(gSubnetsHostsAddressesDropdown);
 
-    if (gSubnetsList) listDestroy(gSubnetsList);
-    if (!(gSubnetsList = netSubnets())) goto end;
+    if (gSubnetsHostsAddressesList) listDestroy(gSubnetsHostsAddressesList);
+    if (!(gSubnetsHostsAddressesList = netSubnetsHostsAddresses())) goto end;
 
-    for (int i = 0; i < listSize(gSubnetsList); i++) {
-        const int subnet = (int) (long) listGet(gSubnetsList, i);
+    for (int i = 0; i < listSize(gSubnetsHostsAddressesList); i++) {
+        const int subnetHostAddress = (int) (long) listGet(gSubnetsHostsAddressesList, i);
 
         char address[NET_ADDRESS_STRING_SIZE];
-        netAddressToString(address, subnet);
+        netAddressToString(address, subnetHostAddress);
 
-        lv_dropdown_add_option(gSubnetsDropdown, address, i);
+        lv_dropdown_add_option(gSubnetsHostsAddressesDropdown, address, i);
     }
 
     if (wasOpened)
-        lv_dropdown_open(gSubnetsDropdown); // to update the visual representation of dropdown's options while it's being opened
+        lv_dropdown_open(gSubnetsHostsAddressesDropdown); // to update the visual representation of dropdown's options while it's being opened
 
     end:
-    lifecycleRunInMainThread(fetchSubnets, nullptr);
+    lifecycleRunInMainThread(fetchSubnetsHostsAddresses, nullptr);
 }
 
-static void subnetsDropdownValueChangeCallback(lv_event_t* nullable const) {
-    if (!gSubnetsList || !(gSelectedSubnet = (int) (long) listGet(gSubnetsList, (int) lv_dropdown_get_selected(gSubnetsDropdown)))) {
+static void subnetsHostsAddressesDropdownValueChangeCallback(lv_event_t* nullable const) {
+    if (!gSubnetsHostsAddressesList || !(gSelectedSubnetHostAddress = (int) (long) listGet(gSubnetsHostsAddressesList, (int) lv_dropdown_get_selected(gSubnetsHostsAddressesDropdown)))) {
         lv_label_set_text_static(gAddressLabel, constsString(CONSTS_STRING_IP_ADDRESS));
         return;
     }
 
     char address[NET_ADDRESS_STRING_SIZE];
-    netAddressToString(address, gSelectedSubnet);
+    netAddressToString(address, gSelectedSubnetHostAddress);
     lv_label_set_text_fmt(/*TODO: remove as unnecessary*/gAddressLabel, "%s: %s", constsString(CONSTS_STRING_IP_ADDRESS), address);
 
-    netStartBroadcastingAndListeningSubnet(gSelectedSubnet); // TODO: test only
+    netStartBroadcastingAndListeningSubnet(gSelectedSubnetHostAddress); // TODO: test only
 }
 
 void loginSceneQuit(void) {
     assert(gInitialized);
 
-    if (gSubnetsList) listDestroy(gSubnetsList);
+    if (gSubnetsHostsAddressesList) listDestroy(gSubnetsHostsAddressesList);
 
     lv_obj_delete(gSignInLabel);
     lv_obj_delete(gSignInButton);
     lv_obj_delete(gRememberCredentialsCheckbox);
     lv_obj_delete(gPasswordTextArea);
     lv_obj_delete(gAddressLabel);
-    lv_obj_delete(gSubnetsDropdown);
+    lv_obj_delete(gSubnetsHostsAddressesDropdown);
     lv_obj_delete(gWelcomeLabel);
     lv_group_delete(gGroup);
     lv_obj_delete(gScreen);
