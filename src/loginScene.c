@@ -99,13 +99,12 @@ static void fetchSubnetsHostsAddresses(void* nullable const) {
 }
 
 static void subnetsHostsAddressesDropdownValueChangeCallback(lv_event_t* nullable const) {
-    if (
-        !gSubnetsHostsAddressesList ||
-        !(gSelectedSubnetHostAddress = (int) (long) listGet(
-            gSubnetsHostsAddressesList,
-            (int) lv_dropdown_get_selected(gSubnetsHostsAddressesDropdown)
-        )
-    )) return;
+    if (!gSubnetsHostsAddressesList) return;
+    gSelectedSubnetHostAddress = (int) (long) listGet(
+        gSubnetsHostsAddressesList,
+        (int) lv_dropdown_get_selected(gSubnetsHostsAddressesDropdown)
+    );
+    if (!gSelectedSubnetHostAddress) return;
 
     netStartBroadcastingAndListeningSubnet(gSelectedSubnetHostAddress); // TODO: test only
 }
