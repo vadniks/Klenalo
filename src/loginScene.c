@@ -15,7 +15,6 @@ static lv_obj_t* gScreen = nullptr;
 static lv_group_t* gGroup = nullptr;
 static lv_obj_t* gWelcomeLabel = nullptr;
 static lv_obj_t* gSubnetsHostsAddressesDropdown = nullptr;
-static lv_obj_t* gAddressLabel = nullptr; // TODO: remove
 static lv_obj_t* gPasswordTextArea = nullptr;
 static lv_obj_t* gRememberCredentialsCheckbox = nullptr;
 static lv_obj_t* gSignInButton = nullptr;
@@ -50,11 +49,6 @@ void loginSceneInit(void) {
     lv_dropdown_set_text(gSubnetsHostsAddressesDropdown, constsString(CONSTS_STRING_NETWORK));
     lv_dropdown_clear_options(gSubnetsHostsAddressesDropdown);
     lv_obj_add_event_cb(gSubnetsHostsAddressesDropdown, subnetsHostsAddressesDropdownValueChangeCallback, LV_EVENT_VALUE_CHANGED, nullptr);
-
-    assert(gAddressLabel = lv_label_create(gScreen));
-    lv_obj_set_style_text_font(gAddressLabel, resourcesFont(RESOURCES_FONT_SIZE_NORMAL, RESOURCES_FONT_TYPE_BOLD), 0);
-    lv_obj_set_style_text_opa(gAddressLabel, 0xff / 3 * 2, 0);
-    lv_label_set_text_static(gAddressLabel, constsString(CONSTS_STRING_IP_ADDRESS));
 
     assert(gPasswordTextArea = lv_textarea_create(gScreen));
     scenesAddInputFocusEventsHandlerToTextarea(gPasswordTextArea);
@@ -91,10 +85,10 @@ static void fetchSubnetsHostsAddresses(void* nullable const) {
     for (int i = 0; i < listSize(gSubnetsHostsAddressesList); i++) {
         const int subnetHostAddress = (int) (long) listGet(gSubnetsHostsAddressesList, i);
 
-        char address[NET_ADDRESS_STRING_SIZE];
-        netAddressToString(address, subnetHostAddress);
+        char option[NET_ADDRESS_STRING_SIZE];
+        netAddressToString(option, subnetHostAddress);
 
-        lv_dropdown_add_option(gSubnetsHostsAddressesDropdown, address, i);
+        lv_dropdown_add_option(gSubnetsHostsAddressesDropdown, option, i);
     }
 
     if (wasOpened)
@@ -105,14 +99,13 @@ static void fetchSubnetsHostsAddresses(void* nullable const) {
 }
 
 static void subnetsHostsAddressesDropdownValueChangeCallback(lv_event_t* nullable const) {
-    if (!gSubnetsHostsAddressesList || !(gSelectedSubnetHostAddress = (int) (long) listGet(gSubnetsHostsAddressesList, (int) lv_dropdown_get_selected(gSubnetsHostsAddressesDropdown)))) {
-        lv_label_set_text_static(gAddressLabel, constsString(CONSTS_STRING_IP_ADDRESS));
-        return;
-    }
-
-    char address[NET_ADDRESS_STRING_SIZE];
-    netAddressToString(address, gSelectedSubnetHostAddress);
-    lv_label_set_text_fmt(/*TODO: remove as unnecessary*/gAddressLabel, "%s: %s", constsString(CONSTS_STRING_IP_ADDRESS), address);
+    if (
+        !gSubnetsHostsAddressesList ||
+        !(gSelectedSubnetHostAddress = (int) (long) listGet(
+            gSubnetsHostsAddressesList,
+            (int) lv_dropdown_get_selected(gSubnetsHostsAddressesDropdown)
+        )
+    )) return;
 
     netStartBroadcastingAndListeningSubnet(gSelectedSubnetHostAddress); // TODO: test only
 }
@@ -126,7 +119,6 @@ void loginSceneQuit(void) {
     lv_obj_delete(gSignInButton);
     lv_obj_delete(gRememberCredentialsCheckbox);
     lv_obj_delete(gPasswordTextArea);
-    lv_obj_delete(gAddressLabel);
     lv_obj_delete(gSubnetsHostsAddressesDropdown);
     lv_obj_delete(gWelcomeLabel);
     lv_group_delete(gGroup);
