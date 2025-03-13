@@ -24,7 +24,7 @@ struct _HashtableIterator {
     Node* nullable node;
 };
 
-static const int SINT32_MAX = 0x7fffffff;
+static const int SINT32_MAX = ~0u / 2u; // 0x7fffffff
 static const int INITIAL_CAPACITY = 11;
 static const float LOAD_FACTOR = 0.75f;
 
