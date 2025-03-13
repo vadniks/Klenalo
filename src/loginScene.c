@@ -9,6 +9,8 @@
 #include "lifecycle.h"
 #include "loginScene.h"
 
+static const int FETCH_SUBNETS_HOSTS_ADDRESSES_TICKER_PERIOD = 100;
+
 static atomic bool gInitialized = false;
 
 static lv_obj_t* gScreen = nullptr;
@@ -73,7 +75,7 @@ void loginSceneInit(void) {
 static void fetchSubnetsHostsAddresses(void* nullable const) {
     const bool wasOpened = lv_dropdown_is_open(gSubnetsHostsAddressesDropdown);
 
-    if (++gFetchSubnetsHostsAddressesTicker < /*TODO: extract*/100) // TODO: refactor
+    if (++gFetchSubnetsHostsAddressesTicker < FETCH_SUBNETS_HOSTS_ADDRESSES_TICKER_PERIOD) // TODO: refactor
         goto end;
     else
         gFetchSubnetsHostsAddressesTicker = 0;
