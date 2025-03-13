@@ -46,7 +46,8 @@ void loginSceneInit(void) {
     lv_label_set_text_static(gWelcomeLabel, constsString(CONSTS_STRING_WELCOME));
 
     assert(gSubnetsHostsAddressesDropdown = lv_dropdown_create(gScreen));
-    lv_dropdown_set_text(gSubnetsHostsAddressesDropdown, constsString(CONSTS_STRING_NETWORK));
+    lv_dropdown_set_text(gSubnetsHostsAddressesDropdown, constsString(CONSTS_STRING_SUBNET_HOST_ADDRESS));
+    lv_obj_set_width(gSubnetsHostsAddressesDropdown, lv_obj_get_width(gSubnetsHostsAddressesDropdown) * 4 / 3);
     lv_dropdown_clear_options(gSubnetsHostsAddressesDropdown);
     lv_obj_add_event_cb(gSubnetsHostsAddressesDropdown, subnetsHostsAddressesDropdownValueChangeCallback, LV_EVENT_VALUE_CHANGED, nullptr);
 

@@ -23,10 +23,8 @@ static const char* enString(const ConstsString string) {
             return "Sign in";
         case CONSTS_STRING_REMEMBER_CREDENTIALS:
             return "Remember credentials";
-        case CONSTS_STRING_IP_ADDRESS:
-            return "IP Address";
-        case CONSTS_STRING_NETWORK:
-            return "Network";
+        case CONSTS_STRING_SUBNET_HOST_ADDRESS:
+            return "Subnet host address";
     }
 }
 
