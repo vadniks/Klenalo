@@ -128,7 +128,7 @@ static void broadcastSubnetForHosts(void) {
     SDL_LockMutex(gMutex);
     assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
 
-    const int bufferSize = 1024;
+    const int bufferSize = 512;
     byte buffer[bufferSize] = {0}; // TODO
 
     SDLNet_Address* const address = resolveAddress(INADDR_BROADCAST);
