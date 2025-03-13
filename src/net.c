@@ -7,7 +7,7 @@
 #include "net.h"
 
 const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
-static const short NET_BROADCAST_SOCKET_PORT = 8080, BROADCAST_TICKER_PERIOD = 100;
+static const short NET_BROADCAST_SOCKET_PORT = 8080, BROADCAST_SUBNET_TICKER_PERIOD = 100;
 
 static atomic bool gInitialized = false;
 static SDL_Mutex* gMutex = nullptr;
@@ -16,7 +16,7 @@ static List* gSubnetsHostsAddressesList = nullptr; // <int>
 
 static atomic int gSelectedSubnetHostAddress = 0;
 static SDLNet_DatagramSocket* gSubnetBroadcastSocket = nullptr;
-static int gBroadcastTicker = 0;
+static int gBroadcastSubnetTicker = 0;
 
 void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
@@ -145,8 +145,8 @@ void netLoop(void) {
 
     fetchSubnetsHostsAddresses();
 
-    if (gSelectedSubnetHostAddress && ++gBroadcastTicker == BROADCAST_TICKER_PERIOD) {
-        gBroadcastTicker = 0;
+    if (gSelectedSubnetHostAddress && ++gBroadcastSubnetTicker == BROADCAST_SUBNET_TICKER_PERIOD) {
+        gBroadcastSubnetTicker = 0;
         broadcastSubnetForHosts();
     }
 }
