@@ -73,25 +73,23 @@ void loginSceneInit(void) {
 }
 
 static void fetchSubnetsHostsAddresses(void* nullable const) {
+    if (++gFetchSubnetsHostsAddressesTicker < FETCH_SUBNETS_HOSTS_ADDRESSES_TICKER_PERIOD) goto end;
+    gFetchSubnetsHostsAddressesTicker = 0;
+
     const bool wasOpened = lv_dropdown_is_open(gSubnetsHostsAddressesDropdown);
 
-    if (++gFetchSubnetsHostsAddressesTicker < FETCH_SUBNETS_HOSTS_ADDRESSES_TICKER_PERIOD) // TODO: refactor
-        goto end;
-    else
-        gFetchSubnetsHostsAddressesTicker = 0;
-
     lv_dropdown_clear_options(gSubnetsHostsAddressesDropdown);
-
     if (gSubnetsHostsAddressesList) listDestroy(gSubnetsHostsAddressesList);
-    if (!(gSubnetsHostsAddressesList = netSubnetsHostsAddresses())) goto end;
 
-    for (int i = 0; i < listSize(gSubnetsHostsAddressesList); i++) {
-        const int subnetHostAddress = (int) (long) listGet(gSubnetsHostsAddressesList, i);
+    if ((gSubnetsHostsAddressesList = netSubnetsHostsAddresses())) {
+        for (int i = 0; i < listSize(gSubnetsHostsAddressesList); i++) {
+            const int subnetHostAddress = (int) (long) listGet(gSubnetsHostsAddressesList, i);
 
-        char option[NET_ADDRESS_STRING_SIZE];
-        netAddressToString(option, subnetHostAddress);
+            char option[NET_ADDRESS_STRING_SIZE];
+            netAddressToString(option, subnetHostAddress);
 
-        lv_dropdown_add_option(gSubnetsHostsAddressesDropdown, option, i);
+            lv_dropdown_add_option(gSubnetsHostsAddressesDropdown, option, i);
+        }
     }
 
     if (wasOpened)
