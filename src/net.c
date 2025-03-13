@@ -39,12 +39,12 @@ static void fetchSubnetsHostsAddresses(void) {
     SDL_LockMutex(gMutex);
     listClear(gSubnetsHostsAddressesList);
 
-    int numAddrs = 0;
-    SDLNet_Address** const addrs = SDLNet_GetLocalAddresses(&numAddrs);
-    assert(numAddrs && addrs);
+    int numberOfAddresses = 0;
+    SDLNet_Address** const addresses = SDLNet_GetLocalAddresses(&numberOfAddresses);
+    assert(numberOfAddresses && addresses);
 
-    for (int i = 0; i < numAddrs; i++) {
-        const struct addrinfo* const info = *(struct addrinfo**) ((void*) addrs[i] + 32);
+    for (int i = 0; i < numberOfAddresses; i++) {
+        const struct addrinfo* const info = *(struct addrinfo**) ((void*) addresses[i] + 32);
         const int addr = (int) swapBytes(*(unsigned*) (info->ai_addr->sa_data + 2));
 
         if (info->ai_addr->sa_family != AF_INET) continue;
@@ -53,7 +53,7 @@ static void fetchSubnetsHostsAddresses(void) {
         listAddBack(gSubnetsHostsAddressesList, (void*) (long) addr);
     }
 
-    SDLNet_FreeLocalAddresses(addrs);
+    SDLNet_FreeLocalAddresses(addresses);
     SDL_UnlockMutex(gMutex);
 }
 
@@ -84,10 +84,10 @@ static SDLNet_Address* resolveAddress(const int address) {
     char host[NET_ADDRESS_STRING_SIZE];
     netAddressToString(host, address);
 
-    SDLNet_Address* const addr = SDLNet_ResolveHostname(host);
-    assert(addr);
-    assert(SDLNet_WaitUntilResolved(addr, -1) == 1);
-    return addr;
+    SDLNet_Address* const resolvedAddress = SDLNet_ResolveHostname(host);
+    assert(resolvedAddress);
+    assert(SDLNet_WaitUntilResolved(resolvedAddress, -1) == 1);
+    return resolvedAddress;
 }
 
 void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
@@ -99,9 +99,9 @@ void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
 
     gSelectedSubnetHostAddress = subnetHostAddress;
 
-    SDLNet_Address* const addr = resolveAddress(gSelectedSubnetHostAddress);
-    assert(gSubnetBroadcastSocket = SDLNet_CreateDatagramSocket(addr, NET_BROADCAST_SOCKET_PORT));
-    SDLNet_UnrefAddress(addr);
+    SDLNet_Address* const address = resolveAddress(gSelectedSubnetHostAddress);
+    assert(gSubnetBroadcastSocket = SDLNet_CreateDatagramSocket(address, NET_BROADCAST_SOCKET_PORT));
+    SDLNet_UnrefAddress(address);
 
     assert(!setsockopt(
         *(int*) ((void*) gSubnetBroadcastSocket + 20),
@@ -135,9 +135,9 @@ static void broadcastSubnetForHosts(void) {
     const int bufferSize = 1024;
     byte buffer[bufferSize] = {0}; // TODO
 
-    SDLNet_Address* const addr = resolveAddress(INADDR_BROADCAST);
-    assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, addr, NET_BROADCAST_SOCKET_PORT, buffer, bufferSize));
-    SDLNet_UnrefAddress(addr);
+    SDLNet_Address* const address = resolveAddress(INADDR_BROADCAST);
+    assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, address, NET_BROADCAST_SOCKET_PORT, buffer, bufferSize));
+    SDLNet_UnrefAddress(address);
 
     SDL_UnlockMutex(gMutex);
 
