@@ -27,12 +27,15 @@ bool cryptoInitialized(void) {
 }
 
 void cryptoMasterSign(const byte* const message, const int size, byte* const buffer) {
+    assert(lifecycleInitialized() && gInitialized);
+
     xlong generatedSize;
     assert(!crypto_sign(buffer, &generatedSize, message, size, gMasterSecretKey));
     assert((int) generatedSize == CRYPTO_SIGNATURE_SIZE + size);
 }
 
 bool cryptoCheckMasterSigned(const byte* const signedMessage, const int size) {
+    assert(lifecycleInitialized() && gInitialized);
     return !crypto_sign_open(nullptr, nullptr, signedMessage, size, gMasterPublicKey);
 }
 
