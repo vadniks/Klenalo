@@ -7,7 +7,8 @@
 #include "net.h"
 
 const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
-static const short NET_BROADCAST_SOCKET_PORT = 8080, BROADCAST_SUBNET_TICKER_PERIOD = 100;
+static const short NET_BROADCAST_SOCKET_PORT = 8080;
+static const int BROADCAST_SUBNET_TICKER_PERIOD = 100;
 
 static atomic bool gInitialized = false;
 static SDL_Mutex* gMutex = nullptr;
