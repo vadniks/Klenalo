@@ -35,8 +35,6 @@ bool netInitialized(void) {
 }
 
 static void fetchSubnetsHostsAddresses(void) {
-    assert(lifecycleInitialized() && gInitialized);
-
     SDL_LockMutex(gMutex);
     listClear(gSubnetsHostsAddressesList);
 
