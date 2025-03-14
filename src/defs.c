@@ -59,6 +59,31 @@ void xfree(void* nullable const memory) {
     if (memory) gAllocations--;
 }
 
+void printMemory(const void* const memory, const int size, const PrintMemoryMode mode) {
+    const char* format, * divider;
+    switch (mode) {
+        case PRINT_MEMORY_MODE_DEC:
+            format = "%u";
+            divider = ", ";
+            break;
+        case PRINT_MEMORY_MODE_HEX:
+            format = "%x";
+            divider = ", ";
+            break;
+        case PRINT_MEMORY_MODE_HEX_STR:
+            format = "\\x%x";
+            divider = "";
+            break;
+        case PRINT_MEMORY_MODE_STR:
+            format = "%c";
+            divider = "";
+            break;
+    }
+
+    for (int i = 0; i < size; printf(format, ((byte*) memory)[i++]), i < size ? printf("%s", divider) : 0);
+    printf("\n");
+}
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunknown-pragmas"
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection" // CLion doesn't fully support new C23's attributes syntax

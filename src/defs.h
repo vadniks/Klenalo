@@ -78,4 +78,6 @@ inline void xyield(void) {
     thrd_yield();
 }
 
-int printf(const char* const, ...);
+#define debug(x, ...) {int printf(const char* const, ...); printf(x "\n", __VA_ARGS__);}
+typedef enum {PRINT_MEMORY_MODE_DEC, PRINT_MEMORY_MODE_HEX, PRINT_MEMORY_MODE_HEX_STR, PRINT_MEMORY_MODE_STR} PrintMemoryMode;
+void printMemory(const void* const memory, const int size, const PrintMemoryMode mode);
