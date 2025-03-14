@@ -5,6 +5,7 @@
 #include "input.h"
 #include "resources.h"
 #include "scenes.h"
+#include "crypto.h"
 #include "net.h"
 #include "list.h"
 #include "lifecycle.h"
@@ -60,6 +61,7 @@ void lifecycleInit(void) {
     inputInit();
     resourcesInit();
     scenesInit();
+    cryptoInit();
     netInit();
 
     assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, "Klenalo:bg", nullptr));
@@ -192,6 +194,7 @@ void lifecycleQuit(void) {
     SDL_WaitThread(gBackgroundActionsLooper.thread, nullptr);
 
     netQuit();
+    cryptoQuit();
     scenesQuit();
     resourcesQuit();
     inputQuit();
