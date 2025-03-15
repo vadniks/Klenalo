@@ -375,9 +375,13 @@
 #define LV_USE_ASSERT_MEM_INTEGRITY 0   /**< Check the integrity of `lv_mem` after critical operations. (Slow) */
 #define LV_USE_ASSERT_OBJ           0   /**< Check the object's type and existence (e.g. not deleted). (Slow) */
 
+#ifndef __ASSEMBLY__
+void assert(const _Bool condition);
+#endif
+
 /** Add a custom handler when assert happens e.g. to restart MCU. */
 #define LV_ASSERT_HANDLER_INCLUDE <stdint.h>
-#define LV_ASSERT_HANDLER asm volatile ("call abort");
+#define LV_ASSERT_HANDLER assert(0);
 
 /*-------------
  * Debug
