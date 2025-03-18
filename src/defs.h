@@ -7,16 +7,6 @@
 
 typedef unsigned char byte;
 
-#define staticAssert(x) static_assert(x)
-#define atomic _Atomic
-#define fallthrough [[fallthrough]];
-#define packed [[gnu::packed]]
-#define cleanup(x) [[gnu::cleanup(x)]]
-#define concatActual(x, y) x ## y
-#define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
-#define defer(x) cleanup(x) byte concat(_defer_, __LINE__);
-#define deferHandler(x) static void x([[maybe_unused]] void* const deferred)
-
 // everything that isn't marked with nullable is considered to be not null
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wnullability-extension"
@@ -24,6 +14,23 @@ typedef unsigned char byte;
 #define nullable _Nullable
 #else
 #define nullable
+#endif
+
+#define staticAssert(x) static_assert(x)
+#define atomic _Atomic
+#define fallthrough [[fallthrough]];
+#define packed [[gnu::packed]]
+#define cleanup(x) [[gnu::cleanup(x)]]
+#define concatActual(x, y) x ## y
+#define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
+
+#ifdef __clang__
+#include <Block.h> // https://fdiv.net/2015/10/08/emulating-defer-c-clang-or-gccblocks
+void _deferHandler(void (^ const* const block)(void));
+#define defer cleanup(_deferHandler) void (^ const concat(_defer_, __LINE__))(void) = ^
+#else
+#define defer(x) cleanup(x) const byte concat(_defer_, __LINE__);
+#define deferHandler(x) static void x([[maybe_unused]] void* const deferred)
 #endif
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
@@ -83,6 +90,7 @@ inline void xyield(void) {
     thrd_yield();
 }
 
-#define debug(x, ...) {int printf(const char* const, ...); printf(x "\n", __VA_ARGS__);}
+#define debugArgs(x, ...) {int printf(const char* const, ...); printf(x "\n", __VA_ARGS__);}
+#define debug(x) debugArgs("%s", x)
 typedef enum {PRINT_MEMORY_MODE_DEC, PRINT_MEMORY_MODE_HEX, PRINT_MEMORY_MODE_HEX_STR, PRINT_MEMORY_MODE_STR} PrintMemoryMode;
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode);

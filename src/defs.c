@@ -1,10 +1,21 @@
 
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <execinfo.h>
 #include "defs.h"
 
 static atomic unsigned long gAllocations = 0;
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+[[maybe_unused]] void _deferHandler(void (^ const* const block)(void)) {
+    (*block)();
+}
+#pragma clang diagnostic pop
+#endif
 
 static void printStackTrace(void) {
     const int size = 0xf;
@@ -85,7 +96,6 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
 }
 
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
 #pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection" // CLion doesn't fully support new C23's attributes syntax
 [[gnu::used]] void* nullable __wrap_lv_malloc_core(const unsigned long size) { return xmalloc(size); }
 [[gnu::used]] void* nullable __wrap_lv_realloc_core(void* nullable const pointer, const unsigned long size) { return xrealloc(pointer, size); }
