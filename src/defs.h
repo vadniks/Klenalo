@@ -11,6 +11,11 @@ typedef unsigned char byte;
 #define atomic _Atomic
 #define fallthrough [[fallthrough]];
 #define packed [[gnu::packed]]
+#define cleanup(x) [[gnu::cleanup(x)]]
+#define concatActual(x, y) x ## y
+#define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
+#define defer(x) cleanup(x) byte concat(_defer_, __LINE__);
+#define deferHandler(x) static void x([[maybe_unused]] void* const deferred)
 
 // everything that isn't marked with nullable is considered to be not null
 #ifdef __clang__
