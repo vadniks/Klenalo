@@ -36,6 +36,8 @@ add_compile_options(-fPIE)
 add_link_options(-pie -Wl,-z,relro,-z,now) #add_link_options(-pie -z relro)
 # linker (man ld) -rpath=dir # gdb info symbol <addr>
 
+# TODO: -fsanitize=undefined -fsanitize=bounds
+
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,--wrap=lv_malloc_core,--wrap=lv_realloc_core,--wrap=lv_free_core")
 
 add_compile_options(-Wno-language-extension-token)
