@@ -22,7 +22,7 @@ static void progress(void* const) {
 
     if (value <= PROGRESS_BAR_MAX) {
         lv_bar_set_value(gProgressBar, value, LV_ANIM_ON);
-        lv_label_set_text_static(gLabel, nullptr); // text isn't being displayed without refreshing, strange as it worked without it earlier
+        lv_label_set_text_static(gLabel, nullptr); // text isn't being displayed without refreshing, strange as it worked without it earlier, updating lv_bar causes lv_label not to show the text - ?
         lifecycleRunInMainThread(progress, nullptr);
     } else
         scenesSetCurrentScene(SCENES_SCENE_LOGIN);
