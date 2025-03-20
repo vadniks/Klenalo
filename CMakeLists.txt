@@ -38,12 +38,13 @@ add_link_options(-pie -Wl,-z,relro,-z,now) #add_link_options(-pie -z relro)
 
 # TODO: -fsanitize=undefined -fsanitize=bounds
 
-set(CMAKE_EXE_LINKER_FLAGS "-Wl,--wrap=lv_malloc_core,--wrap=lv_realloc_core,--wrap=lv_free_core")
+set(CMAKE_EXE_LINKER_FLAGS "-Wl,--wrap=lv_malloc_core,--wrap=lv_realloc_core,--wrap=lv_free_core,--wrap=FT_New_Face")
 
 add_compile_options(-Wno-language-extension-token)
 add_compile_options(-Wno-gnu-folding-constant)
 add_compile_options(-Wno-logical-op-parentheses)
 add_compile_options(-Wno-gnu-pointer-arith)
+add_compile_options(-Wno-zero-length-array)
 add_compile_options(-fblocks)
 
 add_compile_definitions("-D_GNU_SOURCE -D_THREAD_SAFE -D_FORTIFY_SOURCE=3")
@@ -53,9 +54,10 @@ add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
 include_directories(lib/lvgl/include)
 include_directories(lib/sdl3net/include)
+include_directories(/usr/include/freetype2)
 target_link_libraries(${PROJECT_NAME} c m SDL3 ${PROJECT_SOURCE_DIR}/lib/lvgl/bin/liblvgl.a freetype sodium ${PROJECT_SOURCE_DIR}/lib/sdl3net/bin/libSDL3_net.so BlocksRuntime) # SDL3_net) TODO
 
-file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
+#file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
 
 #add_compile_definitions(TESTING)
 

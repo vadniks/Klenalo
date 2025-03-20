@@ -20,6 +20,7 @@ typedef unsigned char byte;
 #define atomic _Atomic
 #define fallthrough [[fallthrough]];
 #define packed [[gnu::packed]]
+#define arraySize(x) (sizeof(x) / sizeof x[0])
 #define cleanup(x) [[gnu::cleanup(x)]]
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly

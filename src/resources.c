@@ -1,11 +1,57 @@
 
 #include <SDL3/SDL.h>
+#include <freetype/freetype.h>
 #include "xlvgl.h"
 #include "defs.h"
 #include "video.h"
 #include "resources.h"
 
-static const int FONT_SIZES = 3, FONT_TYPES = 5, FONTS = FONT_SIZES * FONT_TYPES;
+#define FONT_REGULAR "../res/Roboto-Regular.ttf"
+#define FONT_ITALIC "../res/Roboto-Italic.ttf"
+#define FONT_BOLD "../res/Roboto-Bold.ttf"
+#define FONT_BOLD_ITALIC "../res/Roboto-BoldItalic.ttf"
+#define FONT_MONOSPACE "../res/SourceCodePro-Regular.ttf"
+
+#if !defined(__CLION_IDE__) && !defined(__JETBRAINS_IDE__)
+// CLion doesnt know about #embed yet, ignore the 'Invalid preprocessing directive' errors
+static const byte
+    gRegularFont[] = {
+        #embed FONT_REGULAR
+    },
+    gItalicFont[] = {
+        #embed FONT_ITALIC
+    },
+    gBoldFont[] = {
+        #embed FONT_BOLD
+    },
+    gBoldItalicFont[] = {
+        #embed FONT_BOLD_ITALIC
+    },
+    gMonospaceFont[] = {
+        #embed FONT_MONOSPACE
+    };
+#else
+static const byte
+    gRegularFont[] = {},
+    gItalicFont[] = {},
+    gBoldFont[] = {},
+    gBoldItalicFont[] = {},
+    gMonospaceFont[] = {};
+#endif
+
+static const struct {
+    const char* const fileName;
+    const byte* const data;
+    const int size;
+} gFontsData[] = {
+    {FONT_REGULAR, gRegularFont, sizeof(gRegularFont)},
+    {FONT_ITALIC, gItalicFont, sizeof(gItalicFont)},
+    {FONT_BOLD, gBoldFont, sizeof(gBoldFont)},
+    {FONT_BOLD_ITALIC, gBoldItalicFont, sizeof(gBoldItalicFont)},
+    {FONT_MONOSPACE, gMonospaceFont, sizeof(gMonospaceFont)}
+};
+
+static const int FONT_SIZES = 3, FONT_TYPES = arraySize(gFontsData), FONTS = FONT_SIZES * FONT_TYPES;
 
 static atomic bool gInitialized = false;
 static bool gFreetypeInitializedInternally = false;
@@ -46,16 +92,8 @@ static inline int fontIndex(const ResourcesFontSize size, const ResourcesFontTyp
 }
 
 static void createFont(const ResourcesFontSize size, const ResourcesFontType type) {
-    static const char* const paths[FONT_TYPES] = {
-        "res/Roboto-Regular.ttf",
-        "res/Roboto-Italic.ttf",
-        "res/Roboto-Bold.ttf",
-        "res/Roboto-BoldItalic.ttf",
-        "res/SourceCodePro-Regular.ttf"
-    };
-
-    lv_font_t* font = lv_freetype_font_create(
-        paths[type],
+    lv_font_t* const font = lv_freetype_font_create(
+        gFontsData[type].fileName,
         LV_FREETYPE_FONT_RENDER_MODE_BITMAP,
         size % 100,
         (lv_freetype_font_style_t) type
@@ -80,4 +118,18 @@ void resourcesQuit(void) {
 
     if (!gFreetypeInitializedInternally)
         lv_freetype_uninit();
+}
+
+__attribute_used__ FT_Error __wrap_FT_New_Face(
+    struct FT_LibraryRec_* const library,
+    const char* const filePathName,
+    const FT_Long face_index,
+    FT_Face* const aFace
+) {
+    for (byte i = 0; i < FONT_TYPES; i++) {
+        const auto fontData = gFontsData[i];
+        if (!strncmp(filePathName, fontData.fileName, 32))
+            return FT_New_Memory_Face(library, fontData.data, fontData.size, face_index, aFace);
+    }
+    return 1;
 }
