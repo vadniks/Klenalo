@@ -42,6 +42,16 @@ bool cryptoInitialized(void) {
     return gInitialized;
 }
 
+const byte* cryptoMasterSignPublicKey(void) {
+    assert(lifecycleInitialized() && gInitialized);
+    return gMasterSignPublicKey;
+}
+
+const byte* cryptoMasterSealPublicKey(void) {
+    assert(lifecycleInitialized() && gInitialized);
+    return gMasterSealPublicKey;
+}
+
 void cryptoMasterSign(const byte* const message, const int size, byte* const signedMessage) {
     assert(lifecycleInitialized() && gInitialized);
 
