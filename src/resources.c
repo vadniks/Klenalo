@@ -31,6 +31,7 @@ static const byte
         #embed FONT_MONOSPACE
     };
 #else
+// stub
 static const byte
     gRegularFont[] = {},
     gItalicFont[] = {},
