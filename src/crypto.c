@@ -52,12 +52,12 @@ const byte* cryptoMasterSealPublicKey(void) {
     return gMasterSealPublicKey;
 }
 
-void cryptoMasterSign(const byte* const message, const int size, byte* const signedMessage) {
+void cryptoMasterSign(const byte* const message, const int size, byte* const signature) {
     assert(lifecycleInitialized() && gInitialized);
 
     xlong generatedSize;
-    assert(!crypto_sign(signedMessage, &generatedSize, message, size, gMasterSignSecretKey));
-    assert((int) generatedSize == CRYPTO_SIGNATURE_SIZE + size);
+    assert(!crypto_sign_detached(signature, &generatedSize, message, size, gMasterSignSecretKey));
+    assert((int) generatedSize == CRYPTO_SIGNATURE_SIZE);
 }
 
 bool cryptoCheckMasterSigned(const byte* const signedMessage, const int size) {
