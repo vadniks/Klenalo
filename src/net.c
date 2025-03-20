@@ -4,11 +4,28 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include "lifecycle.h"
+#include "crypto.h"
 #include "net.h"
+
+enum _NetMessageFlag : byte {
+    NET_MESSAGE_FLAG_BROADCAST_HOST_DISCOVERY
+};
+
+typedef struct {} MessagePayload;
+
+typedef struct packed {
+    MessagePayload;
+    byte signature[CRYPTO_SIGNATURE_SIZE];
+    const char greeting[40];
+    const byte version;
+    const int address; // address of the sender
+    byte masterSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE];
+} HostDiscoveryBroadcastPayload;
 
 const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
 static const short NET_BROADCAST_SOCKET_PORT = 8080;
 static const int BROADCAST_SUBNET_TICKER_PERIOD = 100;
+static const int UDP_PACKET_MAX_SIZE = 512, BROADCAST_PAYLOAD_SIZE = UDP_PACKET_MAX_SIZE - (int) sizeof(NetMessage);
 
 static atomic bool gInitialized = false;
 static SDL_Mutex* gMutex = nullptr;
@@ -18,6 +35,8 @@ static List* gSubnetsHostsAddressesList = nullptr; // <int>
 static atomic int gSelectedSubnetHostAddress = 0;
 static SDLNet_DatagramSocket* gSubnetBroadcastSocket = nullptr;
 static int gBroadcastSubnetTicker = 0;
+
+static byte gHostDiscoveryBroadcastPayload[sizeof(HostDiscoveryBroadcastPayload)] = {0};
 
 void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
@@ -85,6 +104,32 @@ static SDLNet_Address* resolveAddress(const int address) {
     return resolvedAddress;
 }
 
+static void generateHostDiscoveryBroadcastPayload(void) {
+    HostDiscoveryBroadcastPayload payload = {
+        {},
+        {0},
+        "Klenalo, subnet host discovery broadcast",
+        1,
+        gSelectedSubnetHostAddress,
+        {0}
+    };
+    xmemcpy(payload.masterSealPublicKey, cryptoMasterSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE);
+    cryptoMasterSign((void*) &payload + CRYPTO_SIGNATURE_SIZE, sizeof payload - CRYPTO_SIGNATURE_SIZE, payload.signature);
+    xmemcpy(gHostDiscoveryBroadcastPayload, &payload, sizeof payload);
+
+    // TODO: test only:
+
+    HostDiscoveryBroadcastPayload checker;
+    xmemcpy(&checker, gHostDiscoveryBroadcastPayload, sizeof checker);
+    printMemory(checker.signature, CRYPTO_SIGNATURE_SIZE, PRINT_MEMORY_MODE_HEX);
+    debugArgs("%.*s", 40, checker.greeting)
+    debugArgs("%d", checker.version)
+    debugArgs("%d", checker.address)
+    printMemory(checker.masterSealPublicKey, CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE, PRINT_MEMORY_MODE_HEX);
+
+    assert(cryptoCheckMasterSigned((byte*) &payload, sizeof payload));
+}
+
 void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
     assert(lifecycleInitialized() && gInitialized);
     assert(subnetHostAddress);
@@ -105,6 +150,8 @@ void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
         (int[1]) {1},
         sizeof(int)
     ));
+
+    generateHostDiscoveryBroadcastPayload();
 
     SDL_UnlockMutex(gMutex);
 }

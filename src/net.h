@@ -3,6 +3,16 @@
 
 #include "list.h"
 
+enum _NetMessageFlag : byte;
+typedef enum _NetMessageFlag NetMessageFlag;
+
+typedef struct packed {
+    const NetMessageFlag flag;
+    const unsigned long timestamp;
+    const int index, count, from, to, size;
+    const byte payload[/*size*/];
+} NetMessage;
+
 extern const int NET_ADDRESS_STRING_SIZE; // null terminator included
 
 void netInit(void);

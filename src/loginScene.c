@@ -109,7 +109,7 @@ static void subnetsHostsAddressesDropdownValueChangeCallback(lv_event_t* nullabl
 
     lv_dropdown_set_text(gSubnetsHostsAddressesDropdown, nullptr);
 
-//    netStartBroadcastingAndListeningSubnet(gSelectedSubnetHostAddress); // TODO: test only
+    netStartBroadcastingAndListeningSubnet(gSelectedSubnetHostAddress); // TODO: test only
 }
 
 void loginSceneQuit(void) {
