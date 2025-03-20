@@ -63,3 +63,4 @@ target_link_libraries(${PROJECT_NAME} c m SDL3 ${PROJECT_SOURCE_DIR}/lib/lvgl/bi
 #add_compile_definitions(TESTING)
 
 # mkdir build && (cd build; cmake .. && cd .. && cmake --build build -j 18)
+# objdump -x Klenalo | grep NEEDED
