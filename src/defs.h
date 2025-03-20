@@ -37,7 +37,7 @@ void _deferHandler(void (^ const* const block)(void));
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
 #define boolToStr(x) ((x) ? "true" : "false")
-#define xAlloca(x) xmemset((byte[x]) {0}, 0, x)
+#define xAlloca(x) (byte[x]) {0}
 #define unusedVariableBuffer(x) (x[1]) {0}
 #define USED(x) ((void) (x))
 #define STUB USED(0)
