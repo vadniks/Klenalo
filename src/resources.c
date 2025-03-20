@@ -19,7 +19,8 @@ void resourcesInit(void) {
     assert(videoInitialized() && !gInitialized);
     gInitialized = true;
 
-    gFreetypeInitializedInternally = !lv_freetype_init(LV_FREETYPE_CACHE_FT_GLYPH_CNT);
+    gFreetypeInitializedInternally = LV_GLOBAL_DEFAULT()->ft_context;
+    if (!gFreetypeInitializedInternally) lv_freetype_init(LV_FREETYPE_CACHE_FT_GLYPH_CNT);
 
     static const int fontSizes[FONT_SIZES] = {
         RESOURCES_FONT_SIZE_SMALL,
@@ -41,7 +42,7 @@ void resourcesInit(void) {
 }
 
 static inline int fontIndex(const ResourcesFontSize size, const ResourcesFontType type) {
-    return (size / 100) * max(FONT_SIZES, FONT_TYPES) + type;
+    return ((int) size / 100) * max(FONT_SIZES, FONT_TYPES) + (int) type;
 }
 
 static void createFont(const ResourcesFontSize size, const ResourcesFontType type) {
