@@ -5,12 +5,23 @@
 
 typedef unsigned long long xlong;
 
-//CRYPTO_SIGN_PUBLIC_KEY_SIZE = crypto_sign_PUBLICKEYBYTES
-//CRYPTO_SIGN_SECRET_KEY_SIZE = crypto_sign_SECRETKEYBYTES
-//CRYPTO_SIGNATURE_SIZE = crypto_sign_BYTES
-//CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE = crypto_box_PUBLICKEYBYTES // == crypto_sign_PUBLICKEYBYTES, (1/2)*crypto_sign_SECRETKEYBYTES, crypto_secretbox_KEYBYTES, crypto_kx_PUBLICKEYBYTES, crypto_kx_SECRETKEYBYTES, crypto_kx_SESSIONKEYBYTES, crypto_secretstream_xchacha20poly1305_KEYBYTES
-//CRYPTO_ENCRYPT_SECRET_KEY_SIZE = crypto_box_SECRETKEYBYTES // == crypto_secretbox_KEYBYTES, crypto_sign_PUBLICKEYBYTES, ...
-//CRYPTO_SEAL_SIZE = crypto_box_SEALBYTES
+staticAssert(
+    (CRYPTO_SIGN_PUBLIC_KEY_SIZE == crypto_sign_PUBLICKEYBYTES) &
+    (CRYPTO_SIGN_SECRET_KEY_SIZE == crypto_sign_SECRETKEYBYTES) &
+    (CRYPTO_SIGNATURE_SIZE == crypto_sign_BYTES) &
+        (crypto_sign_BYTES == crypto_sign_SECRETKEYBYTES) &
+    (CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE == crypto_box_PUBLICKEYBYTES) &
+        (crypto_box_PUBLICKEYBYTES == crypto_sign_PUBLICKEYBYTES) &
+        (crypto_box_PUBLICKEYBYTES == crypto_sign_SECRETKEYBYTES / 2) &
+        (crypto_box_PUBLICKEYBYTES == crypto_secretbox_KEYBYTES) &
+        (crypto_box_PUBLICKEYBYTES == crypto_kx_PUBLICKEYBYTES) &
+        (crypto_box_PUBLICKEYBYTES == crypto_kx_SECRETKEYBYTES) &
+        (crypto_box_PUBLICKEYBYTES == crypto_kx_SESSIONKEYBYTES) &
+        (crypto_box_PUBLICKEYBYTES == crypto_secretstream_xchacha20poly1305_KEYBYTES) &
+    (CRYPTO_ENCRYPT_SECRET_KEY_SIZE == crypto_box_SECRETKEYBYTES) &
+        (crypto_box_SECRETKEYBYTES == crypto_box_PUBLICKEYBYTES) &
+    (CRYPTO_SEAL_SIZE == crypto_box_SEALBYTES)
+);
 
 static atomic bool gInitialized = false;
 
