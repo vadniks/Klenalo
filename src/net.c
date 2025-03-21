@@ -110,8 +110,6 @@ static void generateHostDiscoveryBroadcastPayload(void) {
     xmemcpy((byte*) payload.masterSealPublicKey, cryptoMasterSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE);
     cryptoMasterSign((void*) &payload + CRYPTO_SIGNATURE_SIZE, sizeof payload - CRYPTO_SIGNATURE_SIZE, (byte*) payload.signature);
     xmemcpy(gHostDiscoveryBroadcastPayload, &payload, sizeof payload);
-
-    printMemory(&payload, sizeof payload, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK);
 }
 
 void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
