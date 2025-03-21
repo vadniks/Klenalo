@@ -14,18 +14,19 @@ enum _NetMessageFlag : byte {
 typedef struct {} MessagePayload;
 
 typedef struct packed {
-    MessagePayload;
-    byte signature[CRYPTO_SIGNATURE_SIZE];
-    const char greeting[40];
+    const MessagePayload;
+    const byte signature[CRYPTO_SIGNATURE_SIZE];
+    const char greeting[12];
     const byte version;
     const int address; // address of the sender
-    byte masterSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE];
+    const byte masterSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE];
 } HostDiscoveryBroadcastPayload;
 
 const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
 static const short NET_BROADCAST_SOCKET_PORT = 8080;
 static const int BROADCAST_SUBNET_TICKER_PERIOD = 100;
 static const int UDP_PACKET_MAX_SIZE = 512, BROADCAST_PAYLOAD_SIZE = UDP_PACKET_MAX_SIZE - (int) sizeof(NetMessage);
+#define GREETING "Klenalo ping"
 
 static atomic bool gInitialized = false;
 static SDL_Mutex* gMutex = nullptr;
@@ -105,17 +106,12 @@ static SDLNet_Address* resolveAddress(const int address) {
 }
 
 static void generateHostDiscoveryBroadcastPayload(void) {
-    HostDiscoveryBroadcastPayload payload = {
-        {},
-        {0},
-        "Klenalo, subnet host discovery broadcast",
-        1,
-        gSelectedSubnetHostAddress,
-        {0}
-    };
-    xmemcpy(payload.masterSealPublicKey, cryptoMasterSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE);
-    cryptoMasterSign((void*) &payload + CRYPTO_SIGNATURE_SIZE, sizeof payload - CRYPTO_SIGNATURE_SIZE, payload.signature);
+    HostDiscoveryBroadcastPayload payload = {{}, {0}, GREETING, 1, gSelectedSubnetHostAddress, {0}};
+    xmemcpy((byte*) payload.masterSealPublicKey, cryptoMasterSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE);
+    cryptoMasterSign((void*) &payload + CRYPTO_SIGNATURE_SIZE, sizeof payload - CRYPTO_SIGNATURE_SIZE, (byte*) payload.signature);
     xmemcpy(gHostDiscoveryBroadcastPayload, &payload, sizeof payload);
+
+    printMemory(&payload, sizeof payload, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK);
 }
 
 void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
