@@ -67,6 +67,8 @@ void xfree(void* nullable const memory) {
 
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode) {
     const char* format, * divider;
+    bool tryStr = false;
+
     switch (mode) {
         case PRINT_MEMORY_MODE_DEC:
             format = "%u";
@@ -84,9 +86,20 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
             format = "%c";
             divider = "";
             break;
+        case PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK:
+            tryStr = true;
+            break;
     }
 
-    for (int i = 0; i < size; printf(format, ((byte*) memory)[i++]), i < size ? printf("%s", divider) : 0);
+    if (tryStr) {
+        for (int i = 0; i < size; i++) {
+            const byte bt = ((const byte*) memory)[i];
+            bt == ' ' || inRange('a', bt, 'z') || inRange('A', bt, 'Z') || inRange('0', bt, '9')
+                ? printf("\033[1;32m%c\033[0m", bt) : printf("%x", bt);
+            if (i < size) printf(" ");
+        }
+    } else
+        for (int i = 0; i < size; printf(format, ((const byte*) memory)[i++]), i < size ? printf("%s", divider) : 0);
     printf("\n");
 }
 

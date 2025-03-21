@@ -21,6 +21,7 @@ typedef unsigned char byte;
 #define fallthrough [[fallthrough]];
 #define packed [[gnu::packed]]
 #define arraySize(x) (sizeof(x) / sizeof x[0])
+#define inRange(x, c, y) c >= x && c <= y
 #define cleanup(x) [[gnu::cleanup(x)]]
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
@@ -93,5 +94,5 @@ inline void xyield(void) {
 
 #define debugArgs(x, ...) {int printf(const char* const, ...); printf(x "\n", __VA_ARGS__);}
 #define debug(x) debugArgs("%s", x)
-typedef enum {PRINT_MEMORY_MODE_DEC, PRINT_MEMORY_MODE_HEX, PRINT_MEMORY_MODE_HEX_STR, PRINT_MEMORY_MODE_STR} PrintMemoryMode;
+typedef enum {PRINT_MEMORY_MODE_DEC, PRINT_MEMORY_MODE_HEX, PRINT_MEMORY_MODE_HEX_STR, PRINT_MEMORY_MODE_STR, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK} PrintMemoryMode;
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode);
