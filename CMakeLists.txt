@@ -17,8 +17,9 @@ add_compile_options(-ffast-math -fsemantic-interposition)
 #add_link_options("-s")
 
 add_compile_options(-g)
+#add_compile_options(-fsanitize=memory)
 add_compile_options(-fstack-protector-all)
-#add_compile_options(-fstack-check)
+add_compile_options(-fstack-check)
 add_compile_options(-fstack-clash-protection)
 add_compile_options(-fsanitize=address) # abort_on_error=1:detect_leaks=0 as SDL has memory leaks
 add_link_options(-fsanitize=address)
@@ -32,12 +33,13 @@ add_compile_options(-fsanitize=undefined)
 add_compile_options(-fsanitize-address-use-after-scope)
 add_compile_options(-fsanitize-trap=all)
 add_compile_options(-fcf-protection=full)
+add_compile_options(-fsanitize=bounds -fsanitize=null -fsanitize=object-size -fsanitize=nonnull-attribute -fsanitize=returns-nonnull-attribute -fsanitize=signed-integer-overflow)
 #add_compile_options(-fhardened)
 add_compile_options(-fPIE)
 add_link_options(-pie -Wl,-z,relro,-z,now) #add_link_options(-pie -z relro)
 # linker (man ld) -rpath=dir # gdb info symbol <addr>
 
-# TODO: -fsanitize=undefined -fsanitize=bounds
+# -finstrument-functions-once for tests
 
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,--wrap=lv_malloc_core,--wrap=lv_realloc_core,--wrap=lv_free_core,--wrap=FT_New_Face")
 
