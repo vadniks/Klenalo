@@ -116,18 +116,6 @@ static void generateHostDiscoveryBroadcastPayload(void) {
     xmemcpy(payload.masterSealPublicKey, cryptoMasterSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE);
     cryptoMasterSign((void*) &payload + CRYPTO_SIGNATURE_SIZE, sizeof payload - CRYPTO_SIGNATURE_SIZE, payload.signature);
     xmemcpy(gHostDiscoveryBroadcastPayload, &payload, sizeof payload);
-
-    // TODO: test only:
-
-    HostDiscoveryBroadcastPayload checker;
-    xmemcpy(&checker, gHostDiscoveryBroadcastPayload, sizeof checker);
-    printMemory(checker.signature, CRYPTO_SIGNATURE_SIZE, PRINT_MEMORY_MODE_HEX);
-    debugArgs("%.*s", 40, checker.greeting)
-    debugArgs("%d", checker.version)
-    debugArgs("%d", checker.address)
-    printMemory(checker.masterSealPublicKey, CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE, PRINT_MEMORY_MODE_HEX);
-
-    assert(cryptoCheckMasterSigned((byte*) &payload, sizeof payload));
 }
 
 void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
