@@ -1,8 +1,12 @@
 
+
+// module is not used anywhere yet
+
+
 #include "rwMutex.h"
 #include "hashtable.h"
 
-// inspired by Java's Hashtable
+// inspired by Java standard library's Hashtable
 
 /////////////////////////////////// TODO: rewrite the hole module!
 // TODO: add red-black tree
