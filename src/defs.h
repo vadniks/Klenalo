@@ -22,6 +22,7 @@ typedef unsigned char byte;
 #define packed [[gnu::packed]]
 #define arraySize(x) (sizeof(x) / sizeof x[0])
 #define inRange(x, c, y) c >= x && c <= y
+#define unconst(x) *((typeof_unqual(x)*) &(x)) // TODO: replace with this in the all suitable places
 #define cleanup(x) [[gnu::cleanup(x)]]
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
@@ -38,7 +39,7 @@ void _deferHandler(void (^ const* const block)(void));
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
 #define boolToStr(x) ((x) ? "true" : "false")
-#define xAlloca(x) (byte[x]) {0}
+#define xAlloca(x) (void*) (byte[x]) {0}
 #define unusedVariableBuffer(x) (x[1]) {0}
 #define USED(x) ((void) (x))
 #define STUB USED(0)
