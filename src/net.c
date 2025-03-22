@@ -153,7 +153,6 @@ static inline HostDiscoveryBroadcastPayload* hostDiscoveryBroadcastPayload(NetMe
     return (HostDiscoveryBroadcastPayload*) message->payload;
 }
 
-static bool a = false; // TODO: test only
 static void broadcastSubnetForHosts(void) {
     const int messageSize = NET_MESSAGE_SIZE + HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE;
     staticAssert(messageSize <= UDP_PACKET_MAX_SIZE);
@@ -173,8 +172,7 @@ static void broadcastSubnetForHosts(void) {
         (byte*) hostDiscoveryBroadcastPayload(message)->wholeMessageSignature
     );
 
-    SDLNet_Address* const address = resolveAddress(!a ? gSelectedSubnetHostAddress /*TODO: test only*/: message->to);
-    a = true; // TODO: test only
+    SDLNet_Address* const address = resolveAddress(message->to);
 
     SDL_LockMutex(gMutex);
 
