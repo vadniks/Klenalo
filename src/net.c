@@ -25,7 +25,7 @@ typedef struct packed {
 } HostDiscoveryBroadcastPayload;
 
 static const short NET_BROADCAST_SOCKET_PORT = 8080;
-static const int BROADCAST_SUBNET_TICKER_PERIOD = 100;
+static const int FETCH_SUBNETS_HOST_ADDRESSES_PERIOD = 100, SUBNET_BROADCAST_SEND_PERIOD = 1000, SUBNET_BROADCAST_RECEIVE_PERIOD = 250;
 static const int UDP_PACKET_MAX_SIZE = 512, BROADCAST_PAYLOAD_SIZE = UDP_PACKET_MAX_SIZE - (int) sizeof(NetMessage);
 static const int HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE = sizeof(HostDiscoveryBroadcastPayload);
 #define GREETING constsConcatenateTitleWith(" ping")
@@ -37,7 +37,6 @@ static List* gSubnetsHostsAddressesList = nullptr; // <int>
 
 static atomic int gSelectedSubnetHostAddress = 0;
 static SDLNet_DatagramSocket* gSubnetBroadcastSocket = nullptr;
-static int gBroadcastSubnetTicker = 0;
 
 void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
@@ -133,8 +132,6 @@ void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
         sizeof(int)
     ));
 
-    // TODO: recfrom(...socket...)
-
     SDL_UnlockMutex(gMutex);
 }
 
@@ -161,7 +158,7 @@ static void broadcastSubnetForHosts(void) {
     staticAssert(messageSize <= UDP_PACKET_MAX_SIZE);
 
     NetMessage* const message = xalloca(messageSize);
-    unconst(message->flag) = 0;
+    unconst(message->flag) = NET_MESSAGE_FLAG_BROADCAST_HOST_DISCOVERY;
     unconst(message->timestamp) = lifecycleCurrentTimeMillis();
     unconst(message->index) = 0;
     unconst(message->count) = 1;
@@ -174,12 +171,6 @@ static void broadcastSubnetForHosts(void) {
         messageSize - CRYPTO_SIGNATURE_SIZE,
         (byte*) hostDiscoveryBroadcastPayload(message)->wholeMessageSignature
     );
-
-    // TODO: test only
-    printMemory(message, messageSize, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK);
-    assert(cryptoCheckMasterSigned((byte*) message, messageSize - CRYPTO_SIGNATURE_SIZE, (void*) message + (messageSize - CRYPTO_SIGNATURE_SIZE)));
-    assert(!xmemcmp(message->payload, hostDiscoveryBroadcastPayload(message)->payload, HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE));
-    assert(memmem(hostDiscoveryBroadcastPayload(message)->payload, HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE, hostDiscoveryBroadcastPayload(message)->greeting, sizeof((HostDiscoveryBroadcastPayload){}.greeting)));
 
     SDLNet_Address* const address = resolveAddress(INADDR_BROADCAST);
 
@@ -194,14 +185,27 @@ static void broadcastSubnetForHosts(void) {
     SDLNet_UnrefAddress(address);
 }
 
+static void listenSubnetForBroadcasts(void) {
+    // TODO: recfrom(...socket...)
+}
+
+static void runPeriodically(const unsigned long currentMillis, unsigned long* const lastRunMillis, const int period, void (* const action)(void)) {
+    if (currentMillis - *lastRunMillis < (unsigned) period) return;
+    *lastRunMillis = currentMillis;
+    action();
+}
+
 void netLoop(void) {
     assert(lifecycleInitialized() && gInitialized);
 
-    fetchSubnetsHostsAddresses();
+    const unsigned long currentMillis = lifecycleCurrentTimeMillis();
+    static unsigned long lastSubnetsHostsAddressesFetch = 0, lastBroadcastSend = 0, lastBroadcastReceive = 0;
 
-    if (gSelectedSubnetHostAddress && ++gBroadcastSubnetTicker == BROADCAST_SUBNET_TICKER_PERIOD) { // TODO: replace with time based ticker
-        gBroadcastSubnetTicker = 0;
-        broadcastSubnetForHosts();
+    runPeriodically(currentMillis, &lastSubnetsHostsAddressesFetch, FETCH_SUBNETS_HOST_ADDRESSES_PERIOD, fetchSubnetsHostsAddresses);
+
+    if (gSelectedSubnetHostAddress) {
+        runPeriodically(currentMillis, &lastBroadcastSend, SUBNET_BROADCAST_SEND_PERIOD, broadcastSubnetForHosts);
+        runPeriodically(currentMillis, &lastBroadcastReceive, SUBNET_BROADCAST_RECEIVE_PERIOD, listenSubnetForBroadcasts);
     }
 }
 
