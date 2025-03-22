@@ -12,10 +12,10 @@ struct _ConditionObserver {
 
 ConditionObserver* conditionObserverCreate(void* const variablePointer, const ConditionObserverVariableType variableType) {
     ConditionObserver* const observer = xmalloc(sizeof *observer);
-    *(void**) &observer->variablePointer = variablePointer;
-    *(int*) &observer->variableType = variableType;
-    assert(*(SDL_Mutex**) &observer->mutex = SDL_CreateMutex());
-    assert(*(SDL_Condition**) &observer->condition = SDL_CreateCondition());
+    unconst(observer->variablePointer) = variablePointer;
+    unconst(observer->variableType) = variableType;
+    assert(unconst(observer->mutex) = SDL_CreateMutex());
+    assert(unconst(observer->condition) = SDL_CreateCondition());
     observer->locked = false;
     return observer;
 }

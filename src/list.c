@@ -17,7 +17,7 @@ List* listCreate(const bool synchronized, const ListDeallocator nullable dealloc
     list->values = nullptr;
     list->size = 0;
     list->rwMutex = synchronized ? rwMutexCreate() : nullptr;
-    *(ListDeallocator*) &list->deallocator = deallocator;
+    unconst(list->deallocator) = deallocator;
     return list;
 }
 

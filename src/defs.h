@@ -30,7 +30,7 @@ typedef unsigned char byte;
 #define packed [[gnu::packed]]
 #define arraySize(x) (sizeof(x) / sizeof x[0])
 #define inRange(x, c, y) c >= x && c <= y
-#define unconst(x) *((typeof_unqual(x)*) &(x)) // TODO: replace with this in the all suitable places
+#define unconst(x) *((typeof_unqual(x)*) &(x))
 #define cleanup(x) [[gnu::cleanup(x)]]
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
