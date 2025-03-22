@@ -188,8 +188,6 @@ static void broadcastSubnetForHosts(void) {
 }
 
 static void listenSubnetForBroadcasts(void) {
-    // TODO: recfrom(...socket...)
-
     SDLNet_Datagram* datagram;
 
     SDL_LockMutex(gMutex);
