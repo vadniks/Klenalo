@@ -96,7 +96,7 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
             const byte bt = ((const byte*) memory)[i];
             bt == ' ' || inRange('a', bt, 'z') || inRange('A', bt, 'Z') || inRange('0', bt, '9')
                 ? printf("\033[1;32m%c\033[0m", bt) : printf("%x", bt);
-            if (i < size) printf(" ");
+            if (i < size - 1) printf(" ");
         }
     } else
         for (int i = 0; i < size; printf(format, ((const byte*) memory)[i++]), i < size ? printf("%s", divider) : 0);
