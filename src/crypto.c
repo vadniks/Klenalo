@@ -61,9 +61,9 @@ void cryptoMasterSign(const byte* const message, const int size, byte* const sig
     assert((int) generatedSize == CRYPTO_SIGNATURE_SIZE);
 }
 
-bool cryptoCheckMasterSigned(const byte* const signedMessage, const int size) {
+bool cryptoCheckMasterSigned(const byte* const message, const int size, const byte* const signature) {
     assert(lifecycleInitialized() && gInitialized);
-    return !crypto_sign_open(nullptr, nullptr, signedMessage, size, gMasterSignPublicKey);
+    return !crypto_sign_verify_detached(signature, message, size, gMasterSignPublicKey);
 }
 
 void cryptoSeal(const byte* const message, const int size, byte* const sealedMessage, const byte* const sealPublicKey) {

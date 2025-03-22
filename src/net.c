@@ -173,12 +173,7 @@ static void broadcastSubnetForHosts(void) {
     );
 
     printMemory(message, messageSize, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK); // TODO: test only
-    byte checker[messageSize];
-    xmemcpy(checker, ((HostDiscoveryBroadcastPayload*) message->payload)->wholeMessageSignature, CRYPTO_SIGNATURE_SIZE);
-    xmemcpy(checker + CRYPTO_SIGNATURE_SIZE, message, NET_MESSAGE_SIZE);
-//    assert(cryptoCheckMasterSigned(checker, messageSize)); // TODO: fails <--------------------------, detach signature in cryptoCheckMasterSigned()
-
-    // low level memory manipulation - in git repo
+    assert(cryptoCheckMasterSigned((byte*) message, messageSize - CRYPTO_SIGNATURE_SIZE, (void*) message + (messageSize - CRYPTO_SIGNATURE_SIZE)));
 
     SDLNet_Address* const address = resolveAddress(INADDR_BROADCAST);
     assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, address, NET_BROADCAST_SOCKET_PORT, message, messageSize));

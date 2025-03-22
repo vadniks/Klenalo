@@ -16,7 +16,7 @@ bool cryptoInitialized(void);
 const byte* cryptoMasterSignPublicKey(void); // sign*
 const byte* cryptoMasterSessionSealPublicKey(void); // encrypt*
 void cryptoMasterSign(const byte* const message, const int size, byte* const signature); // sizeof(signature) = signatureSize
-bool cryptoCheckMasterSigned(const byte* const signedMessage, const int size); // size = signatureSize + sizeof(message) // TODO: detach signature
+bool cryptoCheckMasterSigned(const byte* const message, const int size, const byte* const signature); // size = sizeof(message)
 void cryptoSeal(const byte* const message, const int size, byte* const sealedMessage, const byte* const sealPublicKey); // sizeof(sealedMessage) = sealSize + size
 bool cryptoMasterSessionUnseal(const byte* const sealedMessage, const int size, byte* const unsealedMessage); // size = sealSize + sizeof(message)
 void cryptoQuit(void);
