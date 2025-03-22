@@ -12,14 +12,16 @@ enum _NetMessageFlag : byte {
     NET_MESSAGE_FLAG_BROADCAST_HOST_DISCOVERY
 };
 
-typedef struct {} MessagePayload;
-
 typedef struct packed {
-    const MessagePayload;
-    const char greeting[12];
-    const byte version;
-    const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE];
-    const byte wholeMessageSignature[CRYPTO_SIGNATURE_SIZE]; // signature not just of the payload but of the whole message and therefore it's recalculated everytime a new broadcast message is prepared to be sent
+    union {
+        const NetMessagePayload;
+        struct {
+            const char greeting[12];
+            const byte version;
+            const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE];
+            const byte wholeMessageSignature[CRYPTO_SIGNATURE_SIZE]; // signature not just of the payload but of the whole message and therefore it's recalculated everytime a new broadcast message is prepared to be sent
+        };
+    };
 } HostDiscoveryBroadcastPayload;
 
 static const short NET_BROADCAST_SOCKET_PORT = 8080;
@@ -172,8 +174,11 @@ static void broadcastSubnetForHosts(void) {
         (byte*) ((HostDiscoveryBroadcastPayload*) message->payload)->wholeMessageSignature
     );
 
-    printMemory(message, messageSize, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK); // TODO: test only
+    // TODO: test only
+    printMemory(message, messageSize, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK);
     assert(cryptoCheckMasterSigned((byte*) message, messageSize - CRYPTO_SIGNATURE_SIZE, (void*) message + (messageSize - CRYPTO_SIGNATURE_SIZE)));
+    assert(!xmemcmp(message->payload, ((HostDiscoveryBroadcastPayload*) message->payload)->payload, HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE));
+    assert(memmem(((HostDiscoveryBroadcastPayload*) message->payload)->payload, HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE, ((HostDiscoveryBroadcastPayload*) message->payload)->greeting, sizeof((HostDiscoveryBroadcastPayload){}.greeting)));
 
     SDLNet_Address* const address = resolveAddress(INADDR_BROADCAST);
     assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, address, NET_BROADCAST_SOCKET_PORT, message, messageSize));

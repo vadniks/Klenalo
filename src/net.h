@@ -7,10 +7,14 @@ enum _NetMessageFlag : byte;
 typedef enum _NetMessageFlag NetMessageFlag;
 
 typedef struct packed {
+    const byte payload[];
+} NetMessagePayload;
+
+typedef struct packed {
     const NetMessageFlag flag;
     const unsigned long timestamp;
     const int index, count, from, to, size;
-    const byte payload[/*size*/];
+    const NetMessagePayload;
 } NetMessage;
 
 typedef enum : int {
