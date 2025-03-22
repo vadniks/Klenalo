@@ -4,6 +4,8 @@
 
 // inspired by Java's Hashtable
 
+/////////////////////////////////// TODO: rewrite the hole module!
+
 typedef struct Node {
     const int hash;
     void* value;
