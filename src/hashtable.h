@@ -24,7 +24,3 @@ HashtableIterator* hashtableIteratorCreate(Hashtable* const hashtable); // don't
 void* nullable hashtableIterate(HashtableIterator* const iterator); // returns null when there aren't any more items available
 void hashtableIteratorDestroy(HashtableIterator* const iterator); // must be called while its hashtable is still active
 void hashtableDestroy(Hashtable* const hashtable);
-
-#if TESTING
-void hashtableRunTests(void);
-#endif
