@@ -19,7 +19,7 @@ typedef struct packed {
     const char greeting[12];
     const byte version;
     const int address; // address of the sender
-    const byte masterSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE];
+    const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE];
 } HostDiscoveryBroadcastPayload;
 
 const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
@@ -107,7 +107,7 @@ static SDLNet_Address* resolveAddress(const int address) {
 
 static void generateHostDiscoveryBroadcastPayload(void) {
     HostDiscoveryBroadcastPayload payload = {{}, {0}, GREETING, 1, gSelectedSubnetHostAddress, {0}};
-    xmemcpy((byte*) payload.masterSealPublicKey, cryptoMasterSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE);
+    xmemcpy((byte*) payload.masterSessionSealPublicKey, cryptoMasterSessionSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE);
     cryptoMasterSign((void*) &payload + CRYPTO_SIGNATURE_SIZE, sizeof payload - CRYPTO_SIGNATURE_SIZE, (byte*) payload.signature);
     xmemcpy(gHostDiscoveryBroadcastPayload, &payload, sizeof payload);
 }

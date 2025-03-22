@@ -26,8 +26,8 @@ staticAssert(
 // TODO: will be replaced with config file where users can set the keys themselves
 static const byte gMasterSignPublicKey[CRYPTO_SIGN_PUBLIC_KEY_SIZE] = "\xa9\x10\x98\xdc\x68\xfb\x26\x29\x71\xbc\x23\x57\x4a\x7\xe7\xc3\x22\x44\x82\x91\xd8\xe4\x3\x88\x82\xad\xbe\x18\xc2\x4e\xef\x77";
 static const byte gMasterSignSecretKey[CRYPTO_SIGN_SECRET_KEY_SIZE] = "\xde\x51\x0\xb3\xf3\x68\xf0\x93\x9c\x51\x0\x19\x86\x53\xc3\x99\xc9\xa7\xc2\x23\x9a\xa4\x46\x26\x21\xde\x5\x44\x5c\x4d\x12\x62\xa9\x10\x98\xdc\x68\xfb\x26\x29\x71\xbc\x23\x57\x4a\x7\xe7\xc3\x22\x44\x82\x91\xd8\xe4\x3\x88\x82\xad\xbe\x18\xc2\x4e\xef\x77";
-static const byte gMasterSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE] = "\x88\x7f\x63\x74\x14\xa1\xb0\xd4\x4e\x18\x49\x85\x33\x4e\x5c\xfe\xda\xff\x8\xbc\x6b\xbb\xe2\xef\x43\x86\xe9\xe7\x5a\x4c\x8\x2f";
-static const byte gMasterSealSecretKey[CRYPTO_ENCRYPT_SECRET_KEY_SIZE] = "\x21\xc\xba\xf7\xb3\x4c\xb9\xde\x9b\x31\x6d\xe4\x9f\x20\x6e\x7e\x67\x4e\xaa\x9a\x97\x55\x27\x31\x17\x6b\xb5\xbc\xe\x2b\xe8\xfc";
+static byte gMasterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE] = {0};
+static byte gMasterSessionSealSecretKey[CRYPTO_ENCRYPT_SECRET_KEY_SIZE] = {0};
 
 static atomic bool gInitialized = false;
 
@@ -36,6 +36,8 @@ void cryptoInit(void) {
     gInitialized = true;
 
     assert(!sodium_init());
+
+    assert(!crypto_box_keypair(gMasterSessionSealPublicKey, gMasterSessionSealSecretKey));
 }
 
 bool cryptoInitialized(void) {
@@ -47,9 +49,9 @@ const byte* cryptoMasterSignPublicKey(void) {
     return gMasterSignPublicKey;
 }
 
-const byte* cryptoMasterSealPublicKey(void) {
+const byte* cryptoMasterSessionSealPublicKey(void) {
     assert(lifecycleInitialized() && gInitialized);
-    return gMasterSealPublicKey;
+    return gMasterSessionSealPublicKey;
 }
 
 void cryptoMasterSign(const byte* const message, const int size, byte* const signature) {
@@ -70,9 +72,9 @@ void cryptoSeal(const byte* const message, const int size, byte* const sealedMes
     assert(!crypto_box_seal(sealedMessage, message, size, sealPublicKey));
 }
 
-bool cryptoMasterUnseal(const byte* const sealedMessage, const int size, byte* const unsealedMessage) {
+bool cryptoMasterSessionUnseal(const byte* const sealedMessage, const int size, byte* const unsealedMessage) {
     assert(lifecycleInitialized() && gInitialized);
-    return !crypto_box_seal_open(unsealedMessage, sealedMessage, size, gMasterSealPublicKey, gMasterSealSecretKey);
+    return !crypto_box_seal_open(unsealedMessage, sealedMessage, size, gMasterSessionSealPublicKey, gMasterSessionSealSecretKey);
 }
 
 void cryptoQuit(void) {
