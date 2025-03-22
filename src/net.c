@@ -153,6 +153,7 @@ static inline HostDiscoveryBroadcastPayload* hostDiscoveryBroadcastPayload(NetMe
     return (HostDiscoveryBroadcastPayload*) message->payload;
 }
 
+static bool a = false; // TODO: test only
 static void broadcastSubnetForHosts(void) {
     const int messageSize = NET_MESSAGE_SIZE + HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE;
     staticAssert(messageSize <= UDP_PACKET_MAX_SIZE);
@@ -172,7 +173,8 @@ static void broadcastSubnetForHosts(void) {
         (byte*) hostDiscoveryBroadcastPayload(message)->wholeMessageSignature
     );
 
-    SDLNet_Address* const address = resolveAddress(INADDR_BROADCAST);
+    SDLNet_Address* const address = resolveAddress(!a ? gSelectedSubnetHostAddress /*TODO: test only*/: message->to);
+    a = true; // TODO: test only
 
     SDL_LockMutex(gMutex);
 
@@ -187,6 +189,23 @@ static void broadcastSubnetForHosts(void) {
 
 static void listenSubnetForBroadcasts(void) {
     // TODO: recfrom(...socket...)
+
+    SDLNet_Datagram* datagram;
+
+    SDL_LockMutex(gMutex);
+    assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
+    assert(SDLNet_ReceiveDatagram(gSubnetBroadcastSocket, &datagram));
+    SDL_UnlockMutex(gMutex);
+
+    if (datagram) {
+        debugArgs("%s:%u %d", SDLNet_GetAddressString(datagram->addr), datagram->port, datagram->buflen)
+        printMemory(datagram->buf, datagram->buflen, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK);
+
+        if (datagram->buflen == NET_MESSAGE_SIZE + HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE) // as anyone can send anything anywhere over udp
+            assert(cryptoCheckMasterSigned(datagram->buf, datagram->buflen - CRYPTO_SIGNATURE_SIZE, datagram->buf + (datagram->buflen - CRYPTO_SIGNATURE_SIZE)));
+
+        SDLNet_DestroyDatagram(datagram);
+    }
 }
 
 static void runPeriodically(const unsigned long currentMillis, unsigned long* const lastRunMillis, const int period, void (* const action)(void)) {
