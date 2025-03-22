@@ -6,8 +6,7 @@
 #define CRYPTO_SIGN_PUBLIC_KEY_SIZE 32
 #define CRYPTO_SIGN_SECRET_KEY_SIZE 64
 #define CRYPTO_SIGNATURE_SIZE 64
-#define CRYPTO_ENCRYPT_PUBLIC_KEY_SIZE 32 // TODO: unify encrypt_*_key
-#define CRYPTO_ENCRYPT_SECRET_KEY_SIZE 32
+#define CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE 32 // public* and secret* key sizes, seal(De)Encrypt size too
 #define CRYPTO_SEAL_SIZE 48
 
 #define cryptoSigned(x) (CRYPTO_SIGNATURE_SIZE + x)
