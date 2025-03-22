@@ -13,7 +13,10 @@ typedef struct packed {
     const byte payload[/*size*/];
 } NetMessage;
 
-extern const int NET_ADDRESS_STRING_SIZE; // null terminator included
+typedef enum : int {
+    NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1, // xxx.xxx.xxx.xxx\0
+    NET_MESSAGE_SIZE = sizeof(NetMessage)
+} _NetConstant;
 
 void netInit(void);
 bool netInitialized(void);

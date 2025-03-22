@@ -16,17 +16,16 @@ typedef struct {} MessagePayload;
 
 typedef struct packed {
     const MessagePayload;
-    const byte signature[CRYPTO_SIGNATURE_SIZE];
     const char greeting[12];
     const byte version;
-    const int address; // address of the sender
     const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE];
+    const byte wholeMessageSignature[CRYPTO_SIGNATURE_SIZE]; // signature not just of the payload but of the whole message and therefore it's recalculated everytime a new broadcast message is prepared to be sent
 } HostDiscoveryBroadcastPayload;
 
-const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
 static const short NET_BROADCAST_SOCKET_PORT = 8080;
 static const int BROADCAST_SUBNET_TICKER_PERIOD = 100;
 static const int UDP_PACKET_MAX_SIZE = 512, BROADCAST_PAYLOAD_SIZE = UDP_PACKET_MAX_SIZE - (int) sizeof(NetMessage);
+static const int HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE = sizeof(HostDiscoveryBroadcastPayload);
 #define GREETING constsConcatenateTitleWith(" ping")
 
 static atomic bool gInitialized = false;
@@ -37,8 +36,6 @@ static List* gSubnetsHostsAddressesList = nullptr; // <int>
 static atomic int gSelectedSubnetHostAddress = 0;
 static SDLNet_DatagramSocket* gSubnetBroadcastSocket = nullptr;
 static int gBroadcastSubnetTicker = 0;
-
-static byte gHostDiscoveryBroadcastPayload[sizeof(HostDiscoveryBroadcastPayload)] = {0};
 
 void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
@@ -106,12 +103,11 @@ static SDLNet_Address* resolveAddress(const int address) {
     return resolvedAddress;
 }
 
-static void generateHostDiscoveryBroadcastPayload(void) {
-    HostDiscoveryBroadcastPayload payload = {{}, {0}, {0}, 1, gSelectedSubnetHostAddress, {0}};
-    strncpy((char*) payload.greeting, GREETING, sizeof payload.greeting);
-    xmemcpy((byte*) payload.masterSessionSealPublicKey, cryptoMasterSessionSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE);
-    cryptoMasterSign((void*) &payload + CRYPTO_SIGNATURE_SIZE, sizeof payload - CRYPTO_SIGNATURE_SIZE, (byte*) payload.signature);
-    xmemcpy(gHostDiscoveryBroadcastPayload, &payload, sizeof payload);
+static void generateHostDiscoveryBroadcastPayload(HostDiscoveryBroadcastPayload* const payload) {
+    strncpy((char*) payload->greeting, GREETING, sizeof payload->greeting);
+    unconst(payload->version) = 1;
+    xmemcpy((byte*) payload->masterSessionSealPublicKey, cryptoMasterSessionSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE);
+    xmemset((byte*) payload->wholeMessageSignature, 0, CRYPTO_SIGNATURE_SIZE);
 }
 
 void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
@@ -135,7 +131,7 @@ void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
         sizeof(int)
     ));
 
-    generateHostDiscoveryBroadcastPayload();
+    // TODO: recfrom(...socket...)
 
     SDL_UnlockMutex(gMutex);
 }
@@ -158,16 +154,37 @@ static void broadcastSubnetForHosts(void) {
     SDL_LockMutex(gMutex);
     assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
 
-    const int bufferSize = 512;
-    byte buffer[bufferSize] = {0}; // TODO
+    const int messageSize = NET_MESSAGE_SIZE + HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE;
+    staticAssert(messageSize <= UDP_PACKET_MAX_SIZE);
+
+    NetMessage* const message = xAlloca(messageSize);
+    unconst(message->flag) = 0;
+    unconst(message->timestamp) = lifecycleCurrentTimeMillis();
+    unconst(message->index) = 0;
+    unconst(message->count) = 1;
+    unconst(message->from) = gSelectedSubnetHostAddress;
+    unconst(message->to) = INADDR_BROADCAST;
+    unconst(message->size) = HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE;
+    generateHostDiscoveryBroadcastPayload((HostDiscoveryBroadcastPayload*) message->payload);
+    cryptoMasterSign(
+        (byte*) message,
+        messageSize - CRYPTO_SIGNATURE_SIZE,
+        (byte*) ((HostDiscoveryBroadcastPayload*) message->payload)->wholeMessageSignature
+    );
+
+    printMemory(message, messageSize, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK); // TODO: test only
+    byte checker[messageSize];
+    xmemcpy(checker, ((HostDiscoveryBroadcastPayload*) message->payload)->wholeMessageSignature, CRYPTO_SIGNATURE_SIZE);
+    xmemcpy(checker + CRYPTO_SIGNATURE_SIZE, message, NET_MESSAGE_SIZE);
+//    assert(cryptoCheckMasterSigned(checker, messageSize)); // TODO: fails <--------------------------, detach signature in cryptoCheckMasterSigned()
+
+    // low level memory manipulation - in git repo
 
     SDLNet_Address* const address = resolveAddress(INADDR_BROADCAST);
-    assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, address, NET_BROADCAST_SOCKET_PORT, buffer, bufferSize));
+    assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, address, NET_BROADCAST_SOCKET_PORT, message, messageSize));
     SDLNet_UnrefAddress(address);
 
     SDL_UnlockMutex(gMutex);
-
-    SDL_Log("broadcast"); // TODO: test
 }
 
 void netLoop(void) {
@@ -175,7 +192,7 @@ void netLoop(void) {
 
     fetchSubnetsHostsAddresses();
 
-    if (gSelectedSubnetHostAddress && ++gBroadcastSubnetTicker == BROADCAST_SUBNET_TICKER_PERIOD) {
+    if (gSelectedSubnetHostAddress && ++gBroadcastSubnetTicker == BROADCAST_SUBNET_TICKER_PERIOD) { // TODO: replace with time based ticker
         gBroadcastSubnetTicker = 0;
         broadcastSubnetForHosts();
     }
