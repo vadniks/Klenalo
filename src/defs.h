@@ -9,13 +9,21 @@ typedef unsigned char byte;
 
 // everything that isn't marked with nullable is considered to be not null
 #ifdef __clang__
-#pragma clang diagnostic ignored "-Wnullability-extension"
+#pragma clang diagnostic ignored "-Wnullability-extension" // TODO: move to CMakeLists.txt
 #pragma clang diagnostic ignored "-Wnullability-completeness"
 #define nullable _Nullable
 #else
 #define nullable
 #endif
 
+#define min(x, y) ((x) < (y) ? (x) : (y))
+#define max(x, y) ((x) > (y) ? (x) : (y))
+#define boolToStr(x) ((x) ? "true" : "false")
+#define xalloca(x) (void*) (byte[x]) {0}
+#define unusedVariableBuffer(x) (x[1]) {0}
+#define USED(x) ((void) (x))
+#define STUB USED(0)
+#define swapValues(x, y) {x ^= y; y ^= x; x ^= y;}
 #define staticAssert(x) static_assert(x)
 #define atomic _Atomic
 #define fallthrough [[fallthrough]];
@@ -35,15 +43,6 @@ void _deferHandler(void (^ const* const block)(void));
 #define defer(x) cleanup(x) const byte concat(_defer_, __LINE__);
 #define deferHandler(x) static void x([[maybe_unused]] void* const deferred)
 #endif
-
-#define min(x, y) ((x) < (y) ? (x) : (y))
-#define max(x, y) ((x) > (y) ? (x) : (y))
-#define boolToStr(x) ((x) ? "true" : "false")
-#define xAlloca(x) (void*) (byte[x]) {0}
-#define unusedVariableBuffer(x) (x[1]) {0}
-#define USED(x) ((void) (x))
-#define STUB USED(0)
-#define swapValues(x, y) {x ^= y; y ^= x; x ^= y;}
 
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
