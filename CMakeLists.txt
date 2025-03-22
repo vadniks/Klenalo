@@ -49,6 +49,8 @@ add_compile_options(-Wno-logical-op-parentheses)
 add_compile_options(-Wno-gnu-pointer-arith)
 add_compile_options(-Wno-zero-length-array)
 add_compile_options(-Wno-gnu-empty-struct)
+#add_compile_options(-Wno-gnu-flexible-array-initializer)
+add_compile_options(-Wno-address-of-packed-member)
 add_compile_options(-fblocks)
 add_compile_options(-fms-extensions -Wno-microsoft-anon-tag)
 
