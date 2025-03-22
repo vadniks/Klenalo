@@ -152,6 +152,10 @@ void netStopBroadcastingAndListeningSubnet(void) {
     SDL_UnlockMutex(gMutex);
 }
 
+static inline HostDiscoveryBroadcastPayload* hostDiscoveryBroadcastPayload(NetMessage* const message) {
+    return (HostDiscoveryBroadcastPayload*) message->payload;
+}
+
 static void broadcastSubnetForHosts(void) {
     SDL_LockMutex(gMutex);
     assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
@@ -167,18 +171,18 @@ static void broadcastSubnetForHosts(void) {
     unconst(message->from) = gSelectedSubnetHostAddress;
     unconst(message->to) = INADDR_BROADCAST;
     unconst(message->size) = HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE;
-    generateHostDiscoveryBroadcastPayload((HostDiscoveryBroadcastPayload*) message->payload);
+    generateHostDiscoveryBroadcastPayload(hostDiscoveryBroadcastPayload(message));
     cryptoMasterSign(
         (byte*) message,
         messageSize - CRYPTO_SIGNATURE_SIZE,
-        (byte*) ((HostDiscoveryBroadcastPayload*) message->payload)->wholeMessageSignature
+        (byte*) hostDiscoveryBroadcastPayload(message)->wholeMessageSignature
     );
 
     // TODO: test only
     printMemory(message, messageSize, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK);
     assert(cryptoCheckMasterSigned((byte*) message, messageSize - CRYPTO_SIGNATURE_SIZE, (void*) message + (messageSize - CRYPTO_SIGNATURE_SIZE)));
-    assert(!xmemcmp(message->payload, ((HostDiscoveryBroadcastPayload*) message->payload)->payload, HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE));
-    assert(memmem(((HostDiscoveryBroadcastPayload*) message->payload)->payload, HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE, ((HostDiscoveryBroadcastPayload*) message->payload)->greeting, sizeof((HostDiscoveryBroadcastPayload){}.greeting)));
+    assert(!xmemcmp(message->payload, hostDiscoveryBroadcastPayload(message)->payload, HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE));
+    assert(memmem(hostDiscoveryBroadcastPayload(message)->payload, HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE, hostDiscoveryBroadcastPayload(message)->greeting, sizeof((HostDiscoveryBroadcastPayload){}.greeting)));
 
     SDLNet_Address* const address = resolveAddress(INADDR_BROADCAST);
     assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, address, NET_BROADCAST_SOCKET_PORT, message, messageSize));
