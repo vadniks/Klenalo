@@ -1,7 +1,10 @@
 
+#include <string.h>
+#include "defs.h"
 #include "consts.h"
 
 static ConstsLanguage gLanguage = CONSTS_LANGUAGE_EN;
+static char gConcatenationBuffer[64] = {0};
 
 void constsSetLanguage(const ConstsLanguage language) {
     gLanguage = language;
@@ -14,7 +17,7 @@ static const char* enString(const ConstsString string) {
                    "              This program comes with ABSOLUTELY NO WARRANTY;                \n"
                    "This is free software which is available under the terms of the GNU GPL 3.0";
         case CONSTS_STRING_TITLE:
-            return "Klenalo";
+            return "Klenalo"; // only ascii chars here!
         case CONSTS_STRING_WELCOME:
             return "Welcome!";
         case CONSTS_STRING_PASSWORD:
@@ -33,4 +36,11 @@ const char* constsString(const ConstsString string) {
         default:
             return enString(string);
     }
+}
+
+const char* constsConcatenateTitleWith(const char* const added) {
+    xmemset(gConcatenationBuffer, 0, sizeof gConcatenationBuffer);
+    strncpy(gConcatenationBuffer, constsString(CONSTS_STRING_TITLE), sizeof gConcatenationBuffer);
+    strncat(gConcatenationBuffer, added, sizeof(gConcatenationBuffer) - strlen(gConcatenationBuffer) - 1);
+    return gConcatenationBuffer;
 }

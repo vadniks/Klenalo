@@ -22,3 +22,4 @@ typedef enum : int {
 
 void constsSetLanguage(const ConstsLanguage language);
 const char* constsString(const ConstsString string);
+const char* constsConcatenateTitleWith(const char* const added); // returns pointer to a static storage, not thread safe

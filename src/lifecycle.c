@@ -8,6 +8,7 @@
 #include "crypto.h"
 #include "net.h"
 #include "list.h"
+#include "consts.h"
 #include "lifecycle.h"
 
 typedef struct {
@@ -64,8 +65,8 @@ void lifecycleInit(void) {
     cryptoInit();
     netInit();
 
-    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, "Klenalo:bg", nullptr));
-    assert(gNetActionsLooper.thread = SDL_CreateThread(netActionsLoop, "Klenalo:net", nullptr));
+    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, constsConcatenateTitleWith(":bg"), nullptr));
+    assert(gNetActionsLooper.thread = SDL_CreateThread(netActionsLoop, constsConcatenateTitleWith(":net"), nullptr));
 }
 
 static unsigned getTicks(void) {

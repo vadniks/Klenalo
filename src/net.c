@@ -5,6 +5,7 @@
 #include <netdb.h>
 #include "lifecycle.h"
 #include "crypto.h"
+#include "consts.h"
 #include "net.h"
 
 enum _NetMessageFlag : byte {
@@ -26,7 +27,7 @@ const int NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1; // xxx.xxx.xxx.xxx\n
 static const short NET_BROADCAST_SOCKET_PORT = 8080;
 static const int BROADCAST_SUBNET_TICKER_PERIOD = 100;
 static const int UDP_PACKET_MAX_SIZE = 512, BROADCAST_PAYLOAD_SIZE = UDP_PACKET_MAX_SIZE - (int) sizeof(NetMessage);
-#define GREETING "Klenalo ping"
+#define GREETING constsConcatenateTitleWith(" ping")
 
 static atomic bool gInitialized = false;
 static SDL_Mutex* gMutex = nullptr;
@@ -106,7 +107,8 @@ static SDLNet_Address* resolveAddress(const int address) {
 }
 
 static void generateHostDiscoveryBroadcastPayload(void) {
-    HostDiscoveryBroadcastPayload payload = {{}, {0}, GREETING, 1, gSelectedSubnetHostAddress, {0}};
+    HostDiscoveryBroadcastPayload payload = {{}, {0}, {0}, 1, gSelectedSubnetHostAddress, {0}};
+    strncpy((char*) payload.greeting, GREETING, sizeof payload.greeting);
     xmemcpy((byte*) payload.masterSessionSealPublicKey, cryptoMasterSessionSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE);
     cryptoMasterSign((void*) &payload + CRYPTO_SIGNATURE_SIZE, sizeof payload - CRYPTO_SIGNATURE_SIZE, (byte*) payload.signature);
     xmemcpy(gHostDiscoveryBroadcastPayload, &payload, sizeof payload);
