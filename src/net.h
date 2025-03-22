@@ -19,7 +19,8 @@ typedef struct packed {
 
 typedef enum : int {
     NET_ADDRESS_STRING_SIZE = 3 * 4 + 3 + 1, // xxx.xxx.xxx.xxx\0
-    NET_MESSAGE_SIZE = sizeof(NetMessage)
+    NET_MESSAGE_SIZE = sizeof(NetMessage),
+    NET_MESSAGE_TO_EVERYONE = -1 // INADDR_BROADCAST
 } _NetConstant;
 
 void netInit(void);

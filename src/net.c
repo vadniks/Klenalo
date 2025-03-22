@@ -157,19 +157,16 @@ static inline HostDiscoveryBroadcastPayload* hostDiscoveryBroadcastPayload(NetMe
 }
 
 static void broadcastSubnetForHosts(void) {
-    SDL_LockMutex(gMutex);
-    assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
-
     const int messageSize = NET_MESSAGE_SIZE + HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE;
     staticAssert(messageSize <= UDP_PACKET_MAX_SIZE);
 
-    NetMessage* const message = xAlloca(messageSize);
+    NetMessage* const message = xalloca(messageSize);
     unconst(message->flag) = 0;
     unconst(message->timestamp) = lifecycleCurrentTimeMillis();
     unconst(message->index) = 0;
     unconst(message->count) = 1;
     unconst(message->from) = gSelectedSubnetHostAddress;
-    unconst(message->to) = INADDR_BROADCAST;
+    unconst(message->to) = NET_MESSAGE_TO_EVERYONE;
     unconst(message->size) = HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE;
     generateHostDiscoveryBroadcastPayload(hostDiscoveryBroadcastPayload(message));
     cryptoMasterSign(
@@ -185,10 +182,16 @@ static void broadcastSubnetForHosts(void) {
     assert(memmem(hostDiscoveryBroadcastPayload(message)->payload, HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE, hostDiscoveryBroadcastPayload(message)->greeting, sizeof((HostDiscoveryBroadcastPayload){}.greeting)));
 
     SDLNet_Address* const address = resolveAddress(INADDR_BROADCAST);
+
+    SDL_LockMutex(gMutex);
+
+    assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
+    assert(message->from == gSelectedSubnetHostAddress);
     assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, address, NET_BROADCAST_SOCKET_PORT, message, messageSize));
-    SDLNet_UnrefAddress(address);
 
     SDL_UnlockMutex(gMutex);
+
+    SDLNet_UnrefAddress(address);
 }
 
 void netLoop(void) {
