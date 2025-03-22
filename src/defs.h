@@ -9,8 +9,6 @@ typedef unsigned char byte;
 
 // everything that isn't marked with nullable is considered to be not null
 #ifdef __clang__
-#pragma clang diagnostic ignored "-Wnullability-extension" // TODO: move to CMakeLists.txt
-#pragma clang diagnostic ignored "-Wnullability-completeness"
 #define nullable _Nullable
 #else
 #define nullable

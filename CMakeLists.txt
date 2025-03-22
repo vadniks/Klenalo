@@ -43,6 +43,8 @@ add_link_options(-pie -Wl,-z,relro,-z,now) #add_link_options(-pie -z relro)
 
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,--wrap=lv_malloc_core,--wrap=lv_realloc_core,--wrap=lv_free_core,--wrap=FT_New_Face")
 
+add_compile_options(-Wno-nullability-extension)
+add_compile_options(-Wno-nullability-completeness)
 add_compile_options(-Wno-language-extension-token)
 add_compile_options(-Wno-gnu-folding-constant)
 add_compile_options(-Wno-logical-op-parentheses)
