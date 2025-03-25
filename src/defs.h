@@ -29,6 +29,7 @@ typedef unsigned char byte;
 #define arraySize(x) (sizeof(x) / sizeof x[0])
 #define inRange(x, c, y) c >= x && c <= y
 #define unconst(x) *((typeof_unqual(x)*) &(x))
+#define overloadable [[clang::overloadable]]
 #define cleanup(x) [[gnu::cleanup(x)]]
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
@@ -49,11 +50,11 @@ void assert(const bool condition);
 // TODO: add a 'generic' copy/duplicate function
 
 #ifdef __clang__
-[[clang::overloadable]] inline unsigned short swapBytes(unsigned short value) { return __builtin_bswap16(value); }
-[[clang::overloadable]] inline unsigned int swapBytes(unsigned int value) { return __builtin_bswap32(value); }
-[[clang::overloadable]] inline unsigned long swapBytes(unsigned long value) { return __builtin_bswap64(value); }
+overloadable inline unsigned short swapBytes(unsigned short value) { return __builtin_bswap16(value); }
+overloadable inline unsigned int swapBytes(unsigned int value) { return __builtin_bswap32(value); }
+overloadable inline unsigned long swapBytes(unsigned long value) { return __builtin_bswap64(value); }
 #else
-#define swapBytes(x) _Generic((x), unsigned short: swapShort, unsigned int: swapInt, unsigned long: swapLong) (x)
+#define swapBytes(x) _Generic((x), unsigned short: swapShort, unsigned int: swapInt, unsigned long: swapLong)(x)
 inline unsigned short swapShort(unsigned short value) { return __builtin_bswap16(value); }
 inline unsigned int swapInt(unsigned int value) { return __builtin_bswap32(value); }
 inline unsigned long swapLong(unsigned long value) { return __builtin_bswap64(value); }
