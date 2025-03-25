@@ -1,15 +1,8 @@
 
-
-// module is not used anywhere yet
-
-
 #include "rwMutex.h"
 #include "hashtable.h"
 
-// inspired by Java standard library's Hashtable
-
-/////////////////////////////////// TODO: rewrite the hole module!
-// TODO: add red-black tree
+// inspired by the Java standard library's Hashtable
 
 typedef struct Node {
     const int hash;
@@ -18,8 +11,8 @@ typedef struct Node {
 } Node;
 
 struct _Hashtable {
-    Node* nullable* table;
-    int capacity, count, threshold;
+    Node* nullable* nodes;
+    int capacity, count;
     const HashtableDeallocator nullable deallocator;
     RWMutex* const nullable rwMutex;
     bool iterating;
@@ -35,20 +28,19 @@ static const int SINT32_MAX = ~0u / 2u; // 0x7fffffff
 static const int INITIAL_CAPACITY = 11;
 static const float LOAD_FACTOR = 0.75f;
 
-int hashtableHash(const byte* key, int size) {
+int hashtableHash(const byte* value, int size) {
     int hash = 0;
-    for (; size--; hash = 31 * hash + *key++);
+    for (; size--; hash = 31 * hash + *value++);
     return hash;
 }
 
 Hashtable* hashtableCreate(const bool synchronized, const HashtableDeallocator nullable deallocator) {
     Hashtable* const hashtable = xmalloc(sizeof *hashtable);
     assert(hashtable);
-    assert(hashtable->table = xcalloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*)));
+    assert(hashtable->nodes = xcalloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*)));
     hashtable->count = 0;
-    hashtable->threshold = (int) ((float) INITIAL_CAPACITY * LOAD_FACTOR);
-    *(HashtableDeallocator*) &hashtable->deallocator = deallocator;
-    *(RWMutex**) &hashtable->rwMutex = synchronized ? rwMutexCreate() : nullptr;
+    unconst(hashtable->deallocator) = deallocator;
+    unconst(hashtable->rwMutex) = synchronized ? rwMutexCreate() : nullptr;
     hashtable->iterating = false;
     return hashtable;
 }
@@ -57,7 +49,7 @@ static inline void deallocateValue(const Hashtable* const hashtable, void* const
     if (hashtable->deallocator) hashtable->deallocator(value);
 }
 
-static inline void hashtableRwMutexCommand(Hashtable* const hashtable, const RWMutexCommand command) {
+static inline void xRwMutexCommand(Hashtable* const hashtable, const RWMutexCommand command) {
     if (hashtable->rwMutex) rwMutexCommand(hashtable->rwMutex, command);
 }
 
@@ -67,43 +59,42 @@ static int makeIndex(const int capacity, const int hash) {
 }
 
 static void rehash(Hashtable* const hashtable) {
-    const int oldCapacity = hashtable->capacity;
-    if (oldCapacity == SINT32_MAX) return;
+    if (hashtable->capacity == SINT32_MAX) return;
 
-    const int newCapacity = oldCapacity * 2 + 1;
-    if (newCapacity < oldCapacity) return;
+    const int newCapacity = hashtable->capacity * 2 + 1;
+    if (newCapacity < hashtable->capacity) return; // overflow
 
-    Node** newTable = xcalloc(newCapacity, sizeof(void*));
-    assert(newTable);
+    Node** const newNodes = xcalloc(newCapacity, sizeof(void*));
+    assert(newNodes);
 
-    for (int index = 0; index < oldCapacity; index++) {
-        for (Node* anchor = hashtable->table[index]; anchor;) {
-            Node* const current = anchor;
-            anchor = anchor->next;
+    for (int index = 0; index < hashtable->capacity; index++) {
+        for (Node* node = hashtable->nodes[index]; node;) {
+            Node* const nextNode = node->next;
 
-            const int newIndex = makeIndex(newCapacity, current->hash);
-            current->next = newTable[newIndex];
-            newTable[newIndex] = current;
+            const int newIndex = makeIndex(newCapacity, node->hash);
+            node->next = newNodes[newIndex];
+            newNodes[newIndex] = node;
+
+            node = nextNode;
         }
     }
 
-    hashtable->threshold = (int) ((float) newCapacity * LOAD_FACTOR);
-    xfree(hashtable->table);
-    hashtable->table = newTable;
     hashtable->capacity = newCapacity;
+    xfree(hashtable->nodes);
+    hashtable->nodes = newNodes;
 }
 
 void hashtablePut(Hashtable* const hashtable, const int hash, void* const value) {
-    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_LOCK);
+    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(
         hashtable->capacity >= INITIAL_CAPACITY &&
         hashtable->capacity < SINT32_MAX &&
         hashtable->count < SINT32_MAX &&
-        hashtable->table &&
+        hashtable->nodes &&
         !hashtable->iterating
     );
 
-    Node** const anchor = &hashtable->table[makeIndex(hashtable->capacity, hash)];
+    Node** const anchor = (void*) hashtable->nodes + makeIndex(hashtable->capacity, hash);
 
     for (Node* node = *anchor; node; node = node->next) {
         if (node->hash != hash) continue;
@@ -111,42 +102,40 @@ void hashtablePut(Hashtable* const hashtable, const int hash, void* const value)
         deallocateValue(hashtable, node->value);
         node->value = value;
 
-        hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+        xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
         return;
     }
 
-    Node* const new = xmalloc(sizeof *new);
-    assert(new);
-    xmemcpy(new, &(Node) {hash, value, *anchor}, sizeof(Node));
-    *anchor = new;
+    Node* const node = xmalloc(sizeof *node);
+    assert(node);
+    assignToStructWithConsts(node, hash, value, *anchor)
+    *anchor = node;
     hashtable->count++;
 
-    if (hashtable->count >= hashtable->threshold)
-        rehash(hashtable);
+    if (hashtable->count >= (int) ((float) hashtable->capacity * LOAD_FACTOR)) rehash(hashtable);
 
-    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
 void* nullable hashtableGet(Hashtable* const hashtable, const int hash) {
-    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
-    assert(hashtable->capacity && hashtable->count && hashtable->table);
+    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
+    assert(hashtable->capacity && hashtable->count && hashtable->nodes);
 
-    for (const Node* node = hashtable->table[makeIndex(hashtable->capacity, hash)]; node; node = node->next) {
-        if (node->hash == hash) {
-            hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
-            return node->value;
-        }
+    for (const Node* node = hashtable->nodes[makeIndex(hashtable->capacity, hash)]; node; node = node->next) {
+        if (node->hash != hash) continue;
+        xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
+        return node->value;
     }
 
-    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
+    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
     return nullptr;
 }
 
 void hashtableRemove(Hashtable* const hashtable, const int hash) {
-    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_LOCK);
-    assert(hashtable->capacity && hashtable->count && hashtable->table && !hashtable->iterating);
+    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_LOCK);
+    assert(hashtable->capacity && hashtable->count && hashtable->nodes && !hashtable->iterating);
 
-    Node** const anchor = &hashtable->table[makeIndex(hashtable->capacity, hash)];
+    Node** const anchor = (void*) hashtable->nodes + makeIndex(hashtable->capacity, hash);
 
     for (Node* node = *anchor, * previous = nullptr; node; previous = node, node = node->next) {
         if (node->hash != hash) continue;
@@ -161,25 +150,25 @@ void hashtableRemove(Hashtable* const hashtable, const int hash) {
         break;
     }
 
-    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
 int hashtableCapacity(Hashtable* const hashtable) {
-    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
+    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
     const int capacity = hashtable->capacity;
-    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
+    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
     return capacity;
 }
 
 int hashtableCount(Hashtable* const hashtable) {
-    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
+    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
     const int count = hashtable->count;
-    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
+    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
     return count;
 }
 
 HashtableIterator* hashtableIteratorCreate(Hashtable* const hashtable) {
-    hashtableRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
+    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
     assert(hashtable->count && !hashtable->iterating);
 
     hashtable->iterating = true;
@@ -205,7 +194,7 @@ void* nullable hashtableIterate(HashtableIterator* const iterator) {
     }
 
     while (iterator->index < iterator->hashtable->capacity) {
-        if ((iterator->node = iterator->hashtable->table[iterator->index++])) {
+        if ((iterator->node = iterator->hashtable->nodes[iterator->index++])) {
             node = iterator->node;
             iterator->node = node->next;
             return node->value;
@@ -220,7 +209,7 @@ void hashtableIteratorDestroy(HashtableIterator* const iterator) {
     iterator->hashtable->iterating = false;
     xfree(iterator);
 
-    hashtableRwMutexCommand(iterator->hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
+    xRwMutexCommand(iterator->hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
 }
 
 void hashtableDestroy(Hashtable* const hashtable) {
@@ -228,16 +217,15 @@ void hashtableDestroy(Hashtable* const hashtable) {
     assert(!hashtable->iterating);
 
     for (int index = 0; index < hashtable->capacity; index++) {
-        for (Node* node = hashtable->table[index]; node; node = node->next) {
+        for (Node* node = hashtable->nodes[index]; node; node = node->next) {
             deallocateValue(hashtable, node->value);
             xfree(node);
         }
     }
 
-    xfree(hashtable->table);
+    xfree(hashtable->nodes);
     xfree(hashtable);
 }
-
 
 // TODO: add shrinkToFit() - allocate only minimal nodes to fit all the values so that each node contains only one value and call it after remove()
 // TODO: add find() or contains()
