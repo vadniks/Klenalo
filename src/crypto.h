@@ -3,13 +3,13 @@
 
 #include "defs.h"
 
-typedef enum {
+enum : int {
     CRYPTO_SIGN_PUBLIC_KEY_SIZE = 32,
     CRYPTO_SIGN_SECRET_KEY_SIZE = 64,
     CRYPTO_SIGNATURE_SIZE = 64,
     CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE = 32, // public* and secret* key sizes, seal(De)Encrypt size too
     CRYPTO_SEAL_SIZE = 48
-} _CryptoConstant;
+};
 
 void cryptoInit(void);
 bool cryptoInitialized(void);
