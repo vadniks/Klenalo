@@ -9,7 +9,7 @@ struct _List {
     const ListDeallocator nullable deallocator;
 };
 
-static const int MAX_SIZE = 0x7fffffff;
+static const int MAX_SIZE = ~0u / 2u; // 0x7fffffff
 
 List* listCreate(const bool synchronized, const ListDeallocator nullable deallocator) {
     List* const list = xmalloc(sizeof *list);
