@@ -38,7 +38,7 @@ typedef unsigned char byte;
     struct packed _S {byte _[sizeof(typeof(*x))];}; \
     staticAssert(sizeof(struct _S) == sizeof(typeof(*x))); \
     *((struct _S*) x) = *(struct _S*) &(typeof(*x)) {__VA_ARGS__}; \
-} // struct __ANY_STRUCT_TYPE_* const var = xmalloc(sizeof *var); x is var
+} // struct __ANY_STRUCT_TYPE_* const var = xmalloc(sizeof *var); if that struct contains const qualified fields; x is var (pointer to that struct)
 
 #ifdef __clang__
 #include <Block.h> // https://fdiv.net/2015/10/08/emulating-defer-c-clang-or-gccblocks
