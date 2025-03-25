@@ -133,7 +133,7 @@ static void scheduleAction(const LifecycleAsyncActionFunction function, void* nu
 
     AsyncAction* const action = xmalloc(sizeof *action);
     assert(action);
-    xmemcpy(action, &(AsyncAction) {function, parameter, delayMillis}, sizeof *action);
+    assignToStructWithConsts(action, function, parameter, delayMillis)
 
     listAddFront(looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.queue : gMainActionsLooper.queue, action);
 }
