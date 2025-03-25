@@ -34,11 +34,11 @@ typedef unsigned char byte;
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
 
-#define assignToStructWithConsts(x, ...) { \
+#define assignToStructWithConsts(x, ...) /* or just xmemcpy(x, &(typeof(*x)) {__VA_ARGS__}, sizeof *x); in case this is a mess */ { \
     struct packed _S {byte _[sizeof(typeof(*x))];}; \
     staticAssert(sizeof(struct _S) == sizeof(typeof(*x))); \
     *((struct _S*) x) = *(struct _S*) &(typeof(*x)) {__VA_ARGS__}; \
-} // struct __ANY_STRUCT_TYPE_* const var = xmalloc(sizeof *var); x is var; or just use xmemcpy
+} // struct __ANY_STRUCT_TYPE_* const var = xmalloc(sizeof *var); x is var
 
 #ifdef __clang__
 #include <Block.h> // https://fdiv.net/2015/10/08/emulating-defer-c-clang-or-gccblocks
