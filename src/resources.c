@@ -14,6 +14,7 @@
 
 #if !defined(__CLION_IDE__) && !defined(__JETBRAINS_IDE__)
 // CLion doesnt know about #embed yet, ignore the 'Invalid preprocessing directive' errors
+[[gnu::section(".resources")]]
 static const byte
     gRegularFont[] = {
         #embed FONT_REGULAR

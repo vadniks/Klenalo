@@ -38,6 +38,8 @@ static List* gSubnetsHostsAddressesList = nullptr; // <int>
 static atomic int gSelectedSubnetHostAddress = 0;
 static SDLNet_DatagramSocket* gSubnetBroadcastSocket = nullptr;
 
+// TODO: implement group chats via multicast
+
 void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
     gInitialized = true;
