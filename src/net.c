@@ -6,6 +6,7 @@
 #include "lifecycle.h"
 #include "crypto.h"
 #include "consts.h"
+#include "hashtable.h"
 #include "net.h"
 
 enum _NetMessageFlag : byte {
@@ -13,19 +14,38 @@ enum _NetMessageFlag : byte {
 };
 
 typedef struct packed {
+    const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE];
+    const byte wholeMessageSignature[CRYPTO_SIGNATURE_SIZE]; // signature not just of the payload but of the whole message and therefore it's recalculated everytime a new broadcast message is prepared to be sent
+} MasterSessionSealPublicKeyAndWholeMessageSignaturePayloadPart;
+
+typedef struct packed {
     union {
         const NetMessagePayload;
         struct {
             const char greeting[12];
             const byte version;
-            const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE];
-            const byte wholeMessageSignature[CRYPTO_SIGNATURE_SIZE]; // signature not just of the payload but of the whole message and therefore it's recalculated everytime a new broadcast message is prepared to be sent
+            const MasterSessionSealPublicKeyAndWholeMessageSignaturePayloadPart;
         };
     };
 } HostDiscoveryBroadcastPayload;
 
-static const short NET_BROADCAST_SOCKET_PORT = 8080;
-static const int FETCH_SUBNETS_HOST_ADDRESSES_PERIOD = 100, SUBNET_BROADCAST_SEND_PERIOD = 1000, SUBNET_BROADCAST_RECEIVE_PERIOD = 250;
+typedef struct packed {
+    union {
+        const NetMessagePayload;
+        const MasterSessionSealPublicKeyAndWholeMessageSignaturePayloadPart;
+    };
+} ConnectionHelloPayload;
+
+typedef struct {
+    const int address;
+    const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE];
+    SDLNet_StreamSocket* const socket;
+} Connection;
+
+// everything time-related is in milliseconds
+static const short SUBNET_BROADCAST_SOCKET_PORT = 8080, SUBNET_CONNECTIONS_LISTENER_SERVER_PORT = 8081;
+static const int MESSAGE_RECEIVE_TIME_WINDOW = 100;
+static const int FETCH_SUBNETS_HOST_ADDRESSES_PERIOD = 100, SUBNET_BROADCAST_SEND_PERIOD = 1000, SUBNET_BROADCAST_RECEIVE_PERIOD = 250, ACCEPT_SUBNET_CONNECTIONS_PERIOD = 100;
 static const int UDP_PACKET_MAX_SIZE = 512, BROADCAST_PAYLOAD_SIZE = UDP_PACKET_MAX_SIZE - (int) sizeof(NetMessage);
 static const int HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE = sizeof(HostDiscoveryBroadcastPayload);
 #define GREETING constsConcatenateTitleWith(" ping")
@@ -34,11 +54,13 @@ static atomic bool gInitialized = false;
 static SDL_Mutex* gMutex = nullptr;
 
 static List* gSubnetsHostsAddressesList = nullptr; // <int>
-
 static atomic int gSelectedSubnetHostAddress = 0;
-static SDLNet_DatagramSocket* gSubnetBroadcastSocket = nullptr;
 
-// TODO: implement group chats via multicast
+static SDLNet_DatagramSocket* gSubnetBroadcastSocket = nullptr;
+static SDLNet_Server* gSubnetConnectionsListenerServer = nullptr; // it's a socket actually
+static Hashtable* gConnectionsHashtable = nullptr; // <int - address, Connection*>
+
+// TODO: non-blocking IO (select(), poll()) for connections but not the broadcast
 
 void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
@@ -113,17 +135,23 @@ static void generateHostDiscoveryBroadcastPayload(HostDiscoveryBroadcastPayload*
     xmemset((byte*) payload->wholeMessageSignature, 0, CRYPTO_SIGNATURE_SIZE);
 }
 
+static void destroyConnection(void* const connection) {
+    SDLNet_DestroyStreamSocket(((Connection*) connection)->socket);
+    xfree(connection);
+}
+
 void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
     assert(lifecycleInitialized() && gInitialized);
     assert(subnetHostAddress);
 
     SDL_LockMutex(gMutex);
-    assert(!gSelectedSubnetHostAddress && !gSubnetBroadcastSocket);
+    assert(!gSelectedSubnetHostAddress && !gSubnetBroadcastSocket && !gSubnetConnectionsListenerServer && !gConnectionsHashtable);
 
     gSelectedSubnetHostAddress = subnetHostAddress;
 
     SDLNet_Address* const address = resolveAddress(gSelectedSubnetHostAddress);
-    assert(gSubnetBroadcastSocket = SDLNet_CreateDatagramSocket(address, NET_BROADCAST_SOCKET_PORT));
+    assert(gSubnetBroadcastSocket = SDLNet_CreateDatagramSocket(address, SUBNET_BROADCAST_SOCKET_PORT));
+    assert(gSubnetConnectionsListenerServer = SDLNet_CreateServer(address, SUBNET_CONNECTIONS_LISTENER_SERVER_PORT));
     SDLNet_UnrefAddress(address);
 
     assert(!setsockopt(
@@ -134,6 +162,8 @@ void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
         sizeof(int)
     ));
 
+    gConnectionsHashtable = hashtableCreate(false, destroyConnection);
+
     SDL_UnlockMutex(gMutex);
 }
 
@@ -141,12 +171,18 @@ void netStopBroadcastingAndListeningSubnet(void) {
     assert(lifecycleInitialized() && gInitialized);
 
     SDL_LockMutex(gMutex);
-    assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
+    assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket && gSubnetConnectionsListenerServer && gConnectionsHashtable);
 
     gSelectedSubnetHostAddress = 0;
 
     SDLNet_DestroyDatagramSocket(gSubnetBroadcastSocket);
     gSubnetBroadcastSocket = nullptr;
+
+    SDLNet_DestroyServer(gSubnetConnectionsListenerServer);
+    gSubnetConnectionsListenerServer = nullptr;
+
+    hashtableDestroy(gConnectionsHashtable);
+    gConnectionsHashtable = nullptr;
 
     SDL_UnlockMutex(gMutex);
 }
@@ -180,7 +216,7 @@ static void broadcastSubnetForHosts(void) {
 
     assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
     assert(message->from == gSelectedSubnetHostAddress);
-    assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, address, NET_BROADCAST_SOCKET_PORT, message, messageSize));
+    assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, address, SUBNET_BROADCAST_SOCKET_PORT, message, messageSize));
 
     SDL_UnlockMutex(gMutex);
 
@@ -200,9 +236,79 @@ static void listenSubnetForBroadcasts(void) {
         printMemory(datagram->buf, datagram->buflen, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK);
 
         if (datagram->buflen == NET_MESSAGE_SIZE + HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE) // as anyone can send anything anywhere over udp
-            assert(cryptoCheckMasterSigned(datagram->buf, datagram->buflen - CRYPTO_SIGNATURE_SIZE, datagram->buf + (datagram->buflen - CRYPTO_SIGNATURE_SIZE)));
+            assert(cryptoCheckMasterSigned(datagram->buf, datagram->buflen - CRYPTO_SIGNATURE_SIZE, datagram->buf + (datagram->buflen - CRYPTO_SIGNATURE_SIZE))); // TODO: extract tot a separate function
+
+        // TODO: try to connect to that host if haven't already
 
         SDLNet_DestroyDatagram(datagram);
+    }
+}
+
+static void acceptClients(void) {
+    SDLNet_StreamSocket* connectionSocket;
+    while (true) {
+        SDL_LockMutex(gMutex);
+        assert(SDLNet_AcceptClient(gSubnetConnectionsListenerServer, &connectionSocket));
+        SDL_UnlockMutex(gMutex);
+
+        if (!connectionSocket) return;
+
+        SDLNet_Address* const addr = SDLNet_GetStreamSocketAddress(connectionSocket);
+        assert(addr);
+        const struct addrinfo* const info = *(struct addrinfo**) ((void*) addr + 32); // TODO: extract tot a separate function
+        const int address = (int) swapBytes(*(unsigned*) (info->ai_addr->sa_data + 2));
+        SDLNet_UnrefAddress(addr);
+
+        SDL_LockMutex(gMutex);
+        HashtableIterator* const iterator = hashtableIteratorCreate(gConnectionsHashtable);
+        const Connection* connection;
+        while ((connection = hashtableIterate(iterator))) { // TODO: allocate iterators on the callers' stacks instead of the heap
+            if (connection->address == address) {
+                SDLNet_DestroyStreamSocket(connectionSocket); // connection is already established
+                hashtableIteratorDestroy(iterator);
+                SDL_UnlockMutex(gMutex);
+                goto iterationEnd; // continue the outer loop
+            }
+        }
+        hashtableIteratorDestroy(iterator);
+        SDL_UnlockMutex(gMutex);
+
+        const unsigned long timestamp = lifecycleCurrentTimeMillis();
+        const int messageSize = NET_MESSAGE_SIZE + sizeof(ConnectionHelloPayload);
+        NetMessage* const message = xalloca(messageSize);
+        int written = 0; // TODO: extract tot a separate function
+        SDL_LockMutex(gMutex);
+        for (; SDLNet_ReadFromStreamSocket(connectionSocket, (void*) message + written, 1) == 1; written++)
+            if (lifecycleCurrentTimeMillis() - timestamp >= MESSAGE_RECEIVE_TIME_WINDOW) break;
+        SDL_UnlockMutex(gMutex);
+
+        if (written < messageSize) {
+            SDLNet_DestroyStreamSocket(connectionSocket);
+            continue;
+        }
+
+        if (message->from != address) {
+            SDLNet_DestroyStreamSocket(connectionSocket);
+            continue;
+        }
+
+        const ConnectionHelloPayload* const payload = (void*) message->payload;
+
+        if (!cryptoCheckMasterSigned((byte*) message, messageSize - CRYPTO_SIGNATURE_SIZE, payload->wholeMessageSignature)) { // TODO: extract tot a separate function
+            SDLNet_DestroyStreamSocket(connectionSocket);
+            continue;
+        }
+
+        Connection* const newConnection = xmalloc(sizeof *newConnection);
+        unconst(newConnection->address) = address;
+        xmemcpy((void*) newConnection->masterSessionSealPublicKey, payload->masterSessionSealPublicKey, CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE);
+        unconst(newConnection->socket) = connectionSocket;
+
+        SDL_LockMutex(gMutex);
+        hashtablePut(gConnectionsHashtable, hashtableHashPrimitive(address), newConnection);
+        SDL_UnlockMutex(gMutex);
+
+        iterationEnd:
     }
 }
 
@@ -216,13 +322,14 @@ void netLoop(void) {
     assert(lifecycleInitialized() && gInitialized);
 
     const unsigned long currentMillis = lifecycleCurrentTimeMillis();
-    static unsigned long lastSubnetsHostsAddressesFetch = 0, lastBroadcastSend = 0, lastBroadcastReceive = 0;
+    static unsigned long lastSubnetsHostsAddressesFetch = 0, lastBroadcastSend = 0, lastBroadcastReceive = 0, lastClientsAccept = 0;
 
     runPeriodically(currentMillis, &lastSubnetsHostsAddressesFetch, FETCH_SUBNETS_HOST_ADDRESSES_PERIOD, fetchSubnetsHostsAddresses);
 
     if (gSelectedSubnetHostAddress) {
         runPeriodically(currentMillis, &lastBroadcastSend, SUBNET_BROADCAST_SEND_PERIOD, broadcastSubnetForHosts);
         runPeriodically(currentMillis, &lastBroadcastReceive, SUBNET_BROADCAST_RECEIVE_PERIOD, listenSubnetForBroadcasts);
+        runPeriodically(currentMillis, &lastClientsAccept, ACCEPT_SUBNET_CONNECTIONS_PERIOD, acceptClients);
     }
 }
 
