@@ -55,6 +55,7 @@ add_compile_options(-Wno-gnu-empty-struct)
 add_compile_options(-Wno-address-of-packed-member)
 add_compile_options(-Wno-microsoft-flexible-array)
 add_compile_options(-Wno-flexible-array-extensions)
+add_compile_options(-Wno-gnu-variable-sized-type-not-at-end)
 add_compile_options(-fblocks)
 add_compile_options(-fms-extensions -Wno-microsoft-anon-tag)
 

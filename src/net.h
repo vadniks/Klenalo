@@ -2,6 +2,7 @@
 #pragma once
 
 #include "list.h"
+#include "crypto.h"
 
 enum _NetMessageFlag : byte;
 typedef enum _NetMessageFlag NetMessageFlag;
@@ -15,6 +16,7 @@ typedef struct packed {
     const unsigned long timestamp;
     const int index, count, from, to, size;
     const NetMessagePayload;
+    const byte signature[CRYPTO_SIGNATURE_SIZE];
 } NetMessage;
 
 enum : int {

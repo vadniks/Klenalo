@@ -4,7 +4,6 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include "lifecycle.h"
-#include "crypto.h"
 #include "consts.h"
 #include "hashtable.h"
 #include "net.h"
@@ -14,17 +13,12 @@ enum _NetMessageFlag : byte {
 };
 
 typedef struct packed {
-    const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE];
-    const byte wholeMessageSignature[CRYPTO_SIGNATURE_SIZE]; // signature not just of the payload but of the whole message and therefore it's recalculated everytime a new broadcast message is prepared to be sent
-} MasterSessionSealPublicKeyAndWholeMessageSignaturePayloadPart;
-
-typedef struct packed {
     union {
         const NetMessagePayload;
         struct {
             const char greeting[12];
             const byte version;
-            const MasterSessionSealPublicKeyAndWholeMessageSignaturePayloadPart;
+            const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE];
         };
     };
 } HostDiscoveryBroadcastPayload;
@@ -32,7 +26,7 @@ typedef struct packed {
 typedef struct packed {
     union {
         const NetMessagePayload;
-        const MasterSessionSealPublicKeyAndWholeMessageSignaturePayloadPart;
+        const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE];
     };
 } ConnectionHelloPayload;
 
@@ -132,7 +126,6 @@ static void generateHostDiscoveryBroadcastPayload(HostDiscoveryBroadcastPayload*
     strncpy((char*) payload->greeting, GREETING, sizeof payload->greeting);
     unconst(payload->version) = 1;
     xmemcpy((byte*) payload->masterSessionSealPublicKey, cryptoMasterSessionSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE);
-    xmemset((byte*) payload->wholeMessageSignature, 0, CRYPTO_SIGNATURE_SIZE);
 }
 
 static void destroyConnection(void* const connection) {
@@ -187,10 +180,6 @@ void netStopBroadcastingAndListeningSubnet(void) {
     SDL_UnlockMutex(gMutex);
 }
 
-static inline HostDiscoveryBroadcastPayload* hostDiscoveryBroadcastPayload(NetMessage* const message) {
-    return (HostDiscoveryBroadcastPayload*) message->payload;
-}
-
 static void broadcastSubnetForHosts(void) {
     const int messageSize = NET_MESSAGE_SIZE + HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE;
     staticAssert(messageSize <= UDP_PACKET_MAX_SIZE);
@@ -203,11 +192,11 @@ static void broadcastSubnetForHosts(void) {
     unconst(message->from) = gSelectedSubnetHostAddress;
     unconst(message->to) = NET_MESSAGE_TO_EVERYONE;
     unconst(message->size) = HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE;
-    generateHostDiscoveryBroadcastPayload(hostDiscoveryBroadcastPayload(message));
+    generateHostDiscoveryBroadcastPayload((HostDiscoveryBroadcastPayload*) message->payload);
     cryptoMasterSign(
         (byte*) message,
         messageSize - CRYPTO_SIGNATURE_SIZE,
-        (byte*) hostDiscoveryBroadcastPayload(message)->wholeMessageSignature
+        (byte*) message->signature
     );
 
     SDLNet_Address* const address = resolveAddress(message->to);
@@ -236,7 +225,7 @@ static void listenSubnetForBroadcasts(void) {
         printMemory(datagram->buf, datagram->buflen, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK);
 
         if (datagram->buflen == NET_MESSAGE_SIZE + HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE) // as anyone can send anything anywhere over udp
-            assert(cryptoCheckMasterSigned(datagram->buf, datagram->buflen - CRYPTO_SIGNATURE_SIZE, datagram->buf + (datagram->buflen - CRYPTO_SIGNATURE_SIZE))); // TODO: extract tot a separate function
+            assert(cryptoCheckMasterSigned(datagram->buf, datagram->buflen - CRYPTO_SIGNATURE_SIZE, ((NetMessage*) datagram->buf)->signature)); // TODO: extract tot a separate function
 
         // TODO: try to connect to that host if haven't already
 
@@ -294,7 +283,7 @@ static void acceptClients(void) {
 
         const ConnectionHelloPayload* const payload = (void*) message->payload;
 
-        if (!cryptoCheckMasterSigned((byte*) message, messageSize - CRYPTO_SIGNATURE_SIZE, payload->wholeMessageSignature)) { // TODO: extract tot a separate function
+        if (!cryptoCheckMasterSigned((byte*) message, messageSize - CRYPTO_SIGNATURE_SIZE, message->signature)) { // TODO: extract tot a separate function
             SDLNet_DestroyStreamSocket(connectionSocket);
             continue;
         }
