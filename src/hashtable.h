@@ -13,6 +13,8 @@ typedef struct _Hashtable Hashtable;
 struct _HashtableIterator;
 typedef struct _HashtableIterator HashtableIterator;
 
+extern const int HASHTABLE_ITERATOR_SIZE;
+
 int hashtableHash(const byte* value, int size);
 #define hashtableHashPrimitive(x) hashtableHash((const byte*) (typeof(x)[1]) {x}, _Generic((x), byte: 1, short: 2, int: 4, long: 8))
 
@@ -22,7 +24,8 @@ void* nullable hashtableGet(Hashtable* const hashtable, const int hash);
 void hashtableRemove(Hashtable* const hashtable, const int hash);
 int hashtableCapacity(Hashtable* const hashtable); // amount of currently allocated cells for storing collision buckets
 int hashtableCount(Hashtable* const hashtable); // amount of elements being stored
-HashtableIterator* hashtableIteratorCreate(Hashtable* const hashtable); // don't use put or remove while iterator is active, fails if there's another active iterator, fails if there's no items
+void hashtableIterateBegin(Hashtable* const hashtable, HashtableIterator* const iterator); // don't use put or remove while iterator is active, fails if there's another active iterator, fails if there's no items
+#define hashtableIterateBegin(x) hashtableIterateBegin(x, xalloca(HASHTABLE_ITERATOR_SIZE))
 void* nullable hashtableIterate(HashtableIterator* const iterator); // returns null when there aren't any more items available
-void hashtableIteratorDestroy(HashtableIterator* const iterator); // must be called while its hashtable is still active
+void hashtableIterateEnd(HashtableIterator* const iterator); // must be called while its hashtable is still active
 void hashtableDestroy(Hashtable* const hashtable);
