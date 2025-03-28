@@ -233,7 +233,7 @@ static void listenSubnetForBroadcasts(void) {
     }
 }
 
-static void acceptClients(void) {
+static void acceptConnections(void) {
     SDLNet_StreamSocket* connectionSocket;
     while (true) {
         SDL_LockMutex(gMutex);
@@ -316,7 +316,7 @@ void netLoop(void) {
     if (gSelectedSubnetHostAddress) {
         runPeriodically(currentMillis, &lastBroadcastSend, SUBNET_BROADCAST_SEND_PERIOD, broadcastSubnetForHosts);
         runPeriodically(currentMillis, &lastBroadcastReceive, SUBNET_BROADCAST_RECEIVE_PERIOD, listenSubnetForBroadcasts);
-        runPeriodically(currentMillis, &lastClientsAccept, ACCEPT_SUBNET_CONNECTIONS_PERIOD, acceptClients);
+        runPeriodically(currentMillis, &lastClientsAccept, ACCEPT_SUBNET_CONNECTIONS_PERIOD, acceptConnections);
     }
 }
 
