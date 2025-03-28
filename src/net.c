@@ -248,30 +248,30 @@ static void acceptClients(void) {
         const int address = (int) swapBytes(*(unsigned*) (info->ai_addr->sa_data + 2));
         SDLNet_UnrefAddress(addr);
 
+        // TODO: allocate iterators on the callers' stacks instead of the heap
+
         SDL_LockMutex(gMutex);
-        HashtableIterator* const iterator = hashtableIteratorCreate(gConnectionsHashtable);
-        const Connection* connection;
-        while ((connection = hashtableIterate(iterator))) { // TODO: allocate iterators on the callers' stacks instead of the heap
-            if (connection->address == address) {
-                SDLNet_DestroyStreamSocket(connectionSocket); // connection is already established
-                hashtableIteratorDestroy(iterator);
-                SDL_UnlockMutex(gMutex);
-                goto iterationEnd; // continue the outer loop
-            }
-        }
-        hashtableIteratorDestroy(iterator);
+        Connection* const connection = hashtableGet(gConnectionsHashtable, hashtableHashPrimitive(address));
         SDL_UnlockMutex(gMutex);
+        if (connection) {
+            assert(connection->address == address);
+            SDLNet_DestroyStreamSocket(connectionSocket); // connection is already established
+            continue;
+        }
 
         const unsigned long timestamp = lifecycleCurrentTimeMillis();
         const int messageSize = NET_MESSAGE_SIZE + sizeof(ConnectionHelloPayload);
         NetMessage* const message = xalloca(messageSize);
-        int written = 0; // TODO: extract tot a separate function
+        int bytesLeft; // TODO: extract tot a separate function
         SDL_LockMutex(gMutex);
-        for (; SDLNet_ReadFromStreamSocket(connectionSocket, (void*) message + written, 1) == 1; written++)
-            if (lifecycleCurrentTimeMillis() - timestamp >= MESSAGE_RECEIVE_TIME_WINDOW) break;
+        for (bytesLeft = messageSize; bytesLeft >= 0;) {
+            const int read = SDLNet_ReadFromStreamSocket(connectionSocket, (void*) message + (messageSize - bytesLeft), bytesLeft);
+            if (read < 1 || lifecycleCurrentTimeMillis() - timestamp >= MESSAGE_RECEIVE_TIME_WINDOW) break;
+            bytesLeft -= read;
+        }
         SDL_UnlockMutex(gMutex);
 
-        if (written < messageSize) {
+        if (bytesLeft) {
             SDLNet_DestroyStreamSocket(connectionSocket);
             continue;
         }
@@ -296,8 +296,6 @@ static void acceptClients(void) {
         SDL_LockMutex(gMutex);
         hashtablePut(gConnectionsHashtable, hashtableHashPrimitive(address), newConnection);
         SDL_UnlockMutex(gMutex);
-
-        iterationEnd:
     }
 }
 
