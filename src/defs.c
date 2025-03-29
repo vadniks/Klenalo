@@ -122,6 +122,7 @@ void patchFunction(void* const original, void* const replacement) {
 
     assert(!mprotect(pageStart, pageSize, PROT_READ | PROT_WRITE | PROT_EXEC));
 
+    // movabs _replacement_,%rax; jmp *%rax
 //    byte trampoline[12] = {0x48, 0xb8, [10] = 0xff, [11] = 0xe0};
 //    *(unsigned long*) &trampoline[2] = (unsigned long) replacement;
     xmemcpy(original, (void*) trampoline + 7, 12);
