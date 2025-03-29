@@ -105,16 +105,19 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
     printf("\n");
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundefined-internal"
 static void trampoline(void);
 asm(
     "trampoline:\n"
-    // if this function accidentally called it just fails, these bytes are ignored
+    // if this function gets called accidentally, it just fails, these bytes are ignored
     "xor %edi,%edi\n" // 2 bytes
     "jmp assert\n" // 5 bytes
     // these bytes are copied and the address is replaced with the actual one
     "movabs $0xffffffffffffffff,%rax\n" // 2 + 8 bytes
     "jmp *%rax" // 2 bytes
 );
+#pragma clang diagnostic pop
 
 void patchFunction(void* const original, void* const replacement) {
     const unsigned long pageSize = sysconf(_SC_PAGESIZE);
@@ -122,9 +125,6 @@ void patchFunction(void* const original, void* const replacement) {
 
     assert(!mprotect(pageStart, pageSize, PROT_READ | PROT_WRITE | PROT_EXEC));
 
-    // movabs _replacement_,%rax; jmp *%rax
-//    byte trampoline[12] = {0x48, 0xb8, [10] = 0xff, [11] = 0xe0};
-//    *(unsigned long*) &trampoline[2] = (unsigned long) replacement;
     xmemcpy(original, (void*) trampoline + 7, 12);
     xmemcpy(original + 2, &replacement, 8);
 

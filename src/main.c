@@ -1,15 +1,19 @@
 
 #include "lifecycle.h"
-#include <SDL3/SDL.h>
+#include <stdio.h>
 
-static bool xSDL_Init(const SDL_InitFlags) {
-    debug("patch")
-    return false;
+static FILE* xfopen(const char* const filename, const char* const modes) {
+    debugArgs("patched fopen(%s, %s)", filename, modes)
+    return nullptr;
 }
 
 int main(void) {
-    patchFunction(SDL_Init, xSDL_Init);
-    return SDL_Init(0);
+    patchFunction((void*) fopen, (void*) xfopen);
+
+    FILE* const self = fopen("/proc/self/exe", "rb");
+    assert(!self);
+
+    return 0;
 
     const unsigned long allocations = xallocations();
     lifecycleInit();
