@@ -56,14 +56,14 @@ void assert(const bool condition);
 // TODO: add a 'generic' copy/duplicate function
 
 #ifdef __clang__
-overloadable inline unsigned short swapBytes(unsigned short value) { return __builtin_bswap16(value); }
-overloadable inline unsigned int swapBytes(unsigned int value) { return __builtin_bswap32(value); }
-overloadable inline unsigned long swapBytes(unsigned long value) { return __builtin_bswap64(value); }
+overloadable inline unsigned short swapBytes(short value) { return __builtin_bswap16(value); }
+overloadable inline unsigned int swapBytes(int value) { return __builtin_bswap32(value); }
+overloadable inline unsigned long swapBytes(long value) { return __builtin_bswap64(value); }
 #else
-#define swapBytes(x) _Generic((x), unsigned short: swapShort, unsigned int: swapInt, unsigned long: swapLong)(x)
-inline unsigned short swapShort(unsigned short value) { return __builtin_bswap16(value); }
-inline unsigned int swapInt(unsigned int value) { return __builtin_bswap32(value); }
-inline unsigned long swapLong(unsigned long value) { return __builtin_bswap64(value); }
+#define swapBytes(x) _Generic((x), short: swapShort, int: swapInt, long: swapLong)(x)
+inline unsigned short swapShort(short value) { return __builtin_bswap16(value); }
+inline unsigned int swapInt(int value) { return __builtin_bswap32(value); }
+inline unsigned long swapLong(long value) { return __builtin_bswap64(value); }
 #endif
 
 unsigned long xallocations(void);
@@ -101,3 +101,7 @@ inline void xyield(void) {
 #define debug(x) debugArgs("%s", x)
 typedef enum {PRINT_MEMORY_MODE_DEC, PRINT_MEMORY_MODE_HEX, PRINT_MEMORY_MODE_HEX_STR, PRINT_MEMORY_MODE_STR, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK} PrintMemoryMode;
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode);
+
+// TODO: mock and unit test functions that uses 3rd party libraries by providing mock implementations of the libraries' functions simply defining those functions as they are weak symbols
+
+void patchFunction(void* const original, void* const replacement); // overrides first 12 bytes of the original function with a trampoline to the replacement function
