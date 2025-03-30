@@ -121,7 +121,7 @@ asm(
 
 void patchFunction(void* const original, void* const replacement) {
     const unsigned long pageSize = sysconf(_SC_PAGESIZE);
-    void* const pageStart = (void*) ((unsigned long) original & ~(pageSize - 1));
+    void* const pageStart = (void*) ((unsigned long) original & ~(pageSize - 1)); // the same as (void*) ((unsigned long) original / pageSize) * pageSize
 
     assert(!mprotect(pageStart, pageSize, PROT_READ | PROT_WRITE | PROT_EXEC));
 
