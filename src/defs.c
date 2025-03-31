@@ -111,11 +111,11 @@ static void trampoline(void);
 asm(
     "trampoline:\n"
     // if this function gets called accidentally, it just fails, these bytes are ignored
-    "xor %edi,%edi\n" // 2 bytes
+    "xorl %edi,%edi\n" // 2 bytes
     "jmp assert\n" // 5 bytes
     // these bytes are copied and the address is replaced with the actual one
-    "movabs $0xffffffffffffffff,%rax\n" // 2 + 8 bytes
-    "jmp *%rax" // 2 bytes
+    "movabsq $-1,%rax\n" // 2 + 8 bytes
+    "jmpq *%rax" // 2 bytes
 );
 #pragma clang diagnostic pop
 
