@@ -30,7 +30,7 @@ static void printStackTrace(void) {
 
 void assert(const bool condition) {
     if (condition) return;
-    fputs("Assert failed\n", stderr);
+    fprintf(stderr, "Assert failed at %p\n", __builtin_return_address(0));
     printStackTrace();
     abort();
 }
