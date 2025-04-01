@@ -41,7 +41,6 @@ static const short SUBNET_BROADCAST_SOCKET_PORT = 8080, SUBNET_CONNECTIONS_LISTE
 static const int MESSAGE_RECEIVE_TIME_WINDOW = 100;
 static const int FETCH_SUBNETS_HOST_ADDRESSES_PERIOD = 100, SUBNET_BROADCAST_SEND_PERIOD = 1000, SUBNET_BROADCAST_RECEIVE_PERIOD = 250, ACCEPT_SUBNET_CONNECTIONS_PERIOD = 100;
 static const int UDP_PACKET_MAX_SIZE = 512, BROADCAST_PAYLOAD_SIZE = UDP_PACKET_MAX_SIZE - (int) sizeof(NetMessage);
-static const int HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE = sizeof(HostDiscoveryBroadcastPayload);
 #define GREETING constsConcatenateTitleWith(" ping")
 
 static atomic bool gInitialized = false;
@@ -71,6 +70,14 @@ bool netInitialized(void) {
     return gInitialized;
 }
 
+static struct ExtractAddressResult {const int address; const bool ipv4;} extractAddress(SDLNet_Address* const address) {
+    const struct addrinfo* const info = *(struct addrinfo**) ((void*) address + 32);
+    return (struct ExtractAddressResult) {
+        (int) swapBytes(*(int*) (info->ai_addr->sa_data + 2)),
+        info->ai_addr->sa_family == AF_INET
+    };
+}
+
 static void fetchSubnetsHostsAddresses(void) {
     SDL_LockMutex(gMutex);
     listClear(gSubnetsHostsAddressesList);
@@ -80,13 +87,9 @@ static void fetchSubnetsHostsAddresses(void) {
     assert(numberOfAddresses && addresses);
 
     for (int i = 0; i < numberOfAddresses; i++) {
-        const struct addrinfo* const info = *(struct addrinfo**) ((void*) addresses[i] + 32);
-        const int addr = (int) swapBytes(*(unsigned*) (info->ai_addr->sa_data + 2));
-
-        if (info->ai_addr->sa_family != AF_INET) continue;
-        if (addr == INADDR_LOOPBACK) continue;
-
-        listAddBack(gSubnetsHostsAddressesList, (void*) (long) addr);
+        const struct ExtractAddressResult result = extractAddress(addresses[i]);
+        if (!result.ipv4 || result.address == INADDR_LOOPBACK) continue;
+        listAddBack(gSubnetsHostsAddressesList, (void*) (long) result.address);
     }
 
     SDLNet_FreeLocalAddresses(addresses);
@@ -181,7 +184,7 @@ void netStopBroadcastingAndListeningSubnet(void) {
 }
 
 static void broadcastSubnetForHosts(void) {
-    const int messageSize = NET_MESSAGE_SIZE + HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE;
+    const int messageSize = sizeof(NetMessage) + sizeof(HostDiscoveryBroadcastPayload);
     staticAssert(messageSize <= UDP_PACKET_MAX_SIZE);
 
     NetMessage* const message = xalloca(messageSize);
@@ -191,7 +194,7 @@ static void broadcastSubnetForHosts(void) {
     unconst(message->count) = 1;
     unconst(message->from) = gSelectedSubnetHostAddress;
     unconst(message->to) = NET_MESSAGE_TO_EVERYONE;
-    unconst(message->size) = HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE;
+    unconst(message->size) = sizeof(HostDiscoveryBroadcastPayload);
     generateHostDiscoveryBroadcastPayload((HostDiscoveryBroadcastPayload*) message->payload);
     cryptoMasterSign(
         (byte*) message,
@@ -212,6 +215,14 @@ static void broadcastSubnetForHosts(void) {
     SDLNet_UnrefAddress(address);
 }
 
+static inline bool checkSignedMessage(const NetMessage* const message, const int payloadSize) {
+    return cryptoCheckMasterSigned(
+        (const byte*) message,
+        (int) sizeof(NetMessage) + payloadSize - CRYPTO_SIGNATURE_SIZE,
+        message->signature
+    );
+}
+
 static void listenSubnetForBroadcasts(void) {
     SDLNet_Datagram* datagram;
 
@@ -220,17 +231,30 @@ static void listenSubnetForBroadcasts(void) {
     assert(SDLNet_ReceiveDatagram(gSubnetBroadcastSocket, &datagram));
     SDL_UnlockMutex(gMutex);
 
-    if (datagram) {
-        debugArgs("%s:%u %d", SDLNet_GetAddressString(datagram->addr), datagram->port, datagram->buflen)
-        printMemory(datagram->buf, datagram->buflen, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK);
+    if (!datagram) return;
 
-        if (datagram->buflen == NET_MESSAGE_SIZE + HOST_DISCOVERY_BROADCAST_PAYLOAD_SIZE) // as anyone can send anything anywhere over udp
-            assert(cryptoCheckMasterSigned(datagram->buf, datagram->buflen - CRYPTO_SIGNATURE_SIZE, ((NetMessage*) datagram->buf)->signature)); // TODO: extract tot a separate function
+    if (datagram->buflen == sizeof(NetMessage) + sizeof(HostDiscoveryBroadcastPayload)) // as anyone can send anything anywhere over udp
+        assert(checkSignedMessage((NetMessage*) datagram->buf, sizeof(HostDiscoveryBroadcastPayload))); // TODO: return if signature check fails
 
-        // TODO: try to connect to that host if haven't already
+    // TODO: try to connect to that host if haven't already
 
-        SDLNet_DestroyDatagram(datagram);
+    SDLNet_DestroyDatagram(datagram);
+}
+
+static bool readFromTCPSocket(SDLNet_StreamSocket* const socket, void* const buffer, const int size) {
+    const unsigned long startedMillis = lifecycleCurrentTimeMillis();
+    int totalBytesRead = 0;
+
+    for (
+        int currentBytesRead;
+        (currentBytesRead = SDLNet_ReadFromStreamSocket(socket, buffer + totalBytesRead, size - totalBytesRead));
+        totalBytesRead += currentBytesRead
+    ) {
+        if (lifecycleCurrentTimeMillis() - startedMillis >= MESSAGE_RECEIVE_TIME_WINDOW)
+            break;
     }
+
+    return totalBytesRead == size;
 }
 
 static void acceptConnections(void) {
@@ -244,11 +268,8 @@ static void acceptConnections(void) {
 
         SDLNet_Address* const addr = SDLNet_GetStreamSocketAddress(connectionSocket);
         assert(addr);
-        const struct addrinfo* const info = *(struct addrinfo**) ((void*) addr + 32); // TODO: extract tot a separate function
-        const int address = (int) swapBytes(*(unsigned*) (info->ai_addr->sa_data + 2));
+        const int address = extractAddress(addr).address;
         SDLNet_UnrefAddress(addr);
-
-        // TODO: allocate iterators on the callers' stacks instead of the heap
 
         SDL_LockMutex(gMutex);
         Connection* const connection = hashtableGet(gConnectionsHashtable, hashtableHashPrimitive(address));
@@ -259,19 +280,13 @@ static void acceptConnections(void) {
             continue;
         }
 
-        const unsigned long timestamp = lifecycleCurrentTimeMillis();
-        const int messageSize = NET_MESSAGE_SIZE + sizeof(ConnectionHelloPayload);
+        const int messageSize = sizeof(NetMessage) + sizeof(ConnectionHelloPayload);
         NetMessage* const message = xalloca(messageSize);
-        int bytesLeft; // TODO: extract tot a separate function
         SDL_LockMutex(gMutex);
-        for (bytesLeft = messageSize; bytesLeft >= 0;) {
-            const int read = SDLNet_ReadFromStreamSocket(connectionSocket, (void*) message + (messageSize - bytesLeft), bytesLeft);
-            if (read < 1 || lifecycleCurrentTimeMillis() - timestamp >= MESSAGE_RECEIVE_TIME_WINDOW) break;
-            bytesLeft -= read;
-        }
+        const bool didReadAll = readFromTCPSocket(connectionSocket, message, messageSize);
         SDL_UnlockMutex(gMutex);
 
-        if (bytesLeft) {
+        if (!didReadAll) {
             SDLNet_DestroyStreamSocket(connectionSocket);
             continue;
         }
@@ -283,10 +298,12 @@ static void acceptConnections(void) {
 
         const ConnectionHelloPayload* const payload = (void*) message->payload;
 
-        if (!cryptoCheckMasterSigned((byte*) message, messageSize - CRYPTO_SIGNATURE_SIZE, message->signature)) { // TODO: extract tot a separate function
+        if (!checkSignedMessage(message, sizeof(ConnectionHelloPayload))) {
             SDLNet_DestroyStreamSocket(connectionSocket);
             continue;
         }
+
+        // TODO: exchange peer-level session keys
 
         Connection* const newConnection = xmalloc(sizeof *newConnection);
         unconst(newConnection->address) = address;

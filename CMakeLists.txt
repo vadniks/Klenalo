@@ -14,6 +14,7 @@ add_compile_options("-Wextra")
 add_compile_options("-Wpedantic")
 add_compile_options("-O3")
 add_compile_options(-ffast-math -fsemantic-interposition)
+add_compile_options(-Werror=return-type)
 #add_link_options("-s")
 
 add_compile_options(-g)
