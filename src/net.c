@@ -47,13 +47,11 @@ static atomic bool gInitialized = false;
 static SDL_Mutex* gMutex = nullptr;
 
 static List* gSubnetsHostsAddressesList = nullptr; // <int>
-static atomic int gSelectedSubnetHostAddress = 0;
+static int gSelectedSubnetHostAddress = 0; // TODO: add a flag indicating that a subnet is being monitored and processed and wrap it to a new exclusive mutex and lock that mutex for each netLoop iteration or instead of asserting the necessary conditions do the return and cleanup if they aren't satisfied or make stopBroadcastingAndListeningSubnet asynchronous (do actual stuff inside netLoop)
 
 static SDLNet_DatagramSocket* gSubnetBroadcastSocket = nullptr;
 static SDLNet_Server* gSubnetConnectionsListenerServer = nullptr; // it's a socket actually
 static Hashtable* gConnectionsHashtable = nullptr; // <int - address, Connection*>
-
-// TODO: non-blocking IO (select(), poll()) for connections but not the broadcast
 
 void netInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
@@ -186,7 +184,9 @@ static void broadcastSubnetForHosts(void) {
     unconst(message->timestamp) = lifecycleCurrentTimeMillis();
     unconst(message->index) = 0;
     unconst(message->count) = 1;
+    SDL_LockMutex(gMutex);
     unconst(message->from) = gSelectedSubnetHostAddress;
+    SDL_UnlockMutex(gMutex);
     unconst(message->to) = NET_MESSAGE_TO_EVERYONE;
     unconst(message->size) = sizeof(HostDiscoveryBroadcastPayload);
 
@@ -204,11 +204,8 @@ static void broadcastSubnetForHosts(void) {
     SDLNet_Address* const address = resolveAddress(message->to);
 
     SDL_LockMutex(gMutex);
-
     assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
-    assert(message->from == gSelectedSubnetHostAddress);
     assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, address, SUBNET_BROADCAST_SOCKET_PORT, message, messageSize));
-
     SDL_UnlockMutex(gMutex);
 
     SDLNet_UnrefAddress(address);
@@ -260,6 +257,7 @@ static void acceptConnections(void) {
     SDLNet_StreamSocket* connectionSocket;
     while (true) {
         SDL_LockMutex(gMutex);
+        assert(gSelectedSubnetHostAddress && gSubnetConnectionsListenerServer && gConnectionsHashtable);
         assert(SDLNet_AcceptClient(gSubnetConnectionsListenerServer, &connectionSocket));
         SDL_UnlockMutex(gMutex);
 
@@ -331,7 +329,11 @@ void netLoop(void) {
 
     runPeriodically(currentMillis, &lastSubnetsHostsAddressesFetch, FETCH_SUBNETS_HOST_ADDRESSES_PERIOD, fetchSubnetsHostsAddresses);
 
-    if (gSelectedSubnetHostAddress) {
+    SDL_LockMutex(gMutex);
+    const int selectedSubnetHostAddress = gSelectedSubnetHostAddress;
+    SDL_UnlockMutex(gMutex);
+
+    if (selectedSubnetHostAddress) {
         // TODO: periodically check gConnectionsHashtable for disconnected connections and remove them
         runPeriodically(currentMillis, &lastBroadcastSend, SUBNET_BROADCAST_SEND_PERIOD, broadcastSubnetForHosts);
         runPeriodically(currentMillis, &lastBroadcastReceive, SUBNET_BROADCAST_RECEIVE_PERIOD, listenSubnetForBroadcasts);
@@ -342,6 +344,7 @@ void netLoop(void) {
 void netQuit(void) {
     assert(gInitialized);
 
+    // not wrapped with gMutex as at this point only the main thread is running, and it has waited until others finished
     if (gSelectedSubnetHostAddress) netStopBroadcastingAndListeningSubnet();
 
     gInitialized = false;
