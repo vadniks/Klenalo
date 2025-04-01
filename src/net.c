@@ -47,7 +47,8 @@ static atomic bool gInitialized = false;
 static SDL_Mutex* gMutex = nullptr;
 
 static List* gSubnetsHostsAddressesList = nullptr; // <int>
-static int gSelectedSubnetHostAddress = 0; // TODO: add a flag indicating that a subnet is being monitored and processed and wrap it to a new exclusive mutex and lock that mutex for each netLoop iteration or instead of asserting the necessary conditions do the return and cleanup if they aren't satisfied or make stopBroadcastingAndListeningSubnet asynchronous (do actual stuff inside netLoop)
+static int gSelectedSubnetHostAddress = 0; // if not zero then a subnet is being processed // TODO: add a flag indicating that a subnet is being monitored and processed and wrap it to a new exclusive mutex and lock that mutex for each netLoop iteration or instead of asserting the necessary conditions do the return and cleanup if they aren't satisfied or make stopBroadcastingAndListeningSubnet asynchronous (do actual stuff inside netLoop)
+static SDL_Mutex* gSubnetProcessingMutex = nullptr;
 
 static SDLNet_DatagramSocket* gSubnetBroadcastSocket = nullptr;
 static SDLNet_Server* gSubnetConnectionsListenerServer = nullptr; // it's a socket actually
@@ -60,6 +61,7 @@ void netInit(void) {
     assert(SDLNet_Init());
 
     assert(gMutex = SDL_CreateMutex());
+    assert(gSubnetProcessingMutex = SDL_CreateMutex());
 
     gSubnetsHostsAddressesList = listCreate(false, nullptr);
 }
@@ -132,7 +134,7 @@ void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
     assert(lifecycleInitialized() && gInitialized);
     assert(subnetHostAddress);
 
-    SDL_LockMutex(gMutex);
+    SDL_LockMutex(gSubnetProcessingMutex);
     assert(!gSelectedSubnetHostAddress && !gSubnetBroadcastSocket && !gSubnetConnectionsListenerServer && !gConnectionsHashtable);
 
     gSelectedSubnetHostAddress = subnetHostAddress;
@@ -152,13 +154,13 @@ void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
 
     gConnectionsHashtable = hashtableCreate(false, destroyConnection);
 
-    SDL_UnlockMutex(gMutex);
+    SDL_UnlockMutex(gSubnetProcessingMutex);
 }
 
 void netStopBroadcastingAndListeningSubnet(void) {
     assert(lifecycleInitialized() && gInitialized);
 
-    SDL_LockMutex(gMutex);
+    SDL_LockMutex(gSubnetProcessingMutex);
     assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket && gSubnetConnectionsListenerServer && gConnectionsHashtable);
 
     gSelectedSubnetHostAddress = 0;
@@ -172,10 +174,12 @@ void netStopBroadcastingAndListeningSubnet(void) {
     hashtableDestroy(gConnectionsHashtable);
     gConnectionsHashtable = nullptr;
 
-    SDL_UnlockMutex(gMutex);
+    SDL_UnlockMutex(gSubnetProcessingMutex);
 }
 
 static void broadcastSubnetForHosts(void) {
+    assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
+
     const int messageSize = sizeof(NetMessage) + sizeof(HostDiscoveryBroadcastPayload);
     staticAssert(messageSize <= UDP_PACKET_MAX_SIZE);
 
@@ -184,9 +188,7 @@ static void broadcastSubnetForHosts(void) {
     unconst(message->timestamp) = lifecycleCurrentTimeMillis();
     unconst(message->index) = 0;
     unconst(message->count) = 1;
-    SDL_LockMutex(gMutex);
     unconst(message->from) = gSelectedSubnetHostAddress;
-    SDL_UnlockMutex(gMutex);
     unconst(message->to) = NET_MESSAGE_TO_EVERYONE;
     unconst(message->size) = sizeof(HostDiscoveryBroadcastPayload);
 
@@ -203,8 +205,7 @@ static void broadcastSubnetForHosts(void) {
 
     SDLNet_Address* const address = resolveAddress(message->to);
 
-    SDL_LockMutex(gMutex);
-    assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
+    SDL_LockMutex(gMutex); // TODO: test when these sockets (broadcast and connects) (not the remote ones, exactly these) get disconnected, like when the system gets disconnected from lan/wifi - this would cause asserts failures
     assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, address, SUBNET_BROADCAST_SOCKET_PORT, message, messageSize));
     SDL_UnlockMutex(gMutex);
 
@@ -220,10 +221,11 @@ static inline bool checkSignedMessage(const NetMessage* const message, const int
 }
 
 static void listenSubnetForBroadcasts(void) {
+    assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
+
     SDLNet_Datagram* datagram;
 
     SDL_LockMutex(gMutex);
-    assert(gSelectedSubnetHostAddress && gSubnetBroadcastSocket);
     assert(SDLNet_ReceiveDatagram(gSubnetBroadcastSocket, &datagram));
     SDL_UnlockMutex(gMutex);
 
@@ -254,10 +256,11 @@ static bool readFromTCPSocket(SDLNet_StreamSocket* const socket, void* const buf
 }
 
 static void acceptConnections(void) {
+    assert(gSelectedSubnetHostAddress && gSubnetConnectionsListenerServer && gConnectionsHashtable);
     SDLNet_StreamSocket* connectionSocket;
+
     while (true) {
         SDL_LockMutex(gMutex);
-        assert(gSelectedSubnetHostAddress && gSubnetConnectionsListenerServer && gConnectionsHashtable);
         assert(SDLNet_AcceptClient(gSubnetConnectionsListenerServer, &connectionSocket));
         SDL_UnlockMutex(gMutex);
 
@@ -279,13 +282,9 @@ static void acceptConnections(void) {
 
         const int messageSize = sizeof(NetMessage) + sizeof(ConnectionHelloPayload);
         staticAssert(messageSize <= TCP_PACKET_MAX_SIZE);
-
         NetMessage* const message = xalloca(messageSize);
-        SDL_LockMutex(gMutex);
-        const bool didReadAll = readFromTCPSocket(connectionSocket, message, messageSize);
-        SDL_UnlockMutex(gMutex);
 
-        if (!didReadAll) {
+        if (!readFromTCPSocket(connectionSocket, message, messageSize)) {
             SDLNet_DestroyStreamSocket(connectionSocket);
             continue;
         }
@@ -327,17 +326,16 @@ void netLoop(void) {
     const unsigned long currentMillis = lifecycleCurrentTimeMillis();
     static unsigned long lastSubnetsHostsAddressesFetch = 0, lastBroadcastSend = 0, lastBroadcastReceive = 0, lastClientsAccept = 0;
 
-    runPeriodically(currentMillis, &lastSubnetsHostsAddressesFetch, FETCH_SUBNETS_HOST_ADDRESSES_PERIOD, fetchSubnetsHostsAddresses);
-
-    SDL_LockMutex(gMutex);
-    const int selectedSubnetHostAddress = gSelectedSubnetHostAddress;
-    SDL_UnlockMutex(gMutex);
-
-    if (selectedSubnetHostAddress) {
+    SDL_LockMutex(gSubnetProcessingMutex);
+    if (gSelectedSubnetHostAddress) {
         // TODO: periodically check gConnectionsHashtable for disconnected connections and remove them
         runPeriodically(currentMillis, &lastBroadcastSend, SUBNET_BROADCAST_SEND_PERIOD, broadcastSubnetForHosts);
         runPeriodically(currentMillis, &lastBroadcastReceive, SUBNET_BROADCAST_RECEIVE_PERIOD, listenSubnetForBroadcasts);
         runPeriodically(currentMillis, &lastClientsAccept, ACCEPT_SUBNET_CONNECTIONS_PERIOD, acceptConnections);
+        SDL_UnlockMutex(gSubnetProcessingMutex);
+    } else {
+        SDL_UnlockMutex(gSubnetProcessingMutex);
+        runPeriodically(currentMillis, &lastSubnetsHostsAddressesFetch, FETCH_SUBNETS_HOST_ADDRESSES_PERIOD, fetchSubnetsHostsAddresses);
     }
 }
 
@@ -351,6 +349,7 @@ void netQuit(void) {
 
     listDestroy(gSubnetsHostsAddressesList);
 
+    SDL_DestroyMutex(gSubnetProcessingMutex);
     SDL_DestroyMutex(gMutex);
 
     SDLNet_Quit();
