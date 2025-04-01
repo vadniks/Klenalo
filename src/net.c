@@ -40,7 +40,7 @@ typedef struct {
 static const short SUBNET_BROADCAST_SOCKET_PORT = 8080, SUBNET_CONNECTIONS_LISTENER_SERVER_PORT = 8081;
 static const int MESSAGE_RECEIVE_TIME_WINDOW = 100;
 static const int FETCH_SUBNETS_HOST_ADDRESSES_PERIOD = 100, SUBNET_BROADCAST_SEND_PERIOD = 1000, SUBNET_BROADCAST_RECEIVE_PERIOD = 250, ACCEPT_SUBNET_CONNECTIONS_PERIOD = 100;
-static const int UDP_PACKET_MAX_SIZE = 512, BROADCAST_PAYLOAD_SIZE = UDP_PACKET_MAX_SIZE - (int) sizeof(NetMessage);
+static const int UDP_PACKET_MAX_SIZE = 512, TCP_PACKET_MAX_SIZE = 512;
 #define GREETING constsConcatenateTitleWith(" ping")
 
 static atomic bool gInitialized = false;
@@ -125,12 +125,6 @@ static SDLNet_Address* resolveAddress(const int address) {
     return resolvedAddress;
 }
 
-static void generateHostDiscoveryBroadcastPayload(HostDiscoveryBroadcastPayload* const payload) {
-    strncpy((char*) payload->greeting, GREETING, sizeof payload->greeting);
-    unconst(payload->version) = 1;
-    xmemcpy((byte*) payload->masterSessionSealPublicKey, cryptoMasterSessionSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE);
-}
-
 static void destroyConnection(void* const connection) {
     SDLNet_DestroyStreamSocket(((Connection*) connection)->socket);
     xfree(connection);
@@ -195,7 +189,12 @@ static void broadcastSubnetForHosts(void) {
     unconst(message->from) = gSelectedSubnetHostAddress;
     unconst(message->to) = NET_MESSAGE_TO_EVERYONE;
     unconst(message->size) = sizeof(HostDiscoveryBroadcastPayload);
-    generateHostDiscoveryBroadcastPayload((HostDiscoveryBroadcastPayload*) message->payload);
+
+    HostDiscoveryBroadcastPayload* const payload = (void*) message->payload;
+    strncpy((char*) payload->greeting, GREETING, sizeof payload->greeting);
+    unconst(payload->version) = 1;
+    xmemcpy((byte*) payload->masterSessionSealPublicKey, cryptoMasterSessionSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE);
+
     cryptoMasterSign(
         (byte*) message,
         messageSize - CRYPTO_SIGNATURE_SIZE,
@@ -281,6 +280,8 @@ static void acceptConnections(void) {
         }
 
         const int messageSize = sizeof(NetMessage) + sizeof(ConnectionHelloPayload);
+        staticAssert(messageSize <= TCP_PACKET_MAX_SIZE);
+
         NetMessage* const message = xalloca(messageSize);
         SDL_LockMutex(gMutex);
         const bool didReadAll = readFromTCPSocket(connectionSocket, message, messageSize);
@@ -331,6 +332,7 @@ void netLoop(void) {
     runPeriodically(currentMillis, &lastSubnetsHostsAddressesFetch, FETCH_SUBNETS_HOST_ADDRESSES_PERIOD, fetchSubnetsHostsAddresses);
 
     if (gSelectedSubnetHostAddress) {
+        // TODO: periodically check gConnectionsHashtable for disconnected connections and remove them
         runPeriodically(currentMillis, &lastBroadcastSend, SUBNET_BROADCAST_SEND_PERIOD, broadcastSubnetForHosts);
         runPeriodically(currentMillis, &lastBroadcastReceive, SUBNET_BROADCAST_RECEIVE_PERIOD, listenSubnetForBroadcasts);
         runPeriodically(currentMillis, &lastClientsAccept, ACCEPT_SUBNET_CONNECTIONS_PERIOD, acceptConnections);

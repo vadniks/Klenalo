@@ -7,15 +7,18 @@
 enum _NetMessageFlag : byte;
 typedef enum _NetMessageFlag NetMessageFlag;
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
 typedef struct packed {
     const byte payload[];
 } NetMessagePayload;
+#pragma clang diagnostic pop
 
 typedef struct packed {
     const NetMessageFlag flag;
     const unsigned long timestamp;
     const int index, count, from, to, size;
-    const NetMessagePayload;
+    __attribute_used__ const NetMessagePayload;
     const byte signature[CRYPTO_SIGNATURE_SIZE];
 } NetMessage;
 
