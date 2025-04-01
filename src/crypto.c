@@ -76,6 +76,23 @@ bool cryptoMasterSessionUnseal(const byte* const sealedMessage, const int size, 
     return !crypto_box_seal_open(unsealedMessage, sealedMessage, size, gMasterSessionSealPublicKey, gMasterSessionSealSecretKey);
 }
 
+void cryptoMakeKeysForExchange(byte* const publicKey, byte* const secretKey) {
+    assert(!crypto_kx_keypair(publicKey, secretKey));
+}
+
+bool cryptoExchangeKeys(
+    const bool initiator,
+    byte* const receiveKey,
+    byte* const sendKey,
+    const byte* const ownPublicKey,
+    const byte* const ownSecretKey,
+    const byte* const foreignPublicKey
+) {
+    return initiator
+        ? !crypto_kx_client_session_keys(receiveKey, sendKey, ownPublicKey, ownSecretKey, foreignPublicKey)
+        : !crypto_kx_server_session_keys(receiveKey, sendKey, ownPublicKey, ownSecretKey, foreignPublicKey);
+}
+
 void cryptoQuit(void) {
     assert(gInitialized);
     gInitialized = false;
