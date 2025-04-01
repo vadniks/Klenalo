@@ -47,7 +47,7 @@ static atomic bool gInitialized = false;
 static SDL_Mutex* gMutex = nullptr;
 
 static List* gSubnetsHostsAddressesList = nullptr; // <int>
-static int gSelectedSubnetHostAddress = 0; // if not zero then a subnet is being processed // TODO: add a flag indicating that a subnet is being monitored and processed and wrap it to a new exclusive mutex and lock that mutex for each netLoop iteration or instead of asserting the necessary conditions do the return and cleanup if they aren't satisfied or make stopBroadcastingAndListeningSubnet asynchronous (do actual stuff inside netLoop)
+static int gSelectedSubnetHostAddress = 0; // if not zero then a subnet is being processed
 static SDL_Mutex* gSubnetProcessingMutex = nullptr;
 
 static SDLNet_DatagramSocket* gSubnetBroadcastSocket = nullptr;
@@ -130,7 +130,7 @@ static void destroyConnection(void* const connection) {
     xfree(connection);
 }
 
-void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) {
+void netStartBroadcastingAndListeningSubnet(const int subnetHostAddress) { // TODO: rename to (start|stop)SubnetProcessing
     assert(lifecycleInitialized() && gInitialized);
     assert(subnetHostAddress);
 
@@ -207,7 +207,7 @@ static void broadcastSubnetForHosts(void) {
 
     SDL_LockMutex(gMutex); // TODO: test when these sockets (broadcast and connects) (not the remote ones, exactly these) get disconnected, like when the system gets disconnected from lan/wifi - this would cause asserts failures
     assert(SDLNet_SendDatagram(gSubnetBroadcastSocket, address, SUBNET_BROADCAST_SOCKET_PORT, message, messageSize));
-    SDL_UnlockMutex(gMutex);
+    SDL_UnlockMutex(gMutex); // TODO: instead of asserting sockets operations return if they fail and do cleanup and this would indicate disconnection and network monitoring stop so call stopSubnetListeningAndBroadcasting
 
     SDLNet_UnrefAddress(address);
 }
