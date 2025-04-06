@@ -17,7 +17,7 @@ add_compile_options(-ffast-math -fsemantic-interposition)
 add_compile_options(-Werror=return-type)
 #add_link_options("-s")
 
-add_compile_options(-g)
+add_compile_options(-g3)
 #add_compile_options(-fsanitize=memory)
 add_compile_options(-fstack-protector-all)
 add_compile_options(-fstack-check)

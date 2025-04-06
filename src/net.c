@@ -272,7 +272,7 @@ static void acceptConnections(void) {
         SDLNet_UnrefAddress(addr);
 
         SDL_LockMutex(gMutex);
-        Connection* const connection = hashtableGet(gConnectionsHashtable, hashtableHashPrimitive(address));
+        const Connection* const connection = hashtableGet(gConnectionsHashtable, hashtableHashPrimitive(address));
         SDL_UnlockMutex(gMutex);
         if (connection) {
             assert(connection->address == address);
@@ -301,7 +301,15 @@ static void acceptConnections(void) {
             continue;
         }
 
-        // TODO: exchange peer-level session keys
+        if (!SDLNet_WriteToStreamSocket(connectionSocket, /*TODO: no, create a new secret key for each p2p connection, use secret stream*/ cryptoMasterSessionSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE)) {
+            SDLNet_DestroyStreamSocket(connectionSocket);
+            continue;
+        }
+
+        if (SDLNet_WaitUntilStreamSocketDrained(connectionSocket, MESSAGE_RECEIVE_TIME_WINDOW) != 0) {
+            SDLNet_DestroyStreamSocket(connectionSocket);
+            continue;
+        }
 
         Connection* const newConnection = xmalloc(sizeof *newConnection);
         unconst(newConnection->address) = address;
@@ -328,7 +336,7 @@ void netLoop(void) {
 
     SDL_LockMutex(gSubnetProcessingMutex);
     if (gSelectedSubnetHostAddress) {
-        // TODO: periodically check gConnectionsHashtable for disconnected connections and remove them
+        // TODO: periodically check gConnectionsHashtable for disconnected connections and remove them --- no need as it would be known for a socket to be disconnected when the future messages querying loop would try to access that socket
         runPeriodically(currentMillis, &lastBroadcastSend, SUBNET_BROADCAST_SEND_PERIOD, broadcastSubnetForHosts);
         runPeriodically(currentMillis, &lastBroadcastReceive, SUBNET_BROADCAST_RECEIVE_PERIOD, listenSubnetForBroadcasts);
         runPeriodically(currentMillis, &lastClientsAccept, ACCEPT_SUBNET_CONNECTIONS_PERIOD, acceptConnections);
