@@ -3,7 +3,7 @@
 #include "lifecycle.h"
 #include "crypto.h"
 
-typedef unsigned long long xlong;
+typedef unsigned long long xulong;
 
 staticAssert(
     (CRYPTO_SIGN_PUBLIC_KEY_SIZE == crypto_sign_PUBLICKEYBYTES) &
@@ -19,7 +19,10 @@ staticAssert(
         (crypto_box_PUBLICKEYBYTES == crypto_kx_SECRETKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_kx_SESSIONKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_secretstream_xchacha20poly1305_KEYBYTES) &
-    (CRYPTO_SEAL_SIZE == crypto_box_SEALBYTES)
+    (CRYPTO_SEAL_SIZE == crypto_box_SEALBYTES) &
+    (CRYPTO_STREAM_CODER_SIZE == sizeof(crypto_secretstream_xchacha20poly1305_state)) &
+    (CRYPTO_STREAM_CODER_HEADER_SIZE == crypto_secretstream_xchacha20poly1305_HEADERBYTES) &
+    (CRYPTO_STREAM_SERVICE_BYTES_SIZE == crypto_secretstream_xchacha20poly1305_ABYTES)
 );
 
 // TODO: will be replaced with config file where users can set the keys themselves
@@ -56,7 +59,7 @@ const byte* cryptoMasterSessionSealPublicKey(void) {
 void cryptoMasterSign(const byte* const message, const int size, byte* const signature) {
     assert(lifecycleInitialized() && gInitialized);
 
-    xlong generatedSize;
+    xulong generatedSize;
     assert(!crypto_sign_detached(signature, &generatedSize, message, size, gMasterSignSecretKey));
     assert((int) generatedSize == CRYPTO_SIGNATURE_SIZE);
 }
@@ -72,11 +75,12 @@ void cryptoSeal(const byte* const message, const int size, byte* const sealedMes
 }
 
 bool cryptoMasterSessionUnseal(const byte* const sealedMessage, const int size, byte* const unsealedMessage) {
-    assert(lifecycleInitialized() && gInitialized);
+    assert(lifecycleInitialized() && gInitialized && size > CRYPTO_SEAL_SIZE);
     return !crypto_box_seal_open(unsealedMessage, sealedMessage, size, gMasterSessionSealPublicKey, gMasterSessionSealSecretKey);
 }
 
 void cryptoMakeKeysForExchange(byte* const publicKey, byte* const secretKey) {
+    assert(lifecycleInitialized() && gInitialized);
     assert(!crypto_kx_keypair(publicKey, secretKey));
 }
 
@@ -88,9 +92,59 @@ bool cryptoExchangeKeys(
     const byte* const ownSecretKey,
     const byte* const foreignPublicKey
 ) {
+    assert(lifecycleInitialized() && gInitialized);
     return initiator
         ? !crypto_kx_client_session_keys(receiveKey, sendKey, ownPublicKey, ownSecretKey, foreignPublicKey)
         : !crypto_kx_server_session_keys(receiveKey, sendKey, ownPublicKey, ownSecretKey, foreignPublicKey);
+}
+
+void cryptoMakeStreamCoderForEncryption(const byte* const key, StreamCoder* const coder, byte* const header) {
+    assert(lifecycleInitialized() && gInitialized);
+    assert(!crypto_secretstream_xchacha20poly1305_init_push((crypto_secretstream_xchacha20poly1305_state*) coder, header, key));
+}
+
+bool cryptoMakeStreamCoderForDecryption(const byte* const key, const byte* const header, StreamCoder* const coder) {
+    assert(lifecycleInitialized() && gInitialized);
+    return !crypto_secretstream_xchacha20poly1305_init_pull((crypto_secretstream_xchacha20poly1305_state*) coder, header, key);
+}
+
+void cryptoStreamEncrypt(StreamCoder* const coder, const byte* const message, const int size, byte* const encrypted) {
+    assert(lifecycleInitialized() && gInitialized);
+    xulong generatedSize;
+
+    assert(!crypto_secretstream_xchacha20poly1305_push(
+        (crypto_secretstream_xchacha20poly1305_state*) coder,
+        encrypted,
+        &generatedSize,
+        message,
+        size,
+        nullptr,
+        0,
+        crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
+    ));
+    assert((int) generatedSize == size + CRYPTO_STREAM_SERVICE_BYTES_SIZE);
+}
+
+bool cryptoStreamDecrypt(StreamCoder* const coder, const byte* const encrypted, const int size, byte* const message) {
+    assert(lifecycleInitialized() && gInitialized && size > CRYPTO_STREAM_SERVICE_BYTES_SIZE);
+
+    xulong generatedSize;
+    byte tag;
+
+    const bool result = crypto_secretstream_xchacha20poly1305_pull(
+        (crypto_secretstream_xchacha20poly1305_state*) coder,
+        message,
+        &generatedSize,
+        &tag,
+        encrypted,
+        size,
+        nullptr,
+        0
+    );
+    assert(result && (int) generatedSize == size - CRYPTO_STREAM_SERVICE_BYTES_SIZE || !result);
+    assert(tag == crypto_secretstream_xchacha20poly1305_TAG_MESSAGE);
+
+    return result;
 }
 
 void cryptoQuit(void) {
