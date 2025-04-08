@@ -147,6 +147,36 @@ bool cryptoStreamDecrypt(StreamCoder* const coder, const byte* const encrypted, 
     return result;
 }
 
+void cryptoZeroOutMemory(void* const memory, const int size) {
+    sodium_memzero(memory, size);
+}
+
+int cryptoAddPadding(byte* const message, const int size) {
+    unsigned long generatedSize;
+    assert(!sodium_pad(
+        &generatedSize,
+        message,
+        size,
+        CRYPTO_PADDING_BLOCK_SIZE,
+        size + CRYPTO_PADDING_BLOCK_SIZE
+    ));
+    assert((int) generatedSize >= size);
+    return (int) generatedSize;
+}
+
+int cryptoRemovePadding(byte* const message, const int size) {
+    assert(size > 0 && size % CRYPTO_PADDING_BLOCK_SIZE == 0);
+    unsigned long generatedSize;
+
+    const bool successful = !sodium_unpad(&generatedSize, message, size, CRYPTO_PADDING_BLOCK_SIZE);
+
+    if (successful) {
+        assert((int) generatedSize <= size);
+        return (int) generatedSize;
+    } else
+        return 0;
+}
+
 void cryptoQuit(void) {
     assert(gInitialized);
     gInitialized = false;
