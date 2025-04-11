@@ -98,17 +98,17 @@ bool cryptoExchangeKeys(
         : !crypto_kx_server_session_keys(receiveKey, sendKey, ownPublicKey, ownSecretKey, foreignPublicKey);
 }
 
-void cryptoMakeStreamCoderForEncryption(const byte* const key, StreamCoder* const coder, byte* const header) {
+void cryptoMakeStreamCoderForEncryption(const byte* const key, CryptoStreamCoder* const coder, byte* const header) {
     assert(lifecycleInitialized() && gInitialized);
     assert(!crypto_secretstream_xchacha20poly1305_init_push((crypto_secretstream_xchacha20poly1305_state*) coder, header, key));
 }
 
-bool cryptoMakeStreamCoderForDecryption(const byte* const key, const byte* const header, StreamCoder* const coder) {
+bool cryptoMakeStreamCoderForDecryption(const byte* const key, const byte* const header, CryptoStreamCoder* const coder) {
     assert(lifecycleInitialized() && gInitialized);
     return !crypto_secretstream_xchacha20poly1305_init_pull((crypto_secretstream_xchacha20poly1305_state*) coder, header, key);
 }
 
-void cryptoStreamEncrypt(StreamCoder* const coder, const byte* const message, const int size, byte* const encrypted) {
+void cryptoStreamEncrypt(CryptoStreamCoder* const coder, const byte* const message, const int size, byte* const encrypted) {
     assert(lifecycleInitialized() && gInitialized);
     xulong generatedSize;
 
@@ -125,7 +125,7 @@ void cryptoStreamEncrypt(StreamCoder* const coder, const byte* const message, co
     assert((int) generatedSize == size + CRYPTO_STREAM_SERVICE_BYTES_SIZE);
 }
 
-bool cryptoStreamDecrypt(StreamCoder* const coder, const byte* const encrypted, const int size, byte* const message) {
+bool cryptoStreamDecrypt(CryptoStreamCoder* const coder, const byte* const encrypted, const int size, byte* const message) {
     assert(lifecycleInitialized() && gInitialized && size > CRYPTO_STREAM_SERVICE_BYTES_SIZE);
 
     xulong generatedSize;

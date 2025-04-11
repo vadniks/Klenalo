@@ -17,7 +17,7 @@ enum : int {
 
 typedef struct packed {
     const byte _[CRYPTO_STREAM_CODER_SIZE];
-} StreamCoder;
+} CryptoStreamCoder;
 
 void cryptoInit(void);
 bool cryptoInitialized(void);
@@ -36,10 +36,10 @@ bool cryptoMasterSessionUnseal(const byte* const sealedMessage, const int size, 
     const byte* const ownSecretKey,
     const byte* const foreignPublicKey
 ); // buffers and refs, sizeof(*Key) = encrypt_*_key_size
-void cryptoMakeStreamCoderForEncryption(const byte* const key, StreamCoder* const coder, byte* const header); // takes pointers to buffers in which to write what's been made
-bool cryptoMakeStreamCoderForDecryption(const byte* const key, const byte* const header, StreamCoder* const coder);
-void cryptoStreamEncrypt(StreamCoder* const coder, const byte* const message, const int size, byte* const encrypted); // sizeof(encrypted) = size + stream_service_bytes_size
-bool cryptoStreamDecrypt(StreamCoder* const coder, const byte* const encrypted, const int size, byte* const message);
+void cryptoMakeStreamCoderForEncryption(const byte* const key, CryptoStreamCoder* const coder, byte* const header); // takes pointers to buffers in which to write what's been made
+bool cryptoMakeStreamCoderForDecryption(const byte* const key, const byte* const header, CryptoStreamCoder* const coder);
+void cryptoStreamEncrypt(CryptoStreamCoder* const coder, const byte* const message, const int size, byte* const encrypted); // sizeof(encrypted) = size + stream_service_bytes_size
+bool cryptoStreamDecrypt(CryptoStreamCoder* const coder, const byte* const encrypted, const int size, byte* const message);
 void cryptoZeroOutMemory(void* const memory, const int size);
 int cryptoAddPadding(byte* const message, const int size); // size = size of the actual message but not the whole buffer which size is assumed to be size + padding_block_size, accepts the editable buffer containing the original message, padding will be added to that buffer, returns the actual padded message size
 int cryptoRemovePadding(byte* const message, const int size); // size = sizeof(message), message is padded, returns the original message's size or zero (false) on failure
