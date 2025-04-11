@@ -2,10 +2,9 @@
 #include "lifecycle.h"
 
 int main(void) {
-    const unsigned long allocations = xallocations();
     lifecycleInit();
     lifecycleLoop();
     lifecycleQuit();
-    assert(xallocations() == allocations);
+    assert(xallocations() == 0);
     return 0;
 }
