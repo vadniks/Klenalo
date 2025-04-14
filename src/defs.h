@@ -49,7 +49,7 @@ void _deferHandler(void (^ const* const block)(void));
 #define deferHandler(x) static void x([[maybe_unused]] void* const deferred)
 #endif
 
-typedef struct packed {byte arr[];} VariableSizedStruct;
+typedef struct packed {byte _[];} VariableSizedStruct;
 
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
