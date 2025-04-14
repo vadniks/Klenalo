@@ -68,7 +68,20 @@ add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 include_directories(lib/lvgl/include)
 include_directories(lib/sdl3net/include)
 include_directories(/usr/include/freetype2)
-target_link_libraries(${PROJECT_NAME} c m atomic SDL3 ${PROJECT_SOURCE_DIR}/lib/lvgl/bin/liblvgl.a freetype sodium ${PROJECT_SOURCE_DIR}/lib/sdl3net/bin/libSDL3_net.so BlocksRuntime) # SDL3_net) TODO
+
+target_link_libraries(${PROJECT_NAME}
+    c
+    m
+    atomic
+    SDL3
+    ${PROJECT_SOURCE_DIR}/lib/lvgl/bin/liblvgl.a
+    freetype
+    sodium
+    ${PROJECT_SOURCE_DIR}/lib/sdl3net/bin/libSDL3_net.so # SDL3_net TODO
+    BlocksRuntime
+    # sqlite3 # TODO
+    # sqlcipher
+)
 
 #file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
 
