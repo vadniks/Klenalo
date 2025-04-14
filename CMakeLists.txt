@@ -81,6 +81,7 @@ target_link_libraries(${PROJECT_NAME}
     BlocksRuntime
     # sqlite3 # TODO
     # sqlcipher
+    # dbus
 )
 
 #file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
