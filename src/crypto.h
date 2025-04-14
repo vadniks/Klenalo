@@ -21,6 +21,8 @@ typedef struct packed {
     const byte _[CRYPTO_STREAM_CODER_SIZE];
 } CryptoStreamCoder;
 
+// TODO: create a minimal working prototype first, without "hard" things and then in each iteration add those things
+
 void cryptoInit(void);
 bool cryptoInitialized(void);
 const byte* cryptoMasterSignPublicKey(void); // size = general_key_size
@@ -45,6 +47,7 @@ bool cryptoStreamDecrypt(CryptoStreamCoder* const coder, const byte* const encry
 void cryptoZeroOutMemory(void* const memory, const int size);
 int cryptoAddPadding(byte* const message, const int size); // size = size of the actual message but not the whole buffer which size is assumed to be size + padding_block_size, accepts the editable buffer containing the original message, padding will be added to that buffer, returns the actual padded message size
 int cryptoRemovePadding(byte* const message, const int size); // size = sizeof(message), message is padded, returns the original message's size or zero (false) on failure
-void cryptoSingleEncrypt(const byte* const message, const int size, const byte* const key, const byte* nullable nonce, byte* const encrypted); // size = sizeof(message), sizeof(none) = single_crypt_nonce_size or null, sizeof(encrypted) = size + single_crypt_service_bytes_size + single_crypt_nonce_size
+void cryptoSingleEncrypt(const byte* const message, const int size, const byte* const key, byte* nullable nonce, byte* const encrypted); // size = sizeof(message), sizeof(nonce) = single_crypt_nonce_size or null, sizeof(encrypted) = size + single_crypt_service_bytes_size + single_crypt_nonce_size
 bool cryptoSingleDecrypt(const byte* const encrypted, const int size, const byte* const key, byte* const message); // sizeof(encrypted) = size = sizeof(message) + single_crypt_service_bytes_size + single_crypt_nonce_size
+// TODO: singleDeterministic*crypt nonceIncrementOverflowChecked genericHashSingle genericHashMultiple passwordHash
 void cryptoQuit(void);

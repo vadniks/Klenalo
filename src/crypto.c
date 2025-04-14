@@ -185,12 +185,12 @@ int cryptoRemovePadding(byte* const message, const int size) {
         return 0;
 }
 
-void cryptoSingleEncrypt(const byte* const message, const int size, const byte* const key, const byte* nullable nonce, byte* const encrypted) {
+void cryptoSingleEncrypt(const byte* const message, const int size, const byte* const key, byte* nullable nonce, byte* const encrypted) {
     assert(lifecycleInitialized() && gInitialized);
 
     if (!nonce) {
         nonce = xalloca(CRYPTO_SINGLE_CRYPT_NONCE_BYTES_SIZE);
-        randombytes_buf((byte*) nonce, CRYPTO_SINGLE_CRYPT_NONCE_BYTES_SIZE);
+        randombytes_buf(nonce, CRYPTO_SINGLE_CRYPT_NONCE_BYTES_SIZE);
     }
 
     assert(!crypto_secretbox_easy(encrypted, message, size, nonce, key));
@@ -198,8 +198,8 @@ void cryptoSingleEncrypt(const byte* const message, const int size, const byte* 
 }
 
 bool cryptoSingleDecrypt(const byte* const encrypted, const int size, const byte* const key, byte* const message) {
-    assert(lifecycleInitialized() && gInitialized);
-    return !crypto_secretbox_open(message, encrypted, size, encrypted + size + CRYPTO_SINGLE_CRYPT_SERVICE_BYTES_SIZE, key);
+    assert(lifecycleInitialized() && gInitialized && size > CRYPTO_SINGLE_CRYPT_SERVICE_BYTES_SIZE + CRYPTO_SINGLE_CRYPT_NONCE_BYTES_SIZE);
+    return !crypto_secretbox_open(message, encrypted, size - CRYPTO_SINGLE_CRYPT_NONCE_BYTES_SIZE, encrypted + size + CRYPTO_SINGLE_CRYPT_SERVICE_BYTES_SIZE, key);
 }
 
 void cryptoQuit(void) {
