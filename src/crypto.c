@@ -6,12 +6,11 @@
 typedef unsigned long long xulong;
 
 staticAssert(
-    (CRYPTO_SIGN_PUBLIC_KEY_SIZE == crypto_sign_PUBLICKEYBYTES) &
     (CRYPTO_SIGN_SECRET_KEY_SIZE == crypto_sign_SECRETKEYBYTES) &
     (CRYPTO_SIGNATURE_SIZE == crypto_sign_BYTES) &
-    (crypto_sign_BYTES == crypto_sign_SECRETKEYBYTES) &
-    (CRYPTO_GENERAL_KEY_SIZE == crypto_box_PUBLICKEYBYTES) &
-    (crypto_box_PUBLICKEYBYTES == crypto_box_SECRETKEYBYTES) &
+        (crypto_sign_BYTES == crypto_sign_SECRETKEYBYTES) &
+    (CRYPTO_GENERIC_KEY_SIZE == crypto_box_PUBLICKEYBYTES) &
+        (crypto_box_PUBLICKEYBYTES == crypto_box_SECRETKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_sign_PUBLICKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_sign_SECRETKEYBYTES / 2) &
         (crypto_box_PUBLICKEYBYTES == crypto_secretbox_KEYBYTES) &
@@ -19,19 +18,13 @@ staticAssert(
         (crypto_box_PUBLICKEYBYTES == crypto_kx_SECRETKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_kx_SESSIONKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_secretstream_xchacha20poly1305_KEYBYTES) &
-    (CRYPTO_SEAL_SIZE == crypto_box_SEALBYTES) &
-    (CRYPTO_STREAM_CODER_SIZE == sizeof(crypto_secretstream_xchacha20poly1305_state)) &
-    (CRYPTO_STREAM_CODER_HEADER_SIZE == crypto_secretstream_xchacha20poly1305_HEADERBYTES) &
-    (CRYPTO_STREAM_SERVICE_BYTES_SIZE == crypto_secretstream_xchacha20poly1305_ABYTES) &
-    (CRYPTO_SINGLE_CRYPT_SERVICE_BYTES_SIZE == crypto_secretbox_MACBYTES) &
-    (CRYPTO_SINGLE_CRYPT_NONCE_BYTES_SIZE == crypto_secretbox_NONCEBYTES)
+        (CRYPTO_SEAL_SIZE == crypto_box_SEALBYTES) &
+        (CRYPTO_STREAM_CODER_SIZE == sizeof(crypto_secretstream_xchacha20poly1305_state)) &
+        (CRYPTO_STREAM_HEADER_SIZE == crypto_secretstream_xchacha20poly1305_HEADERBYTES) &
+        (CRYPTO_STREAM_AUTH_TAG_SIZE == crypto_secretstream_xchacha20poly1305_ABYTES) &
+    (CRYPTO_SINGLE_CRYPT_AUTH_TAG_SIZE == crypto_secretbox_MACBYTES) &
+    (CRYPTO_SINGLE_CRYPT_NONCE_SIZE == crypto_secretbox_NONCEBYTES)
 );
-
-// TODO: will be replaced with config file where users can set the keys themselves
-static const byte gMasterSignPublicKey[CRYPTO_SIGN_PUBLIC_KEY_SIZE] = "\xa9\x10\x98\xdc\x68\xfb\x26\x29\x71\xbc\x23\x57\x4a\x7\xe7\xc3\x22\x44\x82\x91\xd8\xe4\x3\x88\x82\xad\xbe\x18\xc2\x4e\xef\x77";
-static const byte gMasterSignSecretKey[CRYPTO_SIGN_SECRET_KEY_SIZE] = "\xde\x51\x0\xb3\xf3\x68\xf0\x93\x9c\x51\x0\x19\x86\x53\xc3\x99\xc9\xa7\xc2\x23\x9a\xa4\x46\x26\x21\xde\x5\x44\x5c\x4d\x12\x62\xa9\x10\x98\xdc\x68\xfb\x26\x29\x71\xbc\x23\x57\x4a\x7\xe7\xc3\x22\x44\x82\x91\xd8\xe4\x3\x88\x82\xad\xbe\x18\xc2\x4e\xef\x77";
-static byte gMasterSessionSealPublicKey[CRYPTO_GENERAL_KEY_SIZE] = {0};
-static byte gMasterSessionSealSecretKey[CRYPTO_GENERAL_KEY_SIZE] = {0};
 
 static atomic bool gInitialized = false;
 
@@ -40,110 +33,79 @@ void cryptoInit(void) {
     gInitialized = true;
 
     assert(!sodium_init());
-
-    assert(!crypto_box_keypair(gMasterSessionSealPublicKey, gMasterSessionSealSecretKey));
 }
 
 bool cryptoInitialized(void) {
     return gInitialized;
 }
 
-const byte* cryptoMasterSignPublicKey(void) {
-    assert(lifecycleInitialized() && gInitialized);
-    return gMasterSignPublicKey;
-}
-
-const byte* cryptoMasterSessionSealPublicKey(void) {
-    assert(lifecycleInitialized() && gInitialized);
-    return gMasterSessionSealPublicKey;
-}
-
-void cryptoMasterSign(const byte* const message, const int size, byte* const signature) {
+void cryptoSign(const CryptoSignSecretKey* const secretKey, CryptoSigned* const xSigned, const int messageSize) {
     assert(lifecycleInitialized() && gInitialized);
 
     xulong generatedSize;
-    assert(!crypto_sign_detached(signature, &generatedSize, message, size, gMasterSignSecretKey));
+    assert(!crypto_sign_detached(xSigned->signature, &generatedSize, xSigned->message, messageSize, (void*) secretKey));
     assert((int) generatedSize == CRYPTO_SIGNATURE_SIZE);
 }
 
-bool cryptoCheckMasterSigned(const byte* const message, const int size, const byte* const signature) {
+bool cryptoCheckSigned(const CryptoGenericKey* const publicKey, const CryptoSigned* const xSigned, const int messageSize) {
     assert(lifecycleInitialized() && gInitialized);
-    return !crypto_sign_verify_detached(signature, message, size, gMasterSignPublicKey);
+    return !crypto_sign_verify_detached(xSigned->signature, xSigned->message, messageSize, (void*) publicKey);
 }
 
-void cryptoSeal(const byte* const message, const int size, byte* const sealedMessage, const byte* const sealPublicKey) {
+void cryptoSeal(const CryptoGenericKey* const publicKey, CryptoSealed* const sealed, const int messageSize) {
     assert(lifecycleInitialized() && gInitialized);
-    assert(!crypto_box_seal(sealedMessage, message, size, sealPublicKey));
+    assert(!crypto_box_seal((void*) sealed, sealed->message, messageSize, (void*) publicKey));
 }
 
-bool cryptoMasterSessionUnseal(const byte* const sealedMessage, const int size, byte* const unsealedMessage) {
-    assert(lifecycleInitialized() && gInitialized && size > CRYPTO_SEAL_SIZE);
-    return !crypto_box_seal_open(unsealedMessage, sealedMessage, size, gMasterSessionSealPublicKey, gMasterSessionSealSecretKey);
-}
-
-void cryptoMakeKeysForExchange(byte* const publicKey, byte* const secretKey) {
+bool cryptoUnseal(const CryptoGenericKey* const publicKey, const CryptoGenericKey* const secretKey, CryptoSealed* const sealed, const int messageSize) {
     assert(lifecycleInitialized() && gInitialized);
-    assert(!crypto_kx_keypair(publicKey, secretKey));
+    return !crypto_box_seal_open(sealed->message, (void*) sealed, CRYPTO_SEAL_SIZE + messageSize, (void*) publicKey, (void*) secretKey);
 }
 
-bool cryptoExchangeKeys(
-    const bool initiator,
-    byte* const receiveKey,
-    byte* const sendKey,
-    const byte* const ownPublicKey,
-    const byte* const ownSecretKey,
-    const byte* const foreignPublicKey
-) {
+void cryptoMakeStreamCoderForEncryption(const CryptoGenericKey* const key, CryptoStreamCoder* const coder, CryptoStreamHeader* const header) {
     assert(lifecycleInitialized() && gInitialized);
-    return initiator
-        ? !crypto_kx_client_session_keys(receiveKey, sendKey, ownPublicKey, ownSecretKey, foreignPublicKey)
-        : !crypto_kx_server_session_keys(receiveKey, sendKey, ownPublicKey, ownSecretKey, foreignPublicKey);
+    assert(!crypto_secretstream_xchacha20poly1305_init_push((crypto_secretstream_xchacha20poly1305_state*) coder, (void*) header, (void*) key));
 }
 
-void cryptoMakeStreamCoderForEncryption(const byte* const key, CryptoStreamCoder* const coder, byte* const header) {
+bool cryptoMakeStreamCoderForDecryption(const CryptoGenericKey* const key, const CryptoStreamHeader* const header, CryptoStreamCoder* const coder) {
     assert(lifecycleInitialized() && gInitialized);
-    assert(!crypto_secretstream_xchacha20poly1305_init_push((crypto_secretstream_xchacha20poly1305_state*) coder, header, key));
+    return !crypto_secretstream_xchacha20poly1305_init_pull((crypto_secretstream_xchacha20poly1305_state*) coder, (void*) header, (void*) key);
 }
 
-bool cryptoMakeStreamCoderForDecryption(const byte* const key, const byte* const header, CryptoStreamCoder* const coder) {
-    assert(lifecycleInitialized() && gInitialized);
-    return !crypto_secretstream_xchacha20poly1305_init_pull((crypto_secretstream_xchacha20poly1305_state*) coder, header, key);
-}
-
-void cryptoStreamEncrypt(CryptoStreamCoder* const coder, const byte* const message, const int size, byte* const encrypted) {
+void cryptoStreamEncrypt(CryptoStreamCoder* const coder, CryptoStreamEncryptedChunk* const chunk, const int messageSize) {
     assert(lifecycleInitialized() && gInitialized);
     xulong generatedSize;
 
     assert(!crypto_secretstream_xchacha20poly1305_push(
         (crypto_secretstream_xchacha20poly1305_state*) coder,
-        encrypted,
+        (void*) chunk,
         &generatedSize,
-        message,
-        size,
+        (void*) chunk,
+        messageSize,
         nullptr,
         0,
         crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
     ));
-    assert((int) generatedSize == size + CRYPTO_STREAM_SERVICE_BYTES_SIZE);
+    assert((int) generatedSize == messageSize + CRYPTO_STREAM_AUTH_TAG_SIZE);
 }
 
-bool cryptoStreamDecrypt(CryptoStreamCoder* const coder, const byte* const encrypted, const int size, byte* const message) {
-    assert(lifecycleInitialized() && gInitialized && size > CRYPTO_STREAM_SERVICE_BYTES_SIZE);
+bool cryptoStreamDecrypt(CryptoStreamCoder* const coder, CryptoStreamEncryptedChunk* const chunk, const int messageSize) {
+    assert(lifecycleInitialized() && gInitialized);
 
     xulong generatedSize;
     byte tag;
 
     const bool result = crypto_secretstream_xchacha20poly1305_pull(
         (crypto_secretstream_xchacha20poly1305_state*) coder,
-        message,
+        (void*) chunk,
         &generatedSize,
         &tag,
-        encrypted,
-        size,
+        (void*) chunk,
+        CRYPTO_STREAM_AUTH_TAG_SIZE + messageSize,
         nullptr,
         0
     );
-    assert(result && (int) generatedSize == size - CRYPTO_STREAM_SERVICE_BYTES_SIZE || !result);
+    assert(result && (int) generatedSize == messageSize - CRYPTO_STREAM_AUTH_TAG_SIZE || !result);
     assert(tag == crypto_secretstream_xchacha20poly1305_TAG_MESSAGE);
 
     return result;
@@ -185,21 +147,16 @@ int cryptoRemovePadding(byte* const message, const int size) {
         return 0;
 }
 
-void cryptoSingleEncrypt(const byte* const message, const int size, const byte* const key, byte* nullable nonce, byte* const encrypted) {
+void cryptoSingleEncrypt(CryptoGenericKey* const key, CryptoSingleEncrypted* const encrypted, const int messageSize, const bool makeNonce) {
     assert(lifecycleInitialized() && gInitialized);
 
-    if (!nonce) {
-        nonce = xalloca(CRYPTO_SINGLE_CRYPT_NONCE_BYTES_SIZE);
-        randombytes_buf(nonce, CRYPTO_SINGLE_CRYPT_NONCE_BYTES_SIZE);
-    }
-
-    assert(!crypto_secretbox_easy(encrypted, message, size, nonce, key));
-    xmemcpy(encrypted + size + CRYPTO_SINGLE_CRYPT_SERVICE_BYTES_SIZE, nonce, CRYPTO_SINGLE_CRYPT_NONCE_BYTES_SIZE);
+    if (makeNonce) randombytes_buf(encrypted->nonce, CRYPTO_SINGLE_CRYPT_NONCE_SIZE);
+    assert(!crypto_secretbox_easy((void*) encrypted, (void*) &encrypted->message, messageSize, encrypted->nonce, (void*) key));
 }
 
-bool cryptoSingleDecrypt(const byte* const encrypted, const int size, const byte* const key, byte* const message) {
-    assert(lifecycleInitialized() && gInitialized && size > CRYPTO_SINGLE_CRYPT_SERVICE_BYTES_SIZE + CRYPTO_SINGLE_CRYPT_NONCE_BYTES_SIZE);
-    return !crypto_secretbox_open(message, encrypted, size - CRYPTO_SINGLE_CRYPT_NONCE_BYTES_SIZE, encrypted + size + CRYPTO_SINGLE_CRYPT_SERVICE_BYTES_SIZE, key);
+bool cryptoSingleDecrypt(CryptoGenericKey* const key, CryptoSingleEncrypted* const encrypted, const int messageSize) {
+    assert(lifecycleInitialized() && gInitialized);
+    return !crypto_secretbox_open((void*) &encrypted->message, (void*) encrypted, CRYPTO_SINGLE_CRYPT_AUTH_TAG_SIZE + messageSize, encrypted->nonce, (void*) key);
 }
 
 void cryptoQuit(void) {

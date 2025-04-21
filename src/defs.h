@@ -30,6 +30,7 @@ typedef unsigned char byte;
 #define inRange(x, c, y) c >= x && c <= y
 #define unconst(x) *((typeof_unqual(x)*) &(x))
 #define overloadable [[clang::overloadable]]
+#define offsetof(x, y) __builtin_offsetof(x, y)
 #define cleanup(x) [[gnu::cleanup(x)]]
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
