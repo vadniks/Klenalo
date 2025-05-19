@@ -10,15 +10,13 @@ enum : int {
 
 typedef struct packed {byte _[CRYPTO_GENERIC_KEY_SIZE];} CryptoGenericKey;
 
-typedef struct {} CryptoBundle;
+void cryptoInit(void);
+void cryptoQuit(void);
 
 typedef struct packed {
-    __attribute_used__ CryptoBundle;
     byte seal[CRYPTO_SEAL_SIZE];
     byte data[];
 } CryptoPublicEncryptedBundle;
-
-void cryptoInit(void);
 
 void cryptoMakeKeypair(CryptoGenericKey* const publicKey, CryptoGenericKey* const secretKey);
 void cryptoPublicEncrypt(CryptoPublicEncryptedBundle* const bundle, const int dataSize, const CryptoGenericKey* const publicKey);
@@ -28,5 +26,3 @@ bool cryptoPublicDecrypt(
     const CryptoGenericKey* const publicKey,
     const CryptoGenericKey* const secretKey
 );
-
-void cryptoQuit(void);

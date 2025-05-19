@@ -18,6 +18,11 @@ void cryptoInit(void) {
 #endif
 }
 
+void cryptoQuit(void) {
+    assert(gInitialized);
+    gInitialized = false;
+}
+
 void cryptoMakeKeypair(CryptoGenericKey* const publicKey, CryptoGenericKey* const secretKey) {
     assert(!crypto_box_keypair((byte*) publicKey, (byte*) secretKey));
 }
@@ -46,11 +51,6 @@ bool cryptoPublicDecrypt(
     xmemcpy(bundleCopy, bundle, bundleSize);
 
     return !crypto_box_seal_open(bundle->data, bundleCopy, bundleSize, (byte*) publicKey, (byte*) secretKey);
-}
-
-void cryptoQuit(void) {
-    assert(gInitialized);
-    gInitialized = false;
 }
 
 #ifdef DEBUG
