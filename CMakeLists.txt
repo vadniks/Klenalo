@@ -83,6 +83,8 @@ target_link_libraries(${PROJECT_NAME}
     # sqlcipher
     # dbus
     # xml
+    # qrcode, barcode
+    # svg
 )
 
 #file(COPY res DESTINATION ${CMAKE_BINARY_DIR})

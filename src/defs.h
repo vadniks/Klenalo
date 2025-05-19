@@ -1,6 +1,8 @@
 
 #pragma once
 
+#define DEBUG
+
 #if __STDC_VERSION__ < 202311L /*C23*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) || !defined(__linux__) || !defined(__x86_64__) || !__LITTLE_ENDIAN__ || (defined(__WORDSIZE) && __WORDSIZE != 64 || false)
 #   error
 #endif
@@ -51,6 +53,8 @@ void _deferHandler(void (^ const* const block)(void));
 #endif
 
 typedef struct packed {byte _[];} VariableSizedStruct;
+
+// TODO: add allocations tracker to dynamic allocator wrappers via hashtable (bypass wrappers or use arena on stack)
 
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
