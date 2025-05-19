@@ -6,7 +6,6 @@
 #include "resources.h"
 #include "scenes.h"
 #include "crypto.h"
-#include "net.h"
 #include "list.h"
 #include "consts.h"
 #include "lifecycle.h"
@@ -63,7 +62,7 @@ void lifecycleInit(void) {
     resourcesInit();
     scenesInit();
     cryptoInit();
-    netInit();
+//    netInit();
 
     assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, constsConcatenateTitleWith(":bg"), nullptr));
     assert(gNetActionsLooper.thread = SDL_CreateThread(netActionsLoop, constsConcatenateTitleWith(":net"), nullptr));
@@ -110,7 +109,7 @@ static int backgroundActionsLoop(void* nullable const) {
 }
 
 static int netActionsLoop(void* nullable const) {
-    threadLoop(netLoop);
+//    threadLoop(netLoop);
     return 0;
 }
 
@@ -194,7 +193,7 @@ void lifecycleQuit(void) {
     SDL_WaitThread(gNetActionsLooper.thread, nullptr);
     SDL_WaitThread(gBackgroundActionsLooper.thread, nullptr);
 
-    netQuit();
+//    netQuit();
     cryptoQuit();
     scenesQuit();
     resourcesQuit();

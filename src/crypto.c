@@ -1,10 +1,10 @@
-
+// TODO: allocations tracker via return addresses and (arena based) hashtable
 #include <sodium.h>
 #include "lifecycle.h"
 #include "crypto.h"
 
 typedef unsigned long long xulong;
-
+// TODO: dbus, tray
 staticAssert(
     (CRYPTO_SIGN_SECRET_KEY_SIZE == crypto_sign_SECRETKEYBYTES) &
     (CRYPTO_SIGNATURE_SIZE == crypto_sign_BYTES) &
@@ -33,6 +33,23 @@ void cryptoInit(void) {
     gInitialized = true;
 
     assert(!sodium_init());
+
+    CryptoGenericKey p, s;
+    crypto_box_keypair(&p, &s);
+
+    CryptoSealed* const sealed = xalloca(sizeof *sealed + 10);
+    xmemcpy(sealed->message, "abcdefghij", 10);
+    cryptoSeal(&p, sealed, 10);
+    assert(cryptoUnseal(&p, &s, sealed, 10));
+    assert(!xmemcmp(sealed->message, "abcdefghij", 10));
+
+    CryptoGenericKey key = {0};
+
+    CryptoSingleEncrypted* const encrypted = xalloca(sizeof *encrypted + 10);
+    xmemcpy(encrypted->message, "0123456789", 10);
+    cryptoSingleEncrypt(&key, encrypted, 10, false);
+    assert(cryptoSingleDecrypt(&key, encrypted, 10));
+    debugArgs("%s", encrypted->message)
 }
 
 bool cryptoInitialized(void) {
@@ -150,13 +167,20 @@ int cryptoRemovePadding(byte* const message, const int size) {
 void cryptoSingleEncrypt(CryptoGenericKey* const key, CryptoSingleEncrypted* const encrypted, const int messageSize, const bool makeNonce) {
     assert(lifecycleInitialized() && gInitialized);
 
+    byte message[messageSize];
+    xmemcpy(message, encrypted->message, messageSize);
+
     if (makeNonce) randombytes_buf(encrypted->nonce, CRYPTO_SINGLE_CRYPT_NONCE_SIZE);
-    assert(!crypto_secretbox_easy((void*) encrypted, (void*) &encrypted->message, messageSize, encrypted->nonce, (void*) key));
+    assert(!crypto_secretbox_easy(encrypted->authTag, message, messageSize, encrypted->nonce, (void*) key));
 }
 
 bool cryptoSingleDecrypt(CryptoGenericKey* const key, CryptoSingleEncrypted* const encrypted, const int messageSize) {
     assert(lifecycleInitialized() && gInitialized);
-    return !crypto_secretbox_open((void*) &encrypted->message, (void*) encrypted, CRYPTO_SINGLE_CRYPT_AUTH_TAG_SIZE + messageSize, encrypted->nonce, (void*) key);
+
+    byte xEncrypted[sizeof *encrypted + messageSize];
+    xmemcpy(xEncrypted, encrypted, sizeof(xEncrypted));
+
+    return !crypto_secretbox_open(encrypted->message, xEncrypted + CRYPTO_SINGLE_CRYPT_NONCE_SIZE, CRYPTO_SINGLE_CRYPT_AUTH_TAG_SIZE + messageSize, encrypted->nonce, (void*) key);
 }
 
 void cryptoQuit(void) {

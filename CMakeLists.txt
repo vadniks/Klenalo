@@ -82,6 +82,7 @@ target_link_libraries(${PROJECT_NAME}
     # sqlite3 # TODO
     # sqlcipher
     # dbus
+    # xml
 )
 
 #file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
@@ -90,3 +91,5 @@ target_link_libraries(${PROJECT_NAME}
 
 # mkdir build && (cd build; cmake .. && cd .. && cmake --build build -j 18)
 # objdump -x Klenalo | grep NEEDED
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

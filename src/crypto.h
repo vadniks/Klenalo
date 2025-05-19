@@ -41,9 +41,9 @@ typedef struct packed {
 } CryptoStreamEncryptedChunk;
 
 typedef struct packed {
-    byte authTag[CRYPTO_SINGLE_CRYPT_AUTH_TAG_SIZE];
-    VariableSizedStruct message;
     byte nonce[CRYPTO_SINGLE_CRYPT_NONCE_SIZE];
+    byte authTag[CRYPTO_SINGLE_CRYPT_AUTH_TAG_SIZE];
+    byte message[];
 } CryptoSingleEncrypted;
 
 // TODO: create a minimal working prototype first, without "hard" things and then in each iteration add those things
