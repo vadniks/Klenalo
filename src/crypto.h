@@ -12,8 +12,15 @@ enum : int {
     CRYPTO_SEAL_SIZE = 48,
 
     CRYPTO_SINGLE_CRYPT_NONCE_SIZE = 24,
-    CRYPTO_SINGLE_CRYPT_MAC_SIZE = 16
+    CRYPTO_SINGLE_CRYPT_MAC_SIZE = 16,
+
+    CRYPTO_STREAM_HEADER_SIZE = 24,
+    CRYPTO_STREAM_CODER_SIZE = 52,
+    CRYPTO_STREAM_MAC_SIZE = 16,
 };
+
+// don't try to access non-data fields of the *Bundle structures from the outside of this module -
+// the actual memory layout isn't necessarily the same as the implementation's documentation doesn't fully describe these details
 
 typedef struct packed {byte _[CRYPTO_GENERIC_KEY_SIZE];} CryptoGenericKey;
 
@@ -21,9 +28,6 @@ typedef struct packed {byte _[CRYPTO_GENERIC_KEY_SIZE];} CryptoGenericKey;
 
 void cryptoInit(void);
 void cryptoQuit(void);
-
-// don't try to access non-data fields of the *Bundle structures from the outside of this module -
-// the actual memory layout isn't necessarily the same as the implementation's documentation doesn't fully describe these details
 
 // signature
 
@@ -62,8 +66,28 @@ typedef struct packed {
     byte data[];
 } CryptoSingleEncryptedBundle;
 
-void cryptoRandomBytes(byte* const buffer, const int size);
 void cryptoSingleEncrypt(CryptoSingleEncryptedBundle* const bundle, const int dataSize, const CryptoGenericKey* const key);
 bool cryptoSingleDecrypt(CryptoSingleEncryptedBundle* const bundle, const int dataSize, const CryptoGenericKey* const key);
 
+// stream encryption
+
+//typedef struct packed {byte _[CRYPTO_STREAM_HEADER_SIZE];} CryptoStreamCoderHeader;
+//typedef struct packed {byte _[CRYPTO_STREAM_CODER_SIZE];} CryptoStreamCoder;
 //
+//typedef struct packed {
+//    byte mac[CRYPTO_STREAM_MAC_SIZE];
+//    byte tag;
+//    byte data[];
+//} CryptoStreamEncryptedChunkBundle;
+
+// utils
+
+void cryptoRandomBytes(byte* const buffer, const int size);
+void cryptoZeroOutMemory(void* const memory, const int size);
+bool cryptoNonceIncrementOverflowChecked(byte* const nonce, const int size); // little-endian! returns true on overflow
+
+// padding
+
+// generic hash
+
+// password hash

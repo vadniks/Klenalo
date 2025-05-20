@@ -82,11 +82,6 @@ bool cryptoPublicDecrypt(
     return !crypto_box_seal_open(bundle->data, bundleCopy, bundleSize, (byte*) publicKey, (byte*) secretKey);
 }
 
-void cryptoRandomBytes(byte* const buffer, const int size) {
-    assert(lifecycleInitialized() && gInitialized && size > 0);
-    randombytes_buf(buffer, size);
-}
-
 void cryptoSingleEncrypt(CryptoSingleEncryptedBundle* const bundle, const int dataSize, const CryptoGenericKey* const key) {
     assert(lifecycleInitialized() && gInitialized && dataSize > 0);
 
@@ -118,6 +113,29 @@ bool cryptoSingleDecrypt(CryptoSingleEncryptedBundle* const bundle, const int da
         bundle->nonce,
         (byte*) key
     );
+}
+
+//
+
+void cryptoRandomBytes(byte* const buffer, const int size) {
+    assert(lifecycleInitialized() && gInitialized && size > 0);
+    randombytes_buf(buffer, size);
+}
+
+void cryptoZeroOutMemory(void* const memory, const int size) {
+    sodium_memzero(memory, size);
+}
+
+bool cryptoNonceIncrementOverflowChecked(byte* const nonce, const int size) {
+    sodium_increment(nonce, size);
+
+    bool allZeroes = true;
+    for (int i = 0; i < size; i++) {
+        allZeroes &= !nonce[i];
+        if (!allZeroes) return false;
+    }
+
+    return true;
 }
 
 #ifdef DEBUG
@@ -156,6 +174,16 @@ static void tests(void) {
 
         cryptoSingleEncrypt(bundle, dataSize, &secretKey);
         assert(cryptoSingleDecrypt(bundle, dataSize, &secretKey));
+    }
+
+    {
+        const int size = 16;
+        byte nonce[size];
+        xmemset(nonce + 1, 0xff, size - 1);
+        nonce[0] = 0xfe;
+
+        assert(!cryptoNonceIncrementOverflowChecked(nonce, size));
+        assert(cryptoNonceIncrementOverflowChecked(nonce, size));
     }
 }
 
