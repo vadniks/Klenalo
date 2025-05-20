@@ -4,6 +4,7 @@
 #include <execinfo.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sys/syslog.h>
 #include "defs.h"
 
 static atomic unsigned long gAllocations = 0;
@@ -23,7 +24,8 @@ static void printStackTrace(void) {
     if (!strings) return;
 
     for (int i = 3; i < actualSize; i++)
-        fprintf(stderr, "%s\n", strings[i]);
+        fprintf(stderr, "%s\n", strings[i]),
+        syslog(LOG_ERR, "%s\n", strings[i]);
 
     free(strings);
 }
@@ -31,6 +33,7 @@ static void printStackTrace(void) {
 void assert(const bool condition) {
     if (condition) return;
     fprintf(stderr, "Assert failed at %p\n", __builtin_return_address(0));
+    syslog(LOG_ERR, "Assert failed at %p\n", __builtin_return_address(0));
     printStackTrace();
     abort();
 }

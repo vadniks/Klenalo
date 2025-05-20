@@ -23,7 +23,36 @@ void cryptoQuit(void) {
     gInitialized = false;
 }
 
+void cryptoMakeSignKeypair(CryptoGenericKey* const publicKey, CryptoSignSecretKey* const secretKey) {
+    assert(lifecycleInitialized() && gInitialized);
+    assert(!crypto_sign_keypair((byte*) publicKey, (byte*) secretKey));
+}
+
+void cryptoSign(CryptoSignedBundle* const bundle, const int dataSize, const CryptoSignSecretKey* const secretKey) {
+    assert(lifecycleInitialized() && gInitialized && dataSize > 0);
+
+    assert(!crypto_sign_detached(
+        bundle->signature,
+        nullptr,
+        bundle->data,
+        dataSize,
+        (byte*) secretKey
+    ));
+}
+
+bool cryptoSignVerify(CryptoSignedBundle* const bundle, const int dataSize, const CryptoGenericKey* const publicKey) {
+    assert(lifecycleInitialized() && gInitialized && dataSize > 0);
+
+    return !crypto_sign_verify_detached(
+        bundle->signature,
+        bundle->data,
+        dataSize,
+        (byte*) publicKey
+    );
+}
+
 void cryptoMakeKeypair(CryptoGenericKey* const publicKey, CryptoGenericKey* const secretKey) {
+    assert(lifecycleInitialized() && gInitialized);
     assert(!crypto_box_keypair((byte*) publicKey, (byte*) secretKey));
 }
 
@@ -99,6 +128,18 @@ static void tests(void) {
 
     const int dataSize = 13;
     const char data[] = "Hello World!";
+
+    {
+        CryptoSignedBundle* const bundle = xalloca(sizeof *bundle + dataSize);
+        xmemcpy(bundle->data, data, dataSize);
+
+        CryptoSignSecretKey secretKey;
+        cryptoMakeSignKeypair(&publicKey, &secretKey);
+
+        cryptoSign(bundle, dataSize, &secretKey);
+        assert(cryptoSignVerify(bundle, dataSize, &publicKey));
+    }
+    cryptoMakeKeypair(&publicKey, &secretKey);
 
     {
         CryptoPublicEncryptedBundle* const bundle = xalloca(sizeof *bundle + dataSize);

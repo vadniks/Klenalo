@@ -122,7 +122,7 @@ void resourcesQuit(void) {
         lv_freetype_uninit();
 }
 
-__attribute_used__ FT_Error __wrap_FT_New_Face(
+external __attribute_used__ FT_Error __wrap_FT_New_Face(
     struct FT_LibraryRec_* const library,
     const char* const filePathName,
     const FT_Long face_index,

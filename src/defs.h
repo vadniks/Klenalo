@@ -36,6 +36,7 @@ typedef unsigned char byte;
 #define cleanup(x) [[gnu::cleanup(x)]]
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
+#define external [[gnu::visibility("default")]]
 
 #define assignToStructWithConsts(x, ...) /* or just xmemcpy(x, &(typeof(*x)) {__VA_ARGS__}, sizeof *x); in case this is a mess */ { \
     struct packed _S {byte _[sizeof(typeof(*x))];}; \
