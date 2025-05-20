@@ -17,9 +17,13 @@ enum : int {
     CRYPTO_STREAM_HEADER_SIZE = 24,
     CRYPTO_STREAM_CODER_SIZE = 52,
     CRYPTO_STREAM_MAC_SIZE = 16,
+
+    CRYPTO_HASH_STATE_SIZE = 384,
+    CRYPTO_HASH_SMALL_SIZE = 32,
+    CRYPTO_HASH_LARGE_SIZE = 64,
 };
 
-// don't try to access non-data fields of the *Bundle structures from the outside of this module -
+// don't try to access non-data fields in the more-than-one-field structures from the outside of this module -
 // the actual memory layout isn't necessarily the same as the implementation's documentation doesn't fully describe these details
 
 typedef struct packed {byte _[CRYPTO_GENERIC_KEY_SIZE];} CryptoGenericKey;
@@ -89,5 +93,15 @@ bool cryptoNonceIncrementOverflowChecked(byte* const nonce, const int size); // 
 // padding
 
 // generic hash
+
+typedef struct packed {byte _[CRYPTO_HASH_STATE_SIZE];} CryptoHashState;
+
+void cryptoHash(
+    CryptoHashState* nullable const state,
+    const byte* nullable const data,
+    const int dataSize,
+    byte* nullable const output,
+    const int hashSize
+); // (state, data, output): single-part message - null, nonnull, nonnull; multipart init - nonnull, null, null; multipart step - nonnull, nonnull, null; multipart quit - nonnull, null, nonnull
 
 // password hash

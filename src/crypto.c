@@ -123,10 +123,12 @@ void cryptoRandomBytes(byte* const buffer, const int size) {
 }
 
 void cryptoZeroOutMemory(void* const memory, const int size) {
+    assert(lifecycleInitialized() && gInitialized && size > 0);
     sodium_memzero(memory, size);
 }
 
 bool cryptoNonceIncrementOverflowChecked(byte* const nonce, const int size) {
+    assert(lifecycleInitialized() && gInitialized && size > 0);
     sodium_increment(nonce, size);
 
     bool allZeroes = true;
@@ -136,6 +138,27 @@ bool cryptoNonceIncrementOverflowChecked(byte* const nonce, const int size) {
     }
 
     return true;
+}
+
+void cryptoHash(
+    CryptoHashState* nullable const state,
+    const byte* nullable const data,
+    const int dataSize,
+    byte* nullable const output,
+    const int hashSize
+) {
+    assert(lifecycleInitialized() && gInitialized && (inRange((int) crypto_generichash_BYTES_MIN, hashSize, (int) crypto_generichash_BYTES_MAX) || !hashSize));
+
+    if (!state && data && output)
+        assert(!crypto_generichash(output, hashSize, data, dataSize, nullptr, 0));
+    else if (state && !data && !output)
+        assert(!crypto_generichash_init((void*) state, nullptr, 0, hashSize));
+    else if (state && data && !output)
+        assert(!crypto_generichash_update((void*) state, data, dataSize));
+    else if (state && !data && output)
+        assert(!crypto_generichash_final((void*) state, output, hashSize));
+    else
+        assert(false);
 }
 
 #ifdef DEBUG
@@ -184,6 +207,20 @@ static void tests(void) {
 
         assert(!cryptoNonceIncrementOverflowChecked(nonce, size));
         assert(cryptoNonceIncrementOverflowChecked(nonce, size));
+    }
+
+    {
+        byte buffer1[CRYPTO_HASH_LARGE_SIZE], buffer2[CRYPTO_HASH_LARGE_SIZE];
+        cryptoHash(nullptr, (byte*) data, dataSize, buffer1, CRYPTO_HASH_LARGE_SIZE);
+
+        CryptoHashState state;
+        cryptoHash(&state, nullptr, 0, nullptr, CRYPTO_HASH_LARGE_SIZE);
+        cryptoHash(&state, (byte*) "Hello ", 6, nullptr, 0);
+        cryptoHash(&state, (byte*) "World!", 6, nullptr, 0);
+        cryptoHash(&state, (byte[1]) {0}, 1, nullptr, 0);
+        cryptoHash(&state, nullptr, 0, buffer2, CRYPTO_HASH_LARGE_SIZE);
+
+        assert(!xmemcmp(buffer1, buffer2, CRYPTO_HASH_LARGE_SIZE));
     }
 }
 
