@@ -53,18 +53,69 @@ bool cryptoPublicDecrypt(
     return !crypto_box_seal_open(bundle->data, bundleCopy, bundleSize, (byte*) publicKey, (byte*) secretKey);
 }
 
+void cryptoRandomBytes(byte* const buffer, const int size) {
+    assert(lifecycleInitialized() && gInitialized && size > 0);
+    randombytes_buf(buffer, size);
+}
+
+void cryptoSingleEncrypt(CryptoSingleEncryptedBundle* const bundle, const int dataSize, const CryptoGenericKey* const key) {
+    assert(lifecycleInitialized() && gInitialized && dataSize > 0);
+
+    byte data[dataSize];
+    xmemcpy(data, bundle->data, dataSize);
+
+    assert(!crypto_secretbox_detached(
+        bundle->data,
+        bundle->mac,
+        data,
+        dataSize,
+        bundle->nonce,
+        (byte*) key
+    ));
+    sodium_memzero(data, dataSize);
+}
+
+bool cryptoSingleDecrypt(CryptoSingleEncryptedBundle* const bundle, const int dataSize, const CryptoGenericKey* const key) {
+    assert(lifecycleInitialized() && gInitialized && dataSize > 0);
+
+    byte data[dataSize];
+    xmemcpy(data, bundle->data, dataSize);
+
+    return !crypto_secretbox_open_detached(
+        bundle->data,
+        data,
+        bundle->mac,
+        dataSize,
+        bundle->nonce,
+        (byte*) key
+    );
+}
+
 #ifdef DEBUG
 
 static void tests(void) {
-    CryptoGenericKey pk, sk;
-    cryptoMakeKeypair(&pk, &sk);
+    CryptoGenericKey publicKey, secretKey;
+    cryptoMakeKeypair(&publicKey, &secretKey);
 
     const int dataSize = 13;
-    CryptoPublicEncryptedBundle* const bundle = xalloca(sizeof(CryptoPublicEncryptedBundle) + dataSize);
-    xmemcpy(bundle->data, "Hello World!", dataSize);
+    const char data[] = "Hello World!";
 
-    cryptoPublicEncrypt(bundle, dataSize, &pk);
-    assert(cryptoPublicDecrypt(bundle, dataSize, &pk, &sk));
+    {
+        CryptoPublicEncryptedBundle* const bundle = xalloca(sizeof *bundle + dataSize);
+        xmemcpy(bundle->data, data, dataSize);
+
+        cryptoPublicEncrypt(bundle, dataSize, &publicKey);
+        assert(cryptoPublicDecrypt(bundle, dataSize, &publicKey, &secretKey));
+    }
+
+    {
+        CryptoSingleEncryptedBundle* const bundle = xalloca(sizeof *bundle + dataSize);
+        xmemcpy(bundle->data, data, dataSize);
+        cryptoRandomBytes(bundle->nonce, CRYPTO_SINGLE_CRYPT_NONCE_SIZE);
+
+        cryptoSingleEncrypt(bundle, dataSize, &secretKey);
+        assert(cryptoSingleDecrypt(bundle, dataSize, &secretKey));
+    }
 }
 
 #endif

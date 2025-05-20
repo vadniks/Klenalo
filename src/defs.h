@@ -56,6 +56,8 @@ typedef struct packed {byte _[];} VariableSizedStruct;
 
 // TODO: add allocations tracker to dynamic allocator wrappers via hashtable (bypass wrappers or use arena on stack)
 
+// TODO: add locks for each module's quit func
+
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
 void assert(const bool condition);

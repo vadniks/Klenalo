@@ -1,4 +1,6 @@
 
+// TODO: rollback to previous implementation for a recursive rw lock
+
 #include <SDL3/SDL_mutex.h>
 #include "rwMutex.h"
 
