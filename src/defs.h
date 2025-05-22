@@ -107,6 +107,11 @@ inline void xyield(void) {
     thrd_yield();
 }
 
+inline unsigned long xstrnlen(const char* const string, const unsigned long maxSize) {
+    unsigned long strnlen(const char* const, const unsigned long);
+    return strnlen(string, maxSize);
+}
+
 #define debugArgs(x, ...) {int printf(const char* const, ...); printf(x "\n", __VA_ARGS__);}
 #define debug(x) debugArgs("%s", x)
 typedef enum {PRINT_MEMORY_MODE_DEC, PRINT_MEMORY_MODE_HEX, PRINT_MEMORY_MODE_HEX_STR, PRINT_MEMORY_MODE_STR, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK} PrintMemoryMode;

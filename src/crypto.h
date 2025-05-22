@@ -90,6 +90,12 @@ void cryptoRandomBytes(byte* const buffer, const int size);
 void cryptoZeroOutMemory(void* const memory, const int size);
 bool cryptoNonceIncrementOverflowChecked(byte* const nonce, const int size); // little-endian! returns true on overflow
 
+// encoding (url/path safe)
+
+int cryptoBase64ResultSize(const int binarySize); // with trailing null byte
+void cryptoBase64Encode(const byte* const binary, const int binarySize, char* const string, const int stringSize); // stringSize with trailing null byte
+int cryptoBase64Decode(const char* const string, const int stringSize, byte* const binary, const int binarySize); // stringSize with trailing null byte, returns actual decoded size
+
 // padding
 
 // generic hash

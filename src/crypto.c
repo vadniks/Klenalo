@@ -130,14 +130,33 @@ void cryptoZeroOutMemory(void* const memory, const int size) {
 bool cryptoNonceIncrementOverflowChecked(byte* const nonce, const int size) {
     assert(lifecycleInitialized() && gInitialized && size > 0);
     sodium_increment(nonce, size);
+    return sodium_is_zero(nonce, size);
+}
 
-    bool allZeroes = true;
-    for (int i = 0; i < size; i++) {
-        allZeroes &= !nonce[i];
-        if (!allZeroes) return false;
-    }
+int cryptoBase64ResultSize(const int binarySize) {
+    assert(lifecycleInitialized() && gInitialized && binarySize > 0);
+    return (int) sodium_base64_encoded_len(binarySize, sodium_base64_VARIANT_URLSAFE);
+}
 
-    return true;
+void cryptoBase64Encode(const byte* const binary, const int binarySize, char* const string, const int stringSize) {
+    assert(lifecycleInitialized() && gInitialized && binarySize > 0 && stringSize > 0);
+    assert(sodium_bin2base64(string, stringSize, binary, binarySize, sodium_base64_VARIANT_URLSAFE) == string);
+}
+
+int cryptoBase64Decode(const char* const string, const int stringSize, byte* const binary, const int binarySize) {
+    assert(lifecycleInitialized() && gInitialized && stringSize - 1 > 0 && binarySize > 0);
+
+    unsigned long resultSize = 0;
+    return !sodium_base642bin(
+        binary,
+        binarySize,
+        string,
+        stringSize - 1,
+        nullptr,
+        &resultSize,
+        nullptr,
+        sodium_base64_VARIANT_URLSAFE
+    ) ? (int) resultSize : -1;
 }
 
 void cryptoHash(
@@ -207,6 +226,19 @@ static void tests(void) {
 
         assert(!cryptoNonceIncrementOverflowChecked(nonce, size));
         assert(cryptoNonceIncrementOverflowChecked(nonce, size));
+    }
+
+    {
+        byte data[dataSize] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 255, 254}, data2[dataSize];
+
+        const int resultSize = cryptoBase64ResultSize(dataSize);
+        char result[resultSize];
+
+        cryptoBase64Encode(data, dataSize, result, resultSize);
+        assert((int) xstrnlen(result, 0xff) == resultSize - 1);
+
+        assert(cryptoBase64Decode(result, resultSize, data2, dataSize) == dataSize);
+        assert(!xmemcmp(data, data2, dataSize));
     }
 
     {
