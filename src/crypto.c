@@ -3,6 +3,8 @@
 #include "lifecycle.h"
 #include "crypto.h"
 
+// TODO: staticAssert(<sizes> = <library's defined>);
+
 static atomic bool gInitialized = false;
 
 static void tests(void);
@@ -159,6 +161,31 @@ int cryptoBase64Decode(const char* const string, const int stringSize, byte* con
     ) ? (int) resultSize : -1;
 }
 
+int cryptoPaddingAdd(const byte* const original, const int size, byte* const padded) {
+    assert(lifecycleInitialized() && gInitialized && size > 0);
+
+    unsigned long newSize = 0;
+    assert(!sodium_pad(
+        &newSize,
+        padded,
+        size,
+        CRYPTO_PADDING_BLOCK_SIZE,
+        size + CRYPTO_PADDING_BLOCK_SIZE
+    ));
+    assert((int) newSize >= size && (int) newSize <= size + CRYPTO_PADDING_BLOCK_SIZE && (int) newSize % CRYPTO_PADDING_BLOCK_SIZE == 0);
+
+    return (int) newSize;
+}
+
+int cryptoPaddingRemovedSize(const byte* const padded, const int size) {
+    assert(lifecycleInitialized() && gInitialized && size > 0 && size % CRYPTO_PADDING_BLOCK_SIZE == 0);
+
+    unsigned long originalSize = 0;
+    return
+        !sodium_unpad(&originalSize, padded, size, CRYPTO_PADDING_BLOCK_SIZE)
+        && (int) originalSize <= size && originalSize > 0 ? (int) originalSize : -1;
+}
+
 void cryptoHash(
     CryptoHashState* nullable const state,
     const byte* nullable const data,
@@ -239,6 +266,23 @@ static void tests(void) {
 
         assert(cryptoBase64Decode(result, resultSize, data2, dataSize) == dataSize);
         assert(!xmemcmp(data, data2, dataSize));
+    }
+
+    {
+        int values[8] = {1, 15, 16, 17, 31, 32, 33, 46};
+        for (int i = 0, size; i < (int) arraySize(values); i++) {
+            size = values[i];
+
+            byte data[size];
+            xmemset(data, 'a', size);
+
+            const int size2 = size + CRYPTO_PADDING_BLOCK_SIZE;
+            byte padded[size2];
+
+            const int actualPaddedSize = cryptoPaddingAdd(data, size, padded);
+            assert(actualPaddedSize == (size / CRYPTO_PADDING_BLOCK_SIZE + 1) * CRYPTO_PADDING_BLOCK_SIZE);
+            assert(cryptoPaddingRemovedSize(padded, actualPaddedSize) == size);
+        }
     }
 
     {

@@ -18,6 +18,8 @@ enum : int {
     CRYPTO_STREAM_CODER_SIZE = 52,
     CRYPTO_STREAM_MAC_SIZE = 16,
 
+    CRYPTO_PADDING_BLOCK_SIZE = 16,
+
     CRYPTO_HASH_STATE_SIZE = 384,
     CRYPTO_HASH_SMALL_SIZE = 32,
     CRYPTO_HASH_LARGE_SIZE = 64,
@@ -94,9 +96,12 @@ bool cryptoNonceIncrementOverflowChecked(byte* const nonce, const int size); // 
 
 int cryptoBase64ResultSize(const int binarySize); // with trailing null byte
 void cryptoBase64Encode(const byte* const binary, const int binarySize, char* const string, const int stringSize); // stringSize with trailing null byte
-int cryptoBase64Decode(const char* const string, const int stringSize, byte* const binary, const int binarySize); // stringSize with trailing null byte, returns actual decoded size
+int cryptoBase64Decode(const char* const string, const int stringSize, byte* const binary, const int binarySize); // stringSize with trailing null byte, returns actual decoded size or -1 on failure
 
 // padding
+
+int cryptoPaddingAdd(const byte* const original, const int size, byte* const padded); // size of padded is no more than size + padding_block_size and not less than size, returns the actual result size
+int cryptoPaddingRemovedSize(const byte* const padded, const int size); // size = sizeof(padded), returns the actual original size or -1 on failure
 
 // generic hash
 
@@ -109,5 +114,3 @@ void cryptoHash(
     byte* nullable const output,
     const int hashSize
 ); // (state, data, output): single-part message - null, nonnull, nonnull; multipart init - nonnull, null, null; multipart step - nonnull, nonnull, null; multipart quit - nonnull, null, nonnull
-
-// password hash
