@@ -269,7 +269,7 @@ static void tests(void) {
     }
 
     {
-        int values[8] = {1, 15, 16, 17, 31, 32, 33, 46};
+        const int values[8] = {1, 15, 16, 17, 31, 32, 33, 46};
         for (int i = 0, size; i < (int) arraySize(values); i++) {
             size = values[i];
 
