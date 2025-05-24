@@ -1,6 +1,9 @@
 
-# PROJECT IS TEMPORARY SUSPENDED DUE TO THE LACK OF FREE TIME
+# Klenalo - realtime encrypted message & file exchanger and distributed file storage manager for local area networks
 
-# Project is in early development stage
+## _PROJECT IS TEMPORARY SEMI-SUSPENDED DUE TO THE LACK OF FREE TIME_
 
-# No license yet - `TODO`
+## Project is in early development stage
+
+## No license yet - `TODO`
+Planned to be GNU GPL v3

@@ -77,14 +77,19 @@ bool cryptoSingleDecrypt(CryptoSingleEncryptedBundle* const bundle, const int da
 
 // stream encryption
 
-//typedef struct packed {byte _[CRYPTO_STREAM_HEADER_SIZE];} CryptoStreamCoderHeader;
-//typedef struct packed {byte _[CRYPTO_STREAM_CODER_SIZE];} CryptoStreamCoder;
-//
-//typedef struct packed {
-//    byte mac[CRYPTO_STREAM_MAC_SIZE];
-//    byte tag;
-//    byte data[];
-//} CryptoStreamEncryptedChunkBundle;
+typedef struct packed {byte _[CRYPTO_STREAM_CODER_SIZE];} CryptoStreamCoder;
+typedef struct packed {byte _[CRYPTO_STREAM_HEADER_SIZE];} CryptoStreamHeader;
+
+typedef struct packed {
+    byte tag;
+    byte mac[CRYPTO_STREAM_MAC_SIZE];
+    byte data[];
+} CryptoStreamEncryptedChunkBundle;
+
+void cryptoStreamCreateEncoder(CryptoStreamCoder* const coder, CryptoStreamHeader* const header, const CryptoGenericKey* const key);
+bool cryptoStreamCreateDecoder(CryptoStreamCoder* const coder, const CryptoStreamHeader* const header, const CryptoGenericKey* const key);
+void cryptoStreamEncrypt(CryptoStreamCoder* const coder, CryptoStreamEncryptedChunkBundle* const bundle, const int dataSize);
+bool cryptoStreamDecrypt(CryptoStreamCoder* const coder, CryptoStreamEncryptedChunkBundle* const bundle, const int dataSize);
 
 // utils
 

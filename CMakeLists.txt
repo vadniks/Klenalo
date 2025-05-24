@@ -86,6 +86,7 @@ target_link_libraries(${PROJECT_NAME}
     # xml
     # qrcode, barcode
     # svg
+    # googleTest
 )
 
 #file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
