@@ -122,13 +122,13 @@ void resourcesQuit(void) {
         lv_freetype_uninit();
 }
 
-external __attribute_used__ FT_Error __wrap_FT_New_Face(
+external used FT_Error __wrap_FT_New_Face(
     struct FT_LibraryRec_* const library,
     const char* const filePathName,
     const FT_Long face_index,
     FT_Face* const aFace
 ) {
-    for (byte i = 0; i < FONT_TYPES; i++) {
+    for (byte i = 0; i < (byte) FONT_TYPES; i++) {
         const auto fontData = gFontsData[i];
         if (!strncmp(filePathName, fontData.fileName, 32))
             return FT_New_Memory_Face(library, fontData.data, fontData.size, face_index, aFace);

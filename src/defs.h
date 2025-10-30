@@ -38,6 +38,12 @@ typedef unsigned char byte;
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
 #define external [[gnu::visibility("default")]]
 
+#if defined(__CLION_IDE__)
+#define used [[gnu::used]] __attribute__((unused))
+#else
+#define used [[gnu::used]]
+#endif
+
 #define assignToStructWithConsts(x, ...) /* or just xmemcpy(x, &(typeof(*x)) {__VA_ARGS__}, sizeof *x); in case this is a mess */ { \
     struct packed _S {byte _[sizeof(typeof(*x))];}; \
     staticAssert(sizeof(struct _S) == sizeof(typeof(*x))); \
@@ -61,7 +67,7 @@ typedef struct packed {byte _[];} VariableSizedStruct;
 
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
-void assert(const bool condition);
+external void assert(const bool condition);
 
 // TODO: add a 'generic' copy/duplicate function
 

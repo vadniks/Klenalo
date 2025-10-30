@@ -133,7 +133,3 @@ void patchFunction(void* const original, void* const replacement) {
 
     assert(!mprotect(pageStart, pageSize, PROT_READ | PROT_EXEC));
 }
-
-__attribute_used__ void* nullable __wrap_lv_malloc_core(const unsigned long size) { return xmalloc(size); }
-__attribute_used__ void* nullable __wrap_lv_realloc_core(void* nullable const pointer, const unsigned long size) { return xrealloc(pointer, size); }
-__attribute_used__ void __wrap_lv_free_core(void* nullable const memory) { xfree(memory); }

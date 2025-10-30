@@ -73,7 +73,7 @@ static unsigned getTicks(void) {
 }
 
 static void delayThread(const unsigned startMillis) {
-    const unsigned differenceMillis = SDL_GetTicks() - startMillis;
+    const unsigned differenceMillis = (unsigned) SDL_GetTicks() - startMillis;
     if (UPDATE_PERIOD > differenceMillis)
         SDL_Delay(UPDATE_PERIOD - differenceMillis);
 }
@@ -88,7 +88,7 @@ static void threadLoop(void (* const body)(void)) {
     unsigned startMillis;
 
     while (gRunning) {
-        assert(startMillis = SDL_GetTicks());
+        assert(startMillis = (unsigned) SDL_GetTicks());
         body();
         delayThread(startMillis);
     }
@@ -158,7 +158,7 @@ void lifecycleLoop(void) {
     AsyncAction* action;
 
     while (true) {
-        assert(startMillis = SDL_GetTicks());
+        assert(startMillis = (unsigned) SDL_GetTicks());
 
         rwMutexWriteLock(gUIRWMutex);
         lv_timer_periodic_handler();

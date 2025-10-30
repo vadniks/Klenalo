@@ -240,7 +240,7 @@ int cryptoBase64Decode(const char* const string, const int stringSize, byte* con
     ) ? (int) resultSize : -1;
 }
 
-int cryptoPaddingAdd(const byte* const original, const int size, byte* const padded) {
+int cryptoPaddingAdd(byte* const padded, const int size) {
     assert(lifecycleInitialized() && gInitialized && size > 0);
 
     unsigned long newSize = 0;
@@ -280,7 +280,7 @@ void cryptoHash(
         assert(!crypto_generichash_init((void*) state, nullptr, 0, hashSize));
     else if (state && data && !output)
         assert(!crypto_generichash_update((void*) state, data, dataSize));
-    else if (state && !data && output)
+    else if (state && !data /*&& output*/)
         assert(!crypto_generichash_final((void*) state, output, hashSize));
     else
         assert(false);
@@ -399,7 +399,7 @@ static void tests(void) {
             const int size2 = size + CRYPTO_PADDING_BLOCK_SIZE;
             byte padded[size2];
 
-            const int actualPaddedSize = cryptoPaddingAdd(data, size, padded);
+            const int actualPaddedSize = cryptoPaddingAdd(padded, size);
             assert(actualPaddedSize == (size / CRYPTO_PADDING_BLOCK_SIZE + 1) * CRYPTO_PADDING_BLOCK_SIZE);
             assert(cryptoPaddingRemovedSize(padded, actualPaddedSize) == size);
         }

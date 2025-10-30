@@ -105,7 +105,7 @@ int cryptoBase64Decode(const char* const string, const int stringSize, byte* con
 
 // padding
 
-int cryptoPaddingAdd(const byte* const original, const int size, byte* const padded); // size of padded is no more than size + padding_block_size and not less than size, returns the actual result size
+int cryptoPaddingAdd(byte* const padded, const int size); // size of padded is no more than size + padding_block_size and not less than size, returns the actual result size
 int cryptoPaddingRemovedSize(const byte* const padded, const int size); // size = sizeof(padded), returns the actual original size or -1 on failure
 
 // generic hash
