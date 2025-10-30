@@ -64,7 +64,8 @@ add_compile_options(-Wno-sign-conversion)
 add_compile_options(-fblocks)
 add_compile_options(-fms-extensions -Wno-microsoft-anon-tag)
 
-add_compile_definitions("-D_GNU_SOURCE -D_THREAD_SAFE -D_FORTIFY_SOURCE=3 -U_FORTIFY_SOURCE")
+add_compile_options(-U_FORTIFY_SOURCE)
+add_compile_definitions("-D_GNU_SOURCE -D_THREAD_SAFE -D_FORTIFY_SOURCE=3")
 
 file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h src/*/*.c src/*/*.h)
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
@@ -89,9 +90,9 @@ target_link_libraries(${PROJECT_NAME}
     # sqlcipher
     # dbus
     # xml
-    # qrcode, barcode
+    # qrcode, barcode, aztec-code
     # svg
-    # googleTest
+    # googleTest (gtest)
     # png
     # jpeg-turbo
     # thorvg

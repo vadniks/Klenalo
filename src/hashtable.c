@@ -132,11 +132,12 @@ void* nullable hashtableGet(Hashtable* const hashtable, const int hash) {
     return nullptr;
 }
 
-void hashtableRemove(Hashtable* const hashtable, const int hash) {
+void* nullable hashtableRemove(Hashtable* const hashtable, const int hash, const bool deallocate) {
     xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(hashtable->capacity && hashtable->count && hashtable->nodes && !hashtable->iterators);
 
     Node** const anchor = (void*) hashtable->nodes + makeIndex(hashtable->capacity, hash);
+    void* value = nullptr;
 
     for (Node* node = *anchor, * previous = nullptr; node; previous = node, node = node->next) {
         if (node->hash != hash) continue;
@@ -144,7 +145,8 @@ void hashtableRemove(Hashtable* const hashtable, const int hash) {
         if (previous) previous->next = node->next;
         else *anchor = node->next;
 
-        deallocateValue(hashtable, node->value);
+        if (deallocate) deallocateValue(hashtable, node->value);
+        else value = node->value;
 
         xfree(node);
         hashtable->count--;
@@ -152,6 +154,8 @@ void hashtableRemove(Hashtable* const hashtable, const int hash) {
     }
 
     xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+
+    return value;
 }
 
 int hashtableCapacity(Hashtable* const hashtable) {
@@ -203,7 +207,7 @@ void* nullable hashtableIterate(HashtableIterator* const iterator) {
     return nullptr;
 }
 
-void hashtableIteratorDestroy(HashtableIterator* const iterator) {
+void hashtableIterateEnd(HashtableIterator* const iterator) {
     assert(iterator->hashtable->iterators);
     iterator->hashtable->iterators--;
 

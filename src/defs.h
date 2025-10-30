@@ -126,3 +126,6 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
 // TODO: mock and unit test functions that uses 3rd party libraries by providing mock implementations of the libraries' functions simply defining those functions as they are weak symbols
 
 void patchFunction(void* const original, void* const replacement); // overrides first 12 bytes of the original function with a trampoline to the replacement function
+
+// TODO: add logger with various logging modes; add dynamic memory allocation tracker; render lvgl via opengl optimized textures via embedded support via lvgl's generic opengl driver
+// TODO: make stack and heap use (double) linked list instead of growable array
