@@ -25,7 +25,7 @@ void* nullable hashtableRemove(Hashtable* const hashtable, const int hash, const
 int hashtableCapacity(Hashtable* const hashtable); // amount of currently allocated cells for storing collision buckets
 int hashtableCount(Hashtable* const hashtable); // amount of elements being stored
 void hashtableIterateBegin(Hashtable* const hashtable, HashtableIterator* const iterator); // don't use put or remove while iterator is active, fails if there's another active iterator, fails if there's no items
-#define hashtableIterateBegin(x, y) hashtableIterateBegin(x, (y = __builtin_alloca(HASHTABLE_ITERATOR_SIZE)))
+#define hashtableIterateBegin(x, y) hashtableIterateBegin(x, (y = xalloca2(HASHTABLE_ITERATOR_SIZE)))
 void* nullable hashtableIterate(HashtableIterator* const iterator); // returns null when there aren't any more items available
 void hashtableIterateEnd(HashtableIterator* const iterator); // must be called while its hashtable is still active
 void hashtableDestroy(Hashtable* const hashtable);

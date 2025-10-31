@@ -12,7 +12,7 @@ endif()
 add_compile_options(-Wall)
 add_compile_options(-Wextra)
 add_compile_options(-Wpedantic)
-add_compile_options(-Wformat -Wformat=2 -Wconversion -Wimplicit-fallthrough -Werror=format-security )
+add_compile_options(-Wformat -Wformat=2 -Wconversion -Wimplicit-fallthrough -Werror=format-security)
 add_compile_options(-O3)
 add_compile_options(-ffast-math -fsemantic-interposition)
 add_compile_options(-Werror=return-type)
@@ -35,10 +35,11 @@ add_compile_options(-fsanitize=undefined)
 add_compile_options(-fsanitize-address-use-after-scope)
 add_compile_options(-fsanitize-trap=all)
 add_compile_options(-fcf-protection=full)
-add_compile_options(-fsanitize=bounds -fsanitize=null -fsanitize=object-size -fsanitize=nonnull-attribute -fsanitize=returns-nonnull-attribute -fsanitize=signed-integer-overflow)
+add_compile_options(-fsanitize=bounds -fsanitize=null -fsanitize=object-size -fsanitize=nonnull-attribute -fsanitize=returns-nonnull-attribute -fsanitize=signed-integer-overflow -fsanitize=float-cast-overflow -fsanitize=pointer-overflow)
 #add_compile_options(-fhardened)
 add_compile_options(-fPIE)
-add_compile_options(-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-aliasing -ftrivial-auto-var-init=zero -Werror=implicit -Werror=incompatible-pointer-types -Werror=int-conversion)
+add_compile_options(-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-aliasing -ftrivial-auto-var-init=zero -Werror=implicit -Werror=incompatible-pointer-types -Werror=int-conversion -fstrict-flex-arrays=3)
+add_compile_options(-ftrapv)
 add_link_options(-pie -Wl,-z,relro -Wl,-z,now -Wl,-z,nodlopen -Wl,-z,noexecstack -Wl,--as-needed -Wl,--no-copy-dt-needed-entries) #add_link_options(-pie -z relro)
 # linker (man ld) -rpath=dir # gdb info symbol <addr>
 
@@ -63,9 +64,9 @@ add_compile_options(-Wno-unknown-pragmas)
 add_compile_options(-Wno-sign-conversion)
 add_compile_options(-fblocks)
 add_compile_options(-fms-extensions -Wno-microsoft-anon-tag)
+add_compile_options(-fcommon)
 
-add_compile_options(-U_FORTIFY_SOURCE)
-add_compile_definitions("-D_GNU_SOURCE -D_THREAD_SAFE -D_FORTIFY_SOURCE=3")
+add_compile_definitions("-D_GNU_SOURCE -D_THREAD_SAFE -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3")
 
 file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h src/*/*.c src/*/*.h)
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
@@ -74,6 +75,12 @@ add_compile_definitions(-DLV_CONF_PATH="../lv_conf.h")
 include_directories(lib/lvgl/include)
 include_directories(lib/sdl3net/include)
 include_directories(/usr/include/freetype2)
+
+add_compile_options(-flto)
+add_link_options(-flto)
+add_link_options(-fuse-ld=lld)
+
+add_link_options(-static-libasan)
 
 target_link_libraries(${PROJECT_NAME}
     asan

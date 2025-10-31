@@ -20,6 +20,7 @@ typedef unsigned char byte;
 #define max(x, y) ((x) > (y) ? (x) : (y))
 #define boolToStr(x) ((x) ? "true" : "false")
 #define xalloca(x) (void*) (byte[x]) {0}
+#define xalloca2(x) __builtin_alloca(x)
 #define unusedVariableBuffer(x) (x[1]) {0}
 #define USED(x) ((void) (x))
 #define STUB USED(0)
@@ -88,6 +89,13 @@ void* nullable xcalloc(const unsigned long elements, const unsigned long size);
 void* nullable xrealloc(void* nullable const pointer, const unsigned long size);
 void xfree(void* nullable const memory);
 
+typedef struct {
+    void* nullable (* const malloc)(const unsigned long size);
+    void* nullable (* const calloc)(const unsigned long elements, const unsigned long size);
+    void* nullable (* const realloc)(void* nullable const pointer, const unsigned long size);
+    void (* const free)(void* nullable const memory);
+} Allocator;
+
 inline void* xmemset(void* const destination, const int value, const unsigned long length) {
     void* memset(void* const, const int, const unsigned long);
     return memset(destination, value, length);
@@ -129,3 +137,7 @@ void patchFunction(void* const original, void* const replacement); // overrides 
 
 // TODO: add logger with various logging modes; add dynamic memory allocation tracker; render lvgl via opengl optimized textures via embedded support via lvgl's generic opengl driver
 // TODO: make stack and heap use (double) linked list instead of growable array
+
+// TODO: separate data structures into a standalone library and add red-black/(avl<--) tree (self-balancing binary search tree)
+// TODO: separate crypto routines into a standalone library
+// TODO: separate networking module into a standalone library
