@@ -37,10 +37,10 @@ typedef unsigned char byte;
 #define cleanup(x) [[gnu::cleanup(x)]]
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
-#define external [[gnu::visibility("default")]]
+#define external [[gnu::visibility("default")]] // TODO: rename to export
 
 #if defined(__CLION_IDE__)
-#define used [[gnu::used]] __attribute__((unused))
+#define used __attribute__((unused))
 #else
 #define used [[gnu::used]]
 #endif
@@ -68,7 +68,7 @@ typedef struct packed {byte _[];} VariableSizedStruct;
 
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
-external void assert(const bool condition);
+void assert(const bool condition);
 
 // TODO: add a 'generic' copy/duplicate function
 
@@ -135,9 +135,19 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
 
 void patchFunction(void* const original, void* const replacement); // overrides first 12 bytes of the original function with a trampoline to the replacement function
 
-// TODO: add logger with various logging modes; add dynamic memory allocation tracker; render lvgl via opengl optimized textures via embedded support via lvgl's generic opengl driver
-// TODO: make stack and heap use (double) linked list instead of growable array
+// TODO: add logger with various logging modes; add dynamic memory allocation tracker - store allocated memory addresses and corresponding addresses of *alloc callers; render lvgl via opengl optimized textures via embedded support via lvgl's generic opengl driver
+// TODO: make stack and queue use (double) linked list instead of growable array, and make a 'fast' list - also utilizing (double) linked list - create a deque
 
 // TODO: separate data structures into a standalone library and add red-black/(avl<--) tree (self-balancing binary search tree)
 // TODO: separate crypto routines into a standalone library
 // TODO: separate networking module into a standalone library
+
+// TODO: add arena allocator
+// TODO: replace existing with recursive rw mutex
+
+// TODO: read /proc/mappings for tracking allocations; check whether sdl truly replaces its own *alloc funcs with supplied once - leak sanitizer reports there are leaks caused by sdl and our mechanism reports the opposite
+
+// TODO: select 'n poll - linux io multiplexing
+
+// TODO: create a shared/standard comparator object and an enum for the results and use this one common object in all collections
+// TODO: create a shared/standard deallocator object for the use with collections

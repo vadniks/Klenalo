@@ -14,7 +14,7 @@ struct _Hashtable {
     Node* nullable* nodes;
     int capacity, count;
     const HashtableDeallocator nullable deallocator;
-    RWMutex* const nullable rwMutex;
+    RWMutex* nullable const rwMutex;
     int iterators;
 };
 

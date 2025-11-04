@@ -7,10 +7,7 @@
 
 typedef void (* HashtableDeallocator)(void* const);
 
-struct _Hashtable;
 typedef struct _Hashtable Hashtable;
-
-struct _HashtableIterator;
 typedef struct _HashtableIterator HashtableIterator;
 
 extern const int HASHTABLE_ITERATOR_SIZE;

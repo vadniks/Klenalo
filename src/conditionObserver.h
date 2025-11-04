@@ -13,7 +13,6 @@ typedef enum : byte {
     CONDITION_OBSERVER_VARIABLE_TYPE_POINTER = CONDITION_OBSERVER_VARIABLE_TYPE_LONG
 } ConditionObserverVariableType;
 
-struct _ConditionObserver;
 typedef struct _ConditionObserver ConditionObserver;
 
 ConditionObserver* conditionObserverCreate(void* const variablePointer, const ConditionObserverVariableType variableType);

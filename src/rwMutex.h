@@ -3,7 +3,6 @@
 
 #include "defs.h"
 
-struct _RWMutex;
 typedef struct _RWMutex RWMutex;
 
 typedef enum {

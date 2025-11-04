@@ -53,7 +53,7 @@ void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command) {
 }
 
 void rwMutexDestroy(RWMutex* const rwMutex) {
-    assert(!rwMutexLocked(rwMutex));
+    assert(!rwMutexLocked(rwMutex)); // TODO: replace with waiting until every lock-holder has unlocked the mutex
     SDL_DestroyRWLock(rwMutex->lock);
     xfree(rwMutex);
 }
