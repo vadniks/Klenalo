@@ -6,6 +6,7 @@
 //#include "lifecycle.h"
 //#include "consts.h"
 //#include "hashtable.h"
+//#include "crypto.h"
 //#include "net.h"
 //
 //enum _NetMessageFlag : byte {
@@ -18,7 +19,7 @@
 //        struct {
 //            const char greeting[12];
 //            const byte version;
-//            const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE];
+//            const byte masterSessionSealPublicKey[CRYPTO_GENERIC_KEY_SIZE];
 //        };
 //    };
 //} HostDiscoveryBroadcastPayload;
@@ -26,14 +27,14 @@
 //typedef struct packed {
 //    union {
 //        const NetMessagePayload;
-//        const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE];
+//        const byte masterSessionSealPublicKey[CRYPTO_GENERIC_KEY_SIZE];
 //    };
 //} ConnectionHelloPayload;
 //
 //typedef struct {
 //    const int address;
-//    const byte masterSessionSealPublicKey[CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE];
-//    SDLNet_StreamSocket* const socket;
+//    const byte masterSessionSealPublicKey[CRYPTO_GENERIC_KEY_SIZE];
+//    NET_StreamSocket* const socket;
 //} Connection;
 //
 //// everything time-related is in milliseconds
@@ -70,7 +71,8 @@
 //    return gInitialized;
 //}
 //
-//static struct ExtractAddressResult {const int address; const bool ipv4;} extractAddress(SDLNet_Address* const address) {
+//static struct ExtractAddressResult {used const int address; used const bool ipv4;}
+//extractAddress(NET_Address* const address) {
 //    const struct addrinfo* const info = *(struct addrinfo**) ((void*) address + 32);
 //    return (struct ExtractAddressResult) {
 //        (int) swapBytes(*(int*) (info->ai_addr->sa_data + 2)),
@@ -83,7 +85,7 @@
 //    listClear(gSubnetsHostsAddressesList);
 //
 //    int numberOfAddresses = 0;
-//    SDLNet_Address** const addresses = SDLNet_GetLocalAddresses(&numberOfAddresses);
+//    NET_Address** const addresses = NET_GetLocalAddresses(&numberOfAddresses);
 //    assert(numberOfAddresses && addresses);
 //
 //    for (int i = 0; i < numberOfAddresses; i++) {
@@ -92,7 +94,7 @@
 //        listAddBack(gSubnetsHostsAddressesList, (void*) (long) result.address);
 //    }
 //
-//    SDLNet_FreeLocalAddresses(addresses);
+//    NET_FreeLocalAddresses(addresses);
 //    SDL_UnlockMutex(gMutex);
 //}
 //
@@ -115,7 +117,7 @@
 //    assert(count > 0 && count < NET_ADDRESS_STRING_SIZE);
 //}
 //
-//static SDLNet_Address* resolveAddress(const int address) {
+//static NET_Address* resolveAddress(const int address) {
 //    char host[NET_ADDRESS_STRING_SIZE];
 //    netAddressToString(host, address);
 //
@@ -135,14 +137,19 @@
 //    assert(subnetHostAddress);
 //
 //    SDL_LockMutex(gSubnetProcessingMutex);
-//    assert(!gSelectedSubnetHostAddress && !gSubnetBroadcastSocket && !gSubnetConnectionsListenerServer && !gConnectionsHashtable);
+//    assert(
+//        !gSelectedSubnetHostAddress &&
+//        !gSubnetBroadcastSocket &&
+//        !gSubnetConnectionsListenerServer &&
+//        !gConnectionsHashtable
+//    );
 //
 //    gSelectedSubnetHostAddress = subnetHostAddress;
 //
-//    SDLNet_Address* const address = resolveAddress(gSelectedSubnetHostAddress);
-//    assert(gSubnetBroadcastSocket = SDLNet_CreateDatagramSocket(address, SUBNET_BROADCAST_SOCKET_PORT));
-//    assert(gSubnetConnectionsListenerServer = SDLNet_CreateServer(address, SUBNET_CONNECTIONS_LISTENER_SERVER_PORT));
-//    SDLNet_UnrefAddress(address);
+//    NET_Address* const address = resolveAddress(gSelectedSubnetHostAddress);
+//    assert(gSubnetBroadcastSocket = NET_CreateDatagramSocket(address, SUBNET_BROADCAST_SOCKET_PORT));
+//    assert(gSubnetConnectionsListenerServer = NET_CreateServer(address, SUBNET_CONNECTIONS_LISTENER_SERVER_PORT));
+//    NET_UnrefAddress(address);
 //
 //    assert(!setsockopt(
 //        *(int*) ((void*) gSubnetBroadcastSocket + 20),
@@ -158,6 +165,7 @@
 //}
 //
 //void netStopBroadcastingAndListeningSubnet(void) {
+//    netStartBroadcastingAndListeningSubnet(0);
 //    assert(lifecycleInitialized() && gInitialized);
 //
 //    SDL_LockMutex(gSubnetProcessingMutex);
@@ -195,13 +203,13 @@
 //    HostDiscoveryBroadcastPayload* const payload = (void*) message->payload;
 //    strncpy((char*) payload->greeting, GREETING, sizeof payload->greeting);
 //    unconst(payload->version) = 1;
-//    xmemcpy((byte*) payload->masterSessionSealPublicKey, cryptoMasterSessionSealPublicKey(), CRYPTO_ENCRYPT_PUBLIC_SECRET_KEY_SIZE);
+//    xmemcpy((byte*) payload->masterSessionSealPublicKey, nullptr/*TODO*/, CRYPTO_GENERIC_KEY_SIZE);
 //
-//    cryptoMasterSign(
-//        (byte*) message,
-//        messageSize - CRYPTO_SIGNATURE_SIZE,
-//        (byte*) message->signature
-//    );
+////    cryptoMasterSign(
+////        (byte*) message,
+////        messageSize - CRYPTO_SIGNATURE_SIZE,
+////        (byte*) message->signature
+////    );
 //
 //    SDLNet_Address* const address = resolveAddress(message->to);
 //

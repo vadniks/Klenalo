@@ -30,15 +30,21 @@ static void printStackTrace(void) {
     free(strings);
 }
 
-void assert(const bool condition) {
+export void assert(const bool condition) {
     if (condition) return;
-    fprintf(stderr, "Assert failed at %p\n", __builtin_return_address(0));
-    syslog(LOG_ERR, "Assert failed at %p\n", __builtin_return_address(0));
+
+    const char message[] = "Assert failed at %p\n";
+    fprintf(stderr, message, returnAddr);
+    syslog(LOG_ERR, message, returnAddr);
+
     printStackTrace();
     abort();
 }
 
 unsigned long xallocations(void) {
+    const char message[] = "Allocations: %lu\n";
+    fprintf(stderr, message, gAllocations);
+    syslog(LOG_ERR, message, gAllocations);
     return gAllocations;
 }
 

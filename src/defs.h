@@ -40,7 +40,7 @@ typedef unsigned char byte;
 #define cleanup(x) [[gnu::cleanup(x)]]
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
-#define external [[gnu::visibility("default")]] // TODO: rename to export
+#define export [[gnu::visibility("default")]]
 
 #if defined(__CLION_IDE__)
 #define used __attribute__((unused))
@@ -48,7 +48,8 @@ typedef unsigned char byte;
 #define used [[gnu::used]]
 #endif
 
-#define assignToStructWithConsts(x, ...) /* or just xmemcpy(x, &(typeof(*x)) {__VA_ARGS__}, sizeof *x); in case this is a mess */ { \
+// or just xmemcpy(x, &(typeof(*x)) {__VA_ARGS__}, sizeof *x); in case this is a mess
+#define assignToStructWithConsts(x, ...) { \
     struct packed _S {byte _[sizeof(typeof(*x))];}; \
     staticAssert(sizeof(struct _S) == sizeof(typeof(*x))); \
     *((struct _S*) x) = *(struct _S*) &(typeof(*x)) {__VA_ARGS__}; \
