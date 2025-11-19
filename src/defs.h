@@ -3,7 +3,7 @@
 
 #define DEBUG
 
-#if __STDC_VERSION__ < 202311L /*C23*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) || !defined(__linux__) || !defined(__x86_64__) || !__LITTLE_ENDIAN__ || (defined(__WORDSIZE) && __WORDSIZE != 64 || false)
+#if __STDC_VERSION__ < 202311L /*C23*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) /*glibc*/ || !defined(__linux__) || !defined(__x86_64__) || !__LITTLE_ENDIAN__ || (defined(__WORDSIZE) && __WORDSIZE != 64 || false)
 #   error
 #endif
 
@@ -15,6 +15,8 @@ typedef unsigned char byte;
 #else
 #define nullable
 #endif
+
+// if argument of particular function is like ..., bool cond1OrCond2, ... then the logic would be to evaluate either the cond1 or cond2 in the fallowing fashion: cond1OrCond2=true -> cond1, cond1OrCond2=false -> cond2 and vice versa; for the use with if-else
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
@@ -34,6 +36,7 @@ typedef unsigned char byte;
 #define unconst(x) *((typeof_unqual(x)*) &(x))
 #define overloadable [[clang::overloadable]]
 #define offsetof(x, y) __builtin_offsetof(x, y)
+#define returnAddr __builtin_return_address(0)
 #define cleanup(x) [[gnu::cleanup(x)]]
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
@@ -73,14 +76,14 @@ void assert(const bool condition);
 // TODO: add a 'generic' copy/duplicate function
 
 #ifdef __clang__
-overloadable inline unsigned short swapBytes(short value) { return __builtin_bswap16(value); }
-overloadable inline unsigned int swapBytes(int value) { return __builtin_bswap32(value); }
-overloadable inline unsigned long swapBytes(long value) { return __builtin_bswap64(value); }
+overloadable inline unsigned short swapBytes(const short value) { return __builtin_bswap16(value); }
+overloadable inline unsigned int swapBytes(const int value) { return __builtin_bswap32(value); }
+overloadable inline unsigned long swapBytes(const long value) { return __builtin_bswap64(value); }
 #else
 #define swapBytes(x) _Generic((x), short: swapShort, int: swapInt, long: swapLong)(x)
-inline unsigned short swapShort(short value) { return __builtin_bswap16(value); }
-inline unsigned int swapInt(int value) { return __builtin_bswap32(value); }
-inline unsigned long swapLong(long value) { return __builtin_bswap64(value); }
+inline unsigned short swapShort(const short value) { return __builtin_bswap16(value); }
+inline unsigned int swapInt(const int value) { return __builtin_bswap32(value); }
+inline unsigned long swapLong(const long value) { return __builtin_bswap64(value); }
 #endif
 
 unsigned long xallocations(void);
@@ -126,8 +129,9 @@ inline unsigned long xstrnlen(const char* const string, const unsigned long maxS
     return strnlen(string, maxSize);
 }
 
-#define debugArgs(x, ...) {int printf(const char* const, ...); printf(x "\n", __VA_ARGS__);}
-#define debug(x) debugArgs("%s", x)
+int printf(const char* const, ...);
+#define putsf(x, ...) printf(x "\n", __VA_ARGS__);
+
 typedef enum {PRINT_MEMORY_MODE_DEC, PRINT_MEMORY_MODE_HEX, PRINT_MEMORY_MODE_HEX_STR, PRINT_MEMORY_MODE_STR, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK} PrintMemoryMode;
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode);
 
@@ -142,7 +146,7 @@ void patchFunction(void* const original, void* const replacement); // overrides 
 // TODO: separate crypto routines into a standalone library
 // TODO: separate networking module into a standalone library
 
-// TODO: add arena allocator
+// TODO: add arena allocator and fixed-size object allocator
 // TODO: replace existing with recursive rw mutex
 
 // TODO: read /proc/mappings for tracking allocations; check whether sdl truly replaces its own *alloc funcs with supplied once - leak sanitizer reports there are leaks caused by sdl and our mechanism reports the opposite
