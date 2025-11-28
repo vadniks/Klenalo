@@ -6,15 +6,15 @@
 // Red-Black Tree (self-balancing binary search tree), optionally thread-safe, only works with non-null and unique values
 // TODO: embed in the Hashtable, replacing the linked list
 
-typedef int (* TreeMapComparator)(const void* const a, const void* const b); // a=first < b=second : negative, a = b : zero, a > b : positive
-typedef void (* TreeMapVisitor)(const void* const);
+typedef void (* TreeMapVisitor)(const int key, const void* const value);
 typedef void (* TreeMapDeallocator)(void* const);
 
-typedef struct _TreeMapNode TreeMapNode;
+typedef struct _TreeMap TreeMap;
 
-TreeMapNode* treeMapInsert(TreeMapNode* nullable head, void* const value, const TreeMapComparator nullable comparator, const TreeMapDeallocator nullable deallocator);
-void* nullable treeMapSearchKey(TreeMapNode* const head, const void* const key);
-void* nullable treeMapSearchMinOrMax(TreeMapNode* const head, const bool minOrMax);
-void treeMapDelete(TreeMapNode* const head, const void* const value);
-void treeMapTraverse(const TreeMapNode* const head, const TreeMapVisitor visitor);
-void treeMapDestroy(TreeMapNode* const head);
+TreeMap* treeMapCreate(const TreeMapDeallocator nullable deallocator);
+void treeMapInsert(TreeMap* const map, const int key, void* const value);
+void* nullable treeMapSearchKey(TreeMap* const map, const int key);
+void* nullable treeMapSearchMinOrMax(TreeMap* const map, const bool minOrMax);
+void treeMapDelete(TreeMap* const map, const int key);
+void treeMapTraverse(TreeMap* const map, const TreeMapVisitor visitor);
+void treeMapDestroy(TreeMap* const map);
