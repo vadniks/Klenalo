@@ -111,7 +111,7 @@ static void rotateRight(TreeMap* const map, Node* nullable const y) {
     y->parent = x;
 }
 
-static void insertFixup(TreeMap* const map, Node* z) {
+static void insertFixup(TreeMap* const map, Node* nullable z) {
     while (colorOf(parentOf(z)) == COLOR_RED) {
         if (parentOf(z) == leftOf(parentOf(parentOf(z)))) {
             Node* const y = rightOf(parentOf(parentOf(z)));
@@ -157,7 +157,7 @@ void treeMapInsert(TreeMap* const map, const int key, void* const value) {
         y = x;
         if (key < x->key) x = x->left;
         else if (key > x->key) x = x->right;
-        else assert(false);
+        else return;
     }
 
     if (!y) map->root = z;
@@ -198,24 +198,107 @@ void treeMapInsert(TreeMap* const map, const int key, void* const value) {
 //    map->count++;
 //}
 
-void* nullable treeMapSearchKey(TreeMap* const map, const int key) {
+static Node* nullable searchKey(TreeMap* const map, const int key) {
     Node* node = map->root;
     while (node) {
         if (key < node->key) node = node->left;
         else if (key > node->key) node = node->right;
-        else return node->value;
+        else return node;
     }
     return nullptr;
 }
 
-void* nullable treeMapSearchMinOrMax(TreeMap* const map, const bool minOrMax) {
-    Node* node = map->root;
-    while (node) minOrMax ? (node = node->left) : (node = node->right);
+void* nullable treeMapSearchKey(TreeMap* const map, const int key) {
+    Node* const node = searchKey(map, key);
+    return node ? node->value : nullptr;
+}
+
+static void* nullable searchMinOrMax(Node* node, const bool minOrMax) {
+    while (minOrMax ? node->left : node->right)
+        minOrMax ? (node = node->left) : (node = node->right);
     return node;
 }
 
-void treeMapDelete(TreeMap* const map, const int key) {
+void* nullable treeMapSearchMinOrMax(TreeMap* const map, const bool minOrMax) {
+    return searchMinOrMax(map->root, minOrMax);
+}
 
+static void transplant(TreeMap* const map, Node* nullable const u, Node* nullable const v) {
+    if (!parentOf(u)) map->root = v;
+    else if (u == leftOf(parentOf(u))) setLeftOf(parentOf(u), v);
+    else setRightOf(parentOf(u), v);
+    setParentOf(v, parentOf(u));
+}
+
+static void deleteFixup(TreeMap* const map, Node* nullable x) {
+    while (x != map->root && colorOf(x) == COLOR_BLACK) {
+        if (x == leftOf(x->parent)) {
+            Node* w = rightOf(parentOf(x));
+            if (colorOf(w) == COLOR_RED) {
+                setColorOf(w, COLOR_BLACK);
+                setColorOf(parentOf(x), COLOR_RED);
+                rotateLeft(map, parentOf(x));
+                w = rightOf(parentOf(x));
+            }
+            if (colorOf(leftOf(w)) == COLOR_BLACK && colorOf(rightOf(w)) == COLOR_BLACK) {
+                setColorOf(w, COLOR_RED);
+                x = parentOf(x);
+            } else {
+                if (colorOf(rightOf(w)) == COLOR_BLACK) {
+                    setColorOf(leftOf(w), COLOR_BLACK);
+                    setColorOf(w, COLOR_RED);
+                    rotateRight(map, w);
+                    w = rightOf(parentOf(x));
+                }
+                setColorOf(w, colorOf(parentOf(x)));
+                setColorOf(parentOf(x), COLOR_BLACK);
+                setColorOf(rightOf(w), COLOR_BLACK);
+                rotateLeft(map, parentOf(x));
+                x = map->root;
+            }
+        } else {
+            // TODO
+        }
+    }
+}
+
+void treeMapDelete(TreeMap* const map, const int key) {
+    Node* const z = searchKey(map, key);
+    if (!z) return;
+
+    Node* y = z, * x = nullptr;
+    Color color = y->color;
+
+    if (!z->left) {
+        x = z->right;
+        transplant(map, z, z->right);
+    } else if (!z->right) {
+        x = z->left;
+        transplant(map, z, z->left);
+    } else {
+        y = searchMinOrMax(z->right, true);
+        color = y->color;
+        x = y->right;
+
+        if (y->parent == z)
+            setParentOf(x, y);
+        else {
+            transplant(map, y, y->right);
+            y->right = z->right;
+            setParentOf(y->right, y);
+        }
+
+        transplant(map, z, y);
+        y->left = z->left;
+        setParentOf(y->left, y);
+        y->color = z->color;
+    }
+
+    if (color == COLOR_BLACK)
+        deleteFixup(map, x);
+
+    deallocateValue(map, z->value);
+    xfree(z);
 }
 
 static void destroyNodes(TreeMap* const map, Node* const root) {
