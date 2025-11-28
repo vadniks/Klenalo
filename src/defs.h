@@ -88,7 +88,8 @@ inline unsigned long swapLong(const long value) { return __builtin_bswap64(value
 #endif
 
 unsigned long xallocations(void);
-void* nullable xmalloc(const unsigned long size);
+// TODO: xmalloc(size, ...) -> <...> contains flag to bypass tracking to avoid infinite recursion
+void* nullable xmalloc(const unsigned long size); // TODO: embed assert(<returned>) inside the mem funcs, making them non-nullable
 void* nullable xcalloc(const unsigned long elements, const unsigned long size);
 void* nullable xrealloc(void* nullable const pointer, const unsigned long size);
 void xfree(void* nullable const memory);
@@ -99,6 +100,9 @@ typedef struct {
     void* nullable (* const realloc)(void* nullable const pointer, const unsigned long size);
     void (* const free)(void* nullable const memory);
 } Allocator;
+
+/* TODO: unify for all */ typedef int (* Comparator)(const void* const, const void* const); // a=first < b=second : negative, a = b : zero, a > b : positive; add enum of LESS, GREATER, EQUAL
+// TODO: unify Deallocator(void* const)
 
 inline void* xmemset(void* const destination, const int value, const unsigned long length) {
     void* memset(void* const, const int, const unsigned long);
@@ -131,7 +135,7 @@ inline unsigned long xstrnlen(const char* const string, const unsigned long maxS
 }
 
 int printf(const char* const, ...);
-#define putsf(x, ...) printf(x "\n", __VA_ARGS__);
+#define putsf(x, ...) printf(x "\n", __VA_ARGS__)
 
 typedef enum {PRINT_MEMORY_MODE_DEC, PRINT_MEMORY_MODE_HEX, PRINT_MEMORY_MODE_HEX_STR, PRINT_MEMORY_MODE_STR, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK} PrintMemoryMode;
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode);
@@ -156,3 +160,6 @@ void patchFunction(void* const original, void* const replacement); // overrides 
 
 // TODO: create a shared/standard comparator object and an enum for the results and use this one common object in all collections
 // TODO: create a shared/standard deallocator object for the use with collections
+
+// TODO: linux kernel's epoll & select system - use for io multiplexing
+// TODO: create a coroutines implementation

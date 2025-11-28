@@ -1,5 +1,6 @@
 
 // TODO: rollback to previous implementation for a recursive rw lock
+// TODO: check Java's ReentrantLock
 
 #include <SDL3/SDL_mutex.h>
 #include "rwMutex.h"

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 4.0)
 set(CMAKE_C_COMPILER "/usr/bin/clang")
 project(Klenalo LANGUAGES C)
 
-set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD 23) # 2Y | 26 - not yet supported
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
@@ -11,12 +11,12 @@ if(NOT CMAKE_C_COMPILER_ID STREQUAL "Clang")
     message(SEND_ERROR "Extensions are used")
 endif()
 
-add_compile_options(-std=gnu23)
+add_compile_options(-std=gnu2y)
 
 add_compile_options(-Wall)
 add_compile_options(-Wextra)
 add_compile_options(-Wpedantic)
-add_compile_options(-Wformat -Wformat=2 -Wconversion -Wimplicit-fallthrough -Werror=format-security -Wstrict-prototypes -Wdeprecated-non-prototype -Wold-style-definition)
+add_compile_options(-Wformat -Wformat=2 -Wconversion -Wimplicit-fallthrough -Werror=format-security -Wstrict-prototypes -Wdeprecated-non-prototype -Wold-style-definition -Wthread-safety)
 add_compile_options(-O3)
 add_compile_options(-ffast-math -fsemantic-interposition)
 add_compile_options(-Werror=return-type)
@@ -42,7 +42,7 @@ add_compile_options(-fcf-protection=full)
 add_compile_options(-fsanitize=bounds -fsanitize=null -fsanitize=object-size -fsanitize=nonnull-attribute -fsanitize=returns-nonnull-attribute -fsanitize=signed-integer-overflow -fsanitize=float-cast-overflow -fsanitize=pointer-overflow)
 #add_compile_options(-fhardened)
 add_compile_options(-fPIE)
-add_compile_options(-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-aliasing -ftrivial-auto-var-init=zero -Werror=implicit -Werror=incompatible-pointer-types -Werror=int-conversion -fstrict-flex-arrays=3)
+add_compile_options(-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-aliasing -ftrivial-auto-var-init=zero -Werror=implicit -Werror=incompatible-pointer-types -Werror=int-conversion -fstrict-flex-arrays=3 -fwrapv -fno-delete-null-pointer-checks)
 add_compile_options(-ftrapv)
 add_link_options(-pie -Wl,-z,relro -Wl,-z,now -Wl,-z,nodlopen -Wl,-z,noexecstack -Wl,--as-needed -Wl,--no-copy-dt-needed-entries) #add_link_options(-pie -z relro)
 # linker (man ld) -rpath=dir # gdb info symbol <addr>
