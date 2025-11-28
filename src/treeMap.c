@@ -257,9 +257,32 @@ static void deleteFixup(TreeMap* const map, Node* nullable x) {
                 x = map->root;
             }
         } else {
-            // TODO
+            Node* w = leftOf(parentOf(x));
+            if (colorOf(w) == COLOR_RED) {
+                setColorOf(w, COLOR_BLACK);
+                setColorOf(parentOf(x), COLOR_RED);
+                rotateRight(map, parentOf(x));
+                w = leftOf(parentOf(x));
+            }
+            if (colorOf(rightOf(w)) == COLOR_BLACK && colorOf(leftOf(w)) == COLOR_BLACK) {
+                setColorOf(w, COLOR_RED);
+                x = parentOf(x);
+            } else {
+                if (colorOf(leftOf(w)) == COLOR_BLACK) {
+                    setColorOf(rightOf(w), COLOR_BLACK);
+                    setColorOf(w, COLOR_RED);
+                    rotateLeft(map, w);
+                    w = leftOf(parentOf(x));
+                }
+                setColorOf(w, colorOf(parentOf(x)));
+                setColorOf(parentOf(x), COLOR_BLACK);
+                setColorOf(leftOf(w), COLOR_BLACK);
+                rotateRight(map, parentOf(x));
+                x = map->root;
+            }
         }
     }
+    setColorOf(x, COLOR_BLACK);
 }
 
 void treeMapDelete(TreeMap* const map, const int key) {
