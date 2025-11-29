@@ -54,7 +54,10 @@ void rwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command) {
 }
 
 void rwMutexDestroy(RWMutex* const rwMutex) {
+//    while (rwMutexLocked(rwMutex)) xyield();
     assert(!rwMutexLocked(rwMutex)); // TODO: replace with waiting until every lock-holder has unlocked the mutex
     SDL_DestroyRWLock(rwMutex->lock);
+    // rwMutex->lock = nullptr;
+    // TODO: add 'isValid/isntDestroyed' flag to all objects to assert they're still alive inside their methods (in case of accidental access after destroying)
     xfree(rwMutex);
 }
