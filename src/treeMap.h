@@ -16,7 +16,7 @@ int treeMapCount(TreeMap* const map);
 int treeMapIteratorSize(TreeMap* const map);
 void treeMapInsert(TreeMap* const map, const int key, void* const value);
 void* nullable treeMapSearchKey(TreeMap* const map, const int key);
-void* nullable treeMapSearchMinOrMax(TreeMap* const map, const bool minOrMax);
+void* nullable treeMapSearchMinOrMax(TreeMap* const map, const bool minOrMax, int* nullable const key);
 void treeMapDelete(TreeMap* const map, const int key);
 void treeMapIterateBegin(TreeMap* const map, TreeMapIterator* const iterator);
 #define treeMapIterateBegin(x, y) treeMapIterateBegin(x, (y = xalloca2(treeMapIteratorSize(x))))

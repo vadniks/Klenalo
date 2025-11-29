@@ -247,11 +247,18 @@ static Node* nullable searchMinOrMax(Node* nullable node, const bool minOrMax) {
     return node;
 }
 
-void* nullable treeMapSearchMinOrMax(TreeMap* const map, const bool minOrMax) { // return both key and value
+void* nullable treeMapSearchMinOrMax(TreeMap* const map, const bool minOrMax, int* nullable const key) {
     xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_LOCK);
     Node* const node = searchMinOrMax(map->root, minOrMax);
     xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_UNLOCK);
-    return node ? node->value : nullptr;
+
+    if (node) {
+        if (key) *key = node->key;
+        return node->value;
+    } else {
+        if (key) *key = 0;
+        return nullptr;
+    }
 }
 
 static void transplant(TreeMap* const map, Node* nullable const u, Node* nullable const v) {
