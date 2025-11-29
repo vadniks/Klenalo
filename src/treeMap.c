@@ -30,6 +30,8 @@ struct _TreeMapIterator {
     Node* nullable stack[];
 };
 
+static const int MAX_SIZE = ~0u / 2u; // 0x7fffffff
+
 TreeMap* treeMapCreate(const TreeMapDeallocator nullable deallocator) {
     TreeMap* const map = xmalloc(sizeof *map);
     assert(map);
@@ -175,6 +177,8 @@ static void insertFixup(TreeMap* const map, Node* nullable z) {
 }
 
 void treeMapInsert(TreeMap* const map, const int key, void* const value) {
+    assert(map->count < MAX_SIZE);
+
     Node* x = map->root, * y = nullptr, * new = nodeCreate(map, key, value);
 
     while (x) {
@@ -210,7 +214,8 @@ void* nullable treeMapSearchKey(TreeMap* const map, const int key) {
     return node ? node->value : nullptr;
 }
 
-static void* nullable searchMinOrMax(Node* node, const bool minOrMax) {
+static void* nullable searchMinOrMax(Node* nullable node, const bool minOrMax) {
+    if (!node) return nullptr;
     while (minOrMax ? node->left : node->right)
         minOrMax ? (node = node->left) : (node = node->right);
     return node;

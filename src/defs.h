@@ -1,16 +1,17 @@
 
 #pragma once
 
-#define DEBUG
+//#define DEBUG
 
-// 202400L = C2Y
-#if __STDC_VERSION__ < 202311L /*C23*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) /*glibc*/ || !defined(__linux__) || !defined(__x86_64__) || !__LITTLE_ENDIAN__ || (defined(__WORDSIZE) && __WORDSIZE != 64 || false)
+#if __STDC_VERSION__ < 202400L /*C2Y*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) /*glibc*/ || \
+    !defined(__linux__) /*api*/ || !defined(_GNU_SOURCE) /*api*/ || !defined(__x86_64__) || !__LITTLE_ENDIAN__ || \
+    (defined(__WORDSIZE) && __WORDSIZE != 64 || false)
 #   error
 #endif
 
 typedef unsigned char byte;
 
-// everything that isn't marked with nullable is considered to be not null
+// everything (function return types, function parameter type, struct field type) that isn't marked with nullable is considered to be non-null
 #ifdef __clang__
 #define nullable _Nullable
 #else
