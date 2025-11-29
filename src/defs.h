@@ -25,7 +25,7 @@ typedef unsigned char byte;
 #define boolToStr(x) ((x) ? "true" : "false")
 #define xalloca(x) (void*) (byte[x]) {0}
 #define xalloca2(x) __builtin_alloca(x)
-#define unusedVariableBuffer(x) (x[1]) {0}
+#define unusedVariableBuffer(x) (x[1]) {0} // or just &(x) {0}
 #define USED(x) ((void) (x))
 #define STUB USED(0)
 #define swapValues(x, y) {x ^= y; y ^= x; x ^= y;}
@@ -136,7 +136,8 @@ inline unsigned long xstrnlen(const char* const string, const unsigned long maxS
     return strnlen(string, maxSize);
 }
 
-int printf(const char* const, ...);
+int printf(const char* const, ...); // NOLINT(*-redundant-declaration)
+int puts(const char* const); // NOLINT(*-redundant-declaration)
 #define putsf(x, ...) printf(x "\n", __VA_ARGS__)
 
 typedef enum {PRINT_MEMORY_MODE_DEC, PRINT_MEMORY_MODE_HEX, PRINT_MEMORY_MODE_HEX_STR, PRINT_MEMORY_MODE_STR, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK} PrintMemoryMode;

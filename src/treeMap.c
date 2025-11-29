@@ -157,6 +157,7 @@ static void rotateRight(TreeMap* const map, Node* nullable const y) {
 }
 
 static void insertFixup(TreeMap* const map, Node* nullable z) {
+    if (!z) return;
     while (colorOf(parentOf(z)) == COLOR_RED) {
         if (parentOf(z) == leftOf(parentOf(parentOf(z)))) {
             Node* const y = rightOf(parentOf(parentOf(z)));
@@ -269,8 +270,9 @@ static void transplant(TreeMap* const map, Node* nullable const u, Node* nullabl
 }
 
 static void deleteFixup(TreeMap* const map, Node* nullable x) {
+    if (!x) return;
     while (x != map->root && colorOf(x) == COLOR_BLACK) {
-        if (x == leftOf(x->parent)) {
+        if (x == leftOf(parentOf(x))) {
             Node* w = rightOf(parentOf(x));
             if (colorOf(w) == COLOR_RED) {
                 setColorOf(w, COLOR_BLACK);
