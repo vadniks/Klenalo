@@ -22,6 +22,7 @@ struct _TreeMap {
     const TreeMapDeallocator nullable deallocator;
     Node* nullable root;
     int count;
+    bool iterating;
 };
 
 struct _TreeMapIterator {
@@ -38,6 +39,7 @@ TreeMap* treeMapCreate(const TreeMapDeallocator nullable deallocator) {
     unconst(map->deallocator) = deallocator;
     map->root = nullptr;
     map->count = 0;
+    map->iterating = false;
     return map;
 }
 
@@ -177,7 +179,7 @@ static void insertFixup(TreeMap* const map, Node* nullable z) {
 }
 
 void treeMapInsert(TreeMap* const map, const int key, void* const value) {
-    assert(map->count < MAX_SIZE);
+    assert(map->count < MAX_SIZE && !map->iterating);
 
     Node* x = map->root, * y = nullptr, * new = nodeCreate(map, key, value);
 
@@ -199,7 +201,7 @@ void treeMapInsert(TreeMap* const map, const int key, void* const value) {
     insertFixup(map, new);
 }
 
-static Node* nullable searchKey(TreeMap* const map, const int key) {
+static Node* nullable searchKey(const TreeMap* const map, const int key) {
     Node* node = map->root;
     while (node) {
         if (key < node->key) node = node->left;
@@ -214,7 +216,7 @@ void* nullable treeMapSearchKey(TreeMap* const map, const int key) {
     return node ? node->value : nullptr;
 }
 
-static void* nullable searchMinOrMax(Node* nullable node, const bool minOrMax) {
+static Node* nullable searchMinOrMax(Node* nullable node, const bool minOrMax) {
     if (!node) return nullptr;
     while (minOrMax ? node->left : node->right)
         minOrMax ? (node = node->left) : (node = node->right);
@@ -222,7 +224,8 @@ static void* nullable searchMinOrMax(Node* nullable node, const bool minOrMax) {
 }
 
 void* nullable treeMapSearchMinOrMax(TreeMap* const map, const bool minOrMax) {
-    return searchMinOrMax(map->root, minOrMax);
+    Node* const node = searchMinOrMax(map->root, minOrMax);
+    return node ? node->value : nullptr;
 }
 
 static void transplant(TreeMap* const map, Node* nullable const u, Node* nullable const v) {
@@ -288,6 +291,8 @@ static void deleteFixup(TreeMap* const map, Node* nullable x) {
 }
 
 void treeMapDelete(TreeMap* const map, const int key) {
+    assert(!map->iterating);
+
     Node* const found = searchKey(map, key);
     if (!found) return;
 
@@ -325,8 +330,6 @@ void treeMapDelete(TreeMap* const map, const int key) {
     nodeDestroy(map, found);
 }
 
-// TODO: assertions/invariants, thread-safety
-
 static void iteratePutLeftChildrenIntoStack(TreeMapIterator* const iterator, Node* nullable node) {
     while (node) {
         assert(iterator->currentStackTop + 1 <= iterator->map->count);
@@ -335,16 +338,24 @@ static void iteratePutLeftChildrenIntoStack(TreeMapIterator* const iterator, Nod
     }
 }
 
+static inline void clearIteratorStack(TreeMapIterator* const iterator) {
+    xmemset(iterator->stack, 0, sizeof(Node*) * iterator->map->count);
+}
+
 #undef treeMapIterateBegin
 void treeMapIterateBegin(TreeMap* const map, TreeMapIterator* const iterator) {
+    assert(!map->iterating);
+    map->iterating = true;
+
     unconst(iterator->map) = map;
     iterator->currentStackTop = -1;
-    xmemset(iterator->stack, 0, sizeof(Node*) * map->count);
+    clearIteratorStack(iterator);
 
     iteratePutLeftChildrenIntoStack(iterator, map->root);
 }
 
 void* nullable treeMapIterate(TreeMapIterator* const iterator) {
+    assert(iterator->map->iterating);
     if (iterator->currentStackTop < 0) return nullptr;
 
     Node* const node = iterator->stack[iterator->currentStackTop--];
@@ -355,7 +366,17 @@ void* nullable treeMapIterate(TreeMapIterator* const iterator) {
     return node;
 }
 
+void treeMapIterateEnd(TreeMapIterator* const iterator) {
+    assert(iterator->map->iterating);
+    iterator->map->iterating = false;
+
+    iterator->currentStackTop = -1;
+    clearIteratorStack(iterator);
+}
+
 void treeMapDestroy(TreeMap* const map) {
+    assert(!map->iterating);
+
     TreeMapIterator* const iterator = xalloca2(treeMapIteratorSize(map));
     treeMapIterateBegin(map, iterator);
 

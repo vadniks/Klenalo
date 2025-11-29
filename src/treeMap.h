@@ -21,4 +21,5 @@ void treeMapDelete(TreeMap* const map, const int key);
 void treeMapIterateBegin(TreeMap* const map, TreeMapIterator* const iterator);
 #define treeMapIterateBegin(x, y) treeMapIterateBegin(x, (y = xalloca2(treeMapIteratorSize(x))))
 void* nullable treeMapIterate(TreeMapIterator* const iterator);
+void treeMapIterateEnd(TreeMapIterator* const iterator);
 void treeMapDestroy(TreeMap* const map);
