@@ -1,6 +1,6 @@
 
 // TODO: rollback to previous implementation for a recursive rw lock
-// TODO: check Java's ReentrantLock
+// TODO: check Java's ReentrantRecursiveReadWriteLock
 
 #include <SDL3/SDL_mutex.h>
 #include "rwMutex.h"
@@ -59,5 +59,6 @@ void rwMutexDestroy(RWMutex* const rwMutex) {
     SDL_DestroyRWLock(rwMutex->lock);
     // rwMutex->lock = nullptr;
     // TODO: add 'isValid/isntDestroyed' flag to all objects to assert they're still alive inside their methods (in case of accidental access after destroying)
+    // maybe make a proxy object/methods to wrap an origin object and access its methods through mutex'ed 'n destroying-tracking mechanisms
     xfree(rwMutex);
 }

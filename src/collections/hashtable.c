@@ -13,7 +13,7 @@ typedef struct Node {
 struct _Hashtable {
     Node* nullable* nodes;
     int capacity, count;
-    const HashtableDeallocator nullable deallocator;
+    const Deallocator nullable deallocator;
     RWMutex* nullable const rwMutex;
     int iterators;
 };
@@ -29,13 +29,7 @@ static const int SINT32_MAX = ~0u / 2u; // 0x7fffffff
 static const int INITIAL_CAPACITY = 11;
 static const float LOAD_FACTOR = 0.75f;
 
-int hashtableHash(const byte* value, int size) {
-    int hash = 0;
-    for (; size--; hash = 31 * hash + *value++);
-    return hash;
-}
-
-Hashtable* hashtableCreate(const bool synchronized, const HashtableDeallocator nullable deallocator) {
+Hashtable* hashtableCreate(const bool synchronized, const Deallocator nullable deallocator) {
     Hashtable* const hashtable = xmalloc(sizeof *hashtable);
     assert(hashtable);
     assert(hashtable->nodes = xcalloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*)));

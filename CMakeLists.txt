@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 4.0)
 set(CMAKE_C_COMPILER "/usr/bin/clang")
 project(Klenalo LANGUAGES C VERSION 0.1)
 
-#add_subdirectory(collections)
-
 set(CMAKE_C_STANDARD 23) # 2Y | 26 - not yet supported
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
@@ -15,9 +13,7 @@ endif()
 
 add_compile_options(-std=gnu2y)
 
-add_compile_options(-Wall)
-add_compile_options(-Wextra)
-add_compile_options(-Wpedantic)
+add_compile_options(-Wall -Wextra -Wpedantic)
 add_compile_options(-Wformat -Wformat=2 -Wconversion -Wimplicit-fallthrough -Werror=format-security -Wstrict-prototypes -Wdeprecated-non-prototype -Wold-style-definition -Wthread-safety)
 add_compile_options(-O3)
 add_compile_options(-ffast-math -fsemantic-interposition)
@@ -94,7 +90,6 @@ add_link_options(-fuse-ld=lld)
 add_link_options(-static-libasan)
 
 target_link_libraries(${PROJECT_NAME}
-#    Collections
     asan
     c
     m

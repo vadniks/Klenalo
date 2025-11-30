@@ -20,7 +20,7 @@ typedef struct _Node {
 } Node;
 
 struct _TreeMap {
-    const TreeMapDeallocator nullable deallocator;
+    const Deallocator nullable deallocator;
     RWMutex* nullable const rwMutex;
     Node* nullable root;
     int count;
@@ -35,7 +35,7 @@ struct _TreeMapIterator {
 
 static const int MAX_SIZE = ~0u / 2u; // 0x7fffffff
 
-TreeMap* treeMapCreate(const bool synchronized, const TreeMapDeallocator nullable deallocator) {
+TreeMap* treeMapCreate(const bool synchronized, const Deallocator nullable deallocator) {
     TreeMap* const map = xmalloc(sizeof *map);
     assert(map);
     unconst(map->deallocator) = deallocator;

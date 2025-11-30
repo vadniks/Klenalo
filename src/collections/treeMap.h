@@ -6,12 +6,10 @@
 // Red-Black Tree (self-balancing binary search tree), optionally thread-safe, only works with non-null and unique values
 // TODO: embed in the Hashtable, replacing the linked list
 
-typedef void (* TreeMapDeallocator)(void* const);
-
 typedef struct _TreeMap TreeMap;
 typedef struct _TreeMapIterator TreeMapIterator;
 
-TreeMap* treeMapCreate(const bool synchronized, const TreeMapDeallocator nullable deallocator);
+TreeMap* treeMapCreate(const bool synchronized, const Deallocator nullable deallocator);
 int treeMapCount(TreeMap* const map);
 int treeMapIteratorSize(TreeMap* const map);
 void treeMapInsert(TreeMap* const map, const int key, void* const value);

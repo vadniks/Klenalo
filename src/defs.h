@@ -91,20 +91,31 @@ inline unsigned long swapLong(const long value) { return __builtin_bswap64(value
 
 unsigned long xallocations(void);
 // TODO: xmalloc(size, ...) -> <...> contains flag to bypass tracking to avoid infinite recursion
-void* nullable xmalloc(const unsigned long size); // TODO: embed assert(<returned>) inside the mem funcs, making them non-nullable
+void* nullable /*TODO <--*/ xmalloc(const unsigned long size); // TODO: embed assert(<returned>) inside the mem funcs, making them non-nullable
 void* nullable xcalloc(const unsigned long elements, const unsigned long size);
 void* nullable xrealloc(void* nullable const pointer, const unsigned long size);
 void xfree(void* nullable const memory);
 
-typedef struct {
-    void* nullable (* const malloc)(const unsigned long size);
-    void* nullable (* const calloc)(const unsigned long elements, const unsigned long size);
-    void* nullable (* const realloc)(void* nullable const pointer, const unsigned long size);
-    void (* const free)(void* nullable const memory);
+typedef const struct {
+    void* nullable (* malloc)(const unsigned long size);
+    void* nullable (* calloc)(const unsigned long elements, const unsigned long size);
+    void* nullable (* realloc)(void* nullable const pointer, const unsigned long size);
+    void (* free)(void* nullable const memory);
 } Allocator;
 
-/* TODO: unify for all */ typedef int (* Comparator)(const void* const, const void* const); // a=first < b=second : negative, a = b : zero, a > b : positive; add enum of LESS, GREATER, EQUAL
-// TODO: unify Deallocator(void* const)
+extern const Allocator ALLOCATOR_DEFAULT;
+
+typedef void (* Deallocator)(void* const);
+
+typedef void* (* ValueDuplicator)(const void* const);
+
+typedef enum : int /* not char for compatibility with stdlib's bsearch and qsort */ { // means: the first argument is [less, equal or greater] than the second one
+    COMPARED_LESS = -1,
+    COMPARED_EQUAL = 0,
+    COMPARED_GREATER = 1
+} Compared;
+
+typedef Compared (* Comparator)(const void* const, const void* const); // a=first < b=second : negative, a = b : zero, a > b : positive;
 
 inline void* xmemset(void* const destination, const int value, const unsigned long length) {
     void* memset(void* const, const int, const unsigned long);
@@ -147,6 +158,9 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
 
 void patchFunction(void* const original, void* const replacement); // overrides first 12 bytes of the original function with a trampoline to the replacement function
 
+int hashValue(const byte* value, int size); // non-cryptographic
+#define hashPrimitive(x) hashValue((const byte*) (typeof(x)) {x}, _Generic((x), byte: 1, short: 2, int: 4, long: 8))
+
 // TODO: add logger with various logging modes; add dynamic memory allocation tracker - store allocated memory addresses and corresponding addresses of *alloc callers; render lvgl via opengl optimized textures via embedded support via lvgl's generic opengl driver
 // TODO: make stack and queue use (double) linked list instead of growable array, and make a 'fast' list - also utilizing (double) linked list - create a deque
 
@@ -166,3 +180,5 @@ void patchFunction(void* const original, void* const replacement); // overrides 
 
 // TODO: linux kernel's epoll & select system - use for io multiplexing
 // TODO: create a coroutines implementation
+
+// TODO: interact with trusted platform module to store the keys

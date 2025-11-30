@@ -3,19 +3,14 @@
 
 #include "../defs.h"
 
-// optionally thread-safe, only works with non-null values
-
-typedef void (* HashtableDeallocator)(void* const);
+// Key-to-value mapping of items through hashing, optionally thread-safe, only works with non-null values
 
 typedef struct _Hashtable Hashtable;
 typedef struct _HashtableIterator HashtableIterator;
 
 extern const int HASHTABLE_ITERATOR_SIZE;
 
-int hashtableHash(const byte* value, int size);
-#define hashtableHashPrimitive(x) hashtableHash((const byte*) (typeof(x)[1]) {x}, _Generic((x), byte: 1, short: 2, int: 4, long: 8))
-
-Hashtable* hashtableCreate(const bool synchronized, const HashtableDeallocator nullable deallocator);
+Hashtable* hashtableCreate(const bool synchronized, const Deallocator nullable valueDeallocator);
 void hashtablePut(Hashtable* const hashtable, const int hash, void* const value); // hashes are the keys and they must be unique
 void* nullable hashtableGet(Hashtable* const hashtable, const int hash);
 void* nullable hashtableRemove(Hashtable* const hashtable, const int hash, const bool deallocate);

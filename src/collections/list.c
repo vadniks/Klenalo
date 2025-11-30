@@ -5,34 +5,20 @@
 struct _List {
     void** nullable values;
     int size;
-    RWMutex* nullable rwMutex;
-    const ListDeallocator nullable deallocator;
+    RWMutex* nullable const rwMutex;
+    const Deallocator nullable deallocator;
 };
 
 static const int MAX_SIZE = ~0u / 2u; // 0x7fffffff
 
-List* listCreate(const bool synchronized, const ListDeallocator nullable deallocator) {
+List* listCreate(const bool synchronized, const Deallocator nullable deallocator) {
     List* const list = xmalloc(sizeof *list);
     assert(list);
     list->values = nullptr;
     list->size = 0;
-    list->rwMutex = synchronized ? rwMutexCreate() : nullptr;
+    unconst(list->rwMutex) = synchronized ? rwMutexCreate() : nullptr;
     unconst(list->deallocator) = deallocator;
     return list;
-}
-
-bool listSynchronized(const List* const list) {
-    return (bool) list->rwMutex;
-}
-
-void listSetSynchronized(List* const list, const bool synchronized) {
-    assert(synchronized != !!list->rwMutex);
-    if (synchronized)
-        list->rwMutex = rwMutexCreate();
-    else {
-        rwMutexDestroy(list->rwMutex);
-        list->rwMutex = nullptr;
-    }
 }
 
 static inline void deallocateValue(const List* const list, void* const value) {
@@ -43,7 +29,7 @@ static inline void xRwMutexCommand(List* const list, const RWMutexCommand comman
     if (list->rwMutex) rwMutexCommand(list->rwMutex, command);
 }
 
-List* nullable listCopy(List* const old, const bool synchronized, const ListItemDuplicator nullable itemDuplicator) {
+List* nullable listCopy(List* const old, const bool synchronized, const ValueDuplicator nullable duplicator) {
     xRwMutexCommand(old, RW_MUTEX_COMMAND_READ_LOCK);
 
     if (!old->size) {
@@ -56,7 +42,7 @@ List* nullable listCopy(List* const old, const bool synchronized, const ListItem
 
     assert(new->values = xmalloc(old->size * sizeof(void*)));
     new->size = old->size;
-    for (int i = 0; i < old->size; new->values[i] = itemDuplicator ? itemDuplicator(old->values[i]) : old->values[i], i++);
+    for (int i = 0; i < old->size; new->values[i] = duplicator ? duplicator(old->values[i]) : old->values[i], i++);
 
     xRwMutexCommand(old, RW_MUTEX_COMMAND_READ_UNLOCK);
     return new;
@@ -188,13 +174,14 @@ int listSize(List* const list) {
     return size;
 }
 
-void* nullable listBinarySearch(List* const list, const void* const key, const ListComparator comparator) {
+typedef int (* SDL_CompareCallback)(const void* const, const void* const);
+
+void* nullable listBinarySearch(List* const list, const void* const key, const Comparator comparator) {
     xRwMutexCommand(list, RW_MUTEX_COMMAND_READ_LOCK);
     assert(list->size && list->values);
 
     void* SDL_bsearch(
-        const void* const, const void* const, const unsigned long, const unsigned long,
-        int (* const)(const void* const, const void* const)
+        const void* const, const void* const, const unsigned long, const unsigned long, const SDL_CompareCallback
     );
 
     const unsigned long index =
@@ -205,10 +192,10 @@ void* nullable listBinarySearch(List* const list, const void* const key, const L
     return value;
 }
 
-void listQSort(List* const list, const ListComparator comparator) {
+void listQSort(List* const list, const Comparator comparator) {
     xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
 
-    void SDL_qsort(void* const, const unsigned long, const unsigned long, int (* const)(const void* const, const void* const));
+    void SDL_qsort(void* const, const unsigned long, const unsigned long, const SDL_CompareCallback);
 
     assert(list->size && list->values);
     SDL_qsort(list->values, list->size, sizeof(void*), comparator);

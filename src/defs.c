@@ -76,6 +76,8 @@ void xfree(void* nullable const memory) {
     if (memory) gAllocations--;
 }
 
+const Allocator ALLOCATOR_DEFAULT = {xmalloc, xcalloc, xrealloc, xfree};
+
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode) {
     const char* format, * divider;
     bool tryStr = false;
@@ -138,4 +140,10 @@ void patchFunction(void* const original, void* const replacement) {
     xmemcpy(original + 2, &replacement, 8);
 
     assert(!mprotect(pageStart, pageSize, PROT_READ | PROT_EXEC));
+}
+
+int hashValue(const byte* value, int size) {
+    int hash = 0;
+    for (; size--; hash = 31 * hash + *value++);
+    return hash;
 }
