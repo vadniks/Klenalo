@@ -6,7 +6,7 @@
 #include "resources.h"
 #include "scenes.h"
 #include "crypto.h"
-#include "list.h"
+#include "collections/list.h"
 #include "consts.h"
 #include "lifecycle.h"
 

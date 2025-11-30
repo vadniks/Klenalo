@@ -1,9 +1,11 @@
 
-#include "treeMap.h"
+#include "collections/treeMap.h"
 #include "lifecycle.h"
 
-int main(const int argc, const char* const* const argv, const char* const* const envp) {
-    USED(argc), USED(argv), USED(envp);
+// TODO: how to safely destroy a locked mutex? - wait until released? how to ensure noone would access it after destroying/invalidating the object?
+
+// const int argc, const char* const* const argv, const char* const* const envp
+int main(void) {
 //    lifecycleInit();
 //    lifecycleLoop();
 //    lifecycleQuit();

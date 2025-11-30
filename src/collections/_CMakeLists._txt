@@ -1,0 +1,5 @@
+
+file(GLOB COLLECTIONS_SOURCES CONFIGURE_DEPENDS *.c *.h)
+add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+
+add_library(Collections STATIC ${COLLECTIONS_SOURCES})

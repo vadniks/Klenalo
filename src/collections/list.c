@@ -1,5 +1,5 @@
 
-#include "rwMutex.h"
+#include "../rwMutex.h"
 #include "list.h"
 
 struct _List {

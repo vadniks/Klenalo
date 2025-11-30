@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "defs.h"
+#include "../defs.h"
 
 // optionally thread-safe, only works with non-null values
 

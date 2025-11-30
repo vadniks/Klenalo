@@ -1,5 +1,5 @@
 
-#include "rwMutex.h"
+#include "../rwMutex.h"
 #include "hashtable.h"
 
 // inspired by the Java standard library's Hashtable

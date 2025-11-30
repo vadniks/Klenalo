@@ -1,7 +1,9 @@
 
 cmake_minimum_required(VERSION 4.0)
 set(CMAKE_C_COMPILER "/usr/bin/clang")
-project(Klenalo LANGUAGES C)
+project(Klenalo LANGUAGES C VERSION 0.1)
+
+#add_subdirectory(collections)
 
 set(CMAKE_C_STANDARD 23) # 2Y | 26 - not yet supported
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -76,7 +78,8 @@ add_compile_options(-fcommon)
 
 add_compile_definitions("-D_GNU_SOURCE -D_THREAD_SAFE -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3")
 
-file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h src/*/*.c src/*/*.h)
+#file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h src/*/*.c src/*/*.h)
+file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h)
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
 add_compile_definitions(-DLV_CONF_PATH="../lv_conf.h")
@@ -91,6 +94,7 @@ add_link_options(-fuse-ld=lld)
 add_link_options(-static-libasan)
 
 target_link_libraries(${PROJECT_NAME}
+#    Collections
     asan
     c
     m
