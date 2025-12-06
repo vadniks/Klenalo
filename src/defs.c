@@ -15,7 +15,7 @@ static atomic unsigned long gAllocations = 0;
 }
 #endif
 
-static void printStackTrace(void) {
+void printStackTrace(void) {
     const int size = 0xf;
     void* array[size];
 
@@ -23,7 +23,11 @@ static void printStackTrace(void) {
     char** const strings = backtrace_symbols(array, actualSize);
     if (!strings) return;
 
-    for (int i = 3; i < actualSize; i++)
+    // cat /proc/self/maps
+    // cat /proc/meminf
+    // /proc/self/exe
+
+    for (int i = 0; i < actualSize; i++)
         fprintf(stderr, "%s\n", strings[i]),
         syslog(LOG_ERR, "%s\n", strings[i]);
 
@@ -75,8 +79,6 @@ void xfree(void* nullable const memory) {
     free(memory);
     if (memory) gAllocations--;
 }
-
-const Allocator ALLOCATOR_DEFAULT = {xmalloc, xcalloc, xrealloc, xfree};
 
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode) {
     const char* format, * divider;

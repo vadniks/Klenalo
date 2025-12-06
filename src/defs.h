@@ -96,14 +96,7 @@ void* nullable xcalloc(const unsigned long elements, const unsigned long size);
 void* nullable xrealloc(void* nullable const pointer, const unsigned long size);
 void xfree(void* nullable const memory);
 
-typedef const struct {
-    void* nullable (* malloc)(const unsigned long size);
-    void* nullable (* calloc)(const unsigned long elements, const unsigned long size);
-    void* nullable (* realloc)(void* nullable const pointer, const unsigned long size);
-    void (* free)(void* nullable const memory);
-} Allocator;
-
-extern const Allocator ALLOCATOR_DEFAULT;
+/**/ void printStackTrace(void);
 
 typedef void (* Deallocator)(void* const);
 
@@ -182,3 +175,5 @@ int hashValue(const byte* value, int size); // non-cryptographic
 // TODO: create a coroutines implementation
 
 // TODO: interact with trusted platform module to store the keys
+
+// TODO: add/use opengl for drawing
