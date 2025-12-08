@@ -384,10 +384,12 @@ static inline void clearIteratorStack(TreeMapIterator* const iterator) {
 
 #undef treeMapIterateBegin
 void treeMapIterateBegin(TreeMap* const map, TreeMapIterator* const iterator) {
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_LOCK);
-
+    xRwMutexCommand(map, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(!map->iterating);
     map->iterating = true;
+    xRwMutexCommand(map, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+
+    xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_LOCK);
 
     unconst(iterator->map) = map;
     iterator->currentStackTop = -1;
@@ -409,13 +411,15 @@ void* nullable treeMapIterate(TreeMapIterator* const iterator) {
 }
 
 void treeMapIterateEnd(TreeMapIterator* const iterator) {
+    xRwMutexCommand(iterator->map, RW_MUTEX_COMMAND_READ_UNLOCK);
+
+    xRwMutexCommand(iterator->map, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(iterator->map->iterating);
     iterator->map->iterating = false;
+    xRwMutexCommand(iterator->map, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 
     iterator->currentStackTop = -1;
     clearIteratorStack(iterator);
-
-    xRwMutexCommand(iterator->map, RW_MUTEX_COMMAND_READ_UNLOCK);
 }
 
 void treeMapDestroy(TreeMap* const map) {
