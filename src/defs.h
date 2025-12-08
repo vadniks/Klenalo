@@ -42,7 +42,11 @@ typedef unsigned char byte;
 #define cleanup(x) [[gnu::cleanup(x)]]
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
+#define stringifyActual(x) #x
+#define stringify(x) stringifyActual(x)
 #define export [[gnu::visibility("default")]]
+#define noinline [[clang::noinline]]
+#define xinline [[clang::always_inline]] inline
 
 #if defined(__CLION_IDE__)
 #define used __attribute__((unused))
@@ -96,8 +100,6 @@ void* nullable xcalloc(const unsigned long elements, const unsigned long size);
 void* nullable xrealloc(void* nullable const pointer, const unsigned long size);
 void xfree(void* nullable const memory);
 
-/**/ void printStackTrace(void);
-
 typedef void (* Deallocator)(void* const);
 
 typedef void* (* ValueDuplicator)(const void* const);
@@ -110,32 +112,32 @@ typedef enum : int /* not char for compatibility with stdlib's bsearch and qsort
 
 typedef Compared (* Comparator)(const void* const, const void* const); // a=first < b=second : negative, a = b : zero, a > b : positive;
 
-inline void* xmemset(void* const destination, const int value, const unsigned long length) {
+xinline void* xmemset(void* const destination, const int value, const unsigned long length) {
     void* memset(void* const, const int, const unsigned long);
     return memset(destination, value, length);
 }
 
-inline void* xmemcpy(void* const destination, const void* const source, const unsigned long length) {
+xinline void* xmemcpy(void* const destination, const void* const source, const unsigned long length) {
     void* memcpy(void* const, const void* const, const unsigned long);
     return memcpy(destination, source, length);
 }
 
-inline void* xmemmove(void* const destination, const void* const source, const unsigned long length) {
+xinline void* xmemmove(void* const destination, const void* const source, const unsigned long length) {
     void* memmove(void* const, const void* const, const unsigned long);
     return memmove(destination, source, length);
 }
 
-inline int xmemcmp(const void* const source1, const void* const source2, const unsigned long length) {
+xinline int xmemcmp(const void* const source1, const void* const source2, const unsigned long length) {
     int memcmp(const void* const, const void* const, const unsigned long);
     return memcmp(source1, source2, length);
 }
 
-inline void xyield(void) {
+xinline void xyield(void) {
     void thrd_yield(void);
     thrd_yield();
 }
 
-inline unsigned long xstrnlen(const char* const string, const unsigned long maxSize) {
+xinline unsigned long xstrnlen(const char* const string, const unsigned long maxSize) {
     unsigned long strnlen(const char* const, const unsigned long);
     return strnlen(string, maxSize);
 }
@@ -152,7 +154,9 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
 void patchFunction(void* const original, void* const replacement); // overrides first 12 bytes of the original function with a trampoline to the replacement function
 
 int hashValue(const byte* value, int size); // non-cryptographic
-#define hashPrimitive(x) hashValue((const byte*) (typeof(x)) {x}, _Generic((x), byte: 1, short: 2, int: 4, long: 8))
+#define hashPrimitive(x) hashValue((const byte*) &(typeof(x)) {x}, _Generic((x), byte: 1, short: 2, int: 4, long: 8))
+
+extern void (* nullable const START_HOOK)(void), (* nullable const END_HOOK)(void);
 
 // TODO: add logger with various logging modes; add dynamic memory allocation tracker - store allocated memory addresses and corresponding addresses of *alloc callers; render lvgl via opengl optimized textures via embedded support via lvgl's generic opengl driver
 // TODO: make stack and queue use (double) linked list instead of growable array, and make a 'fast' list - also utilizing (double) linked list - create a deque
@@ -177,3 +181,5 @@ int hashValue(const byte* value, int size); // non-cryptographic
 // TODO: interact with trusted platform module to store the keys
 
 // TODO: add/use opengl for drawing
+
+// TODO: use ipv6

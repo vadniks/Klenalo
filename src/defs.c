@@ -5,9 +5,25 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/syslog.h>
+#include <string.h>
+#include "collections/treeMap.h"
 #include "defs.h"
 
+#define functionFooterDeclaration \
+    asm volatile ( \
+        "jmp .x%=\n" \
+        ".ascii \"footer_" __FUNCTION__ "\"\n" \
+        ".x%=:\n" \
+        "nop" \
+    :::);
+
+typedef struct {
+    const void* caller, * memory;
+    unsigned long size;
+} Allocation;
+
 static atomic unsigned long gAllocations = 0;
+static TreeMap* gAllocationsTreeMap = nullptr; // <Allocation*>
 
 #ifdef __clang__
 [[maybe_unused]] void _deferHandler(void (^ const* const block)(void)) {
@@ -15,19 +31,25 @@ static atomic unsigned long gAllocations = 0;
 }
 #endif
 
-void printStackTrace(void) {
-    const int size = 0xf;
-    void* array[size];
+static void init(void) {
+    gAllocationsTreeMap = treeMapCreate(false, xfree);
+}
 
-    const int actualSize = backtrace(array, size);
-    char** const strings = backtrace_symbols(array, actualSize);
+static void quit(void) {
+    TreeMap* const map = gAllocationsTreeMap;
+    gAllocationsTreeMap = nullptr;
+    treeMapDestroy(map);
+}
+
+static void printStackTrace(void) {
+    int size = 0xf;
+    const void* array[size];
+
+    size = backtrace((void**) array, size);
+    char** const strings = backtrace_symbols((void**) array, size);
     if (!strings) return;
 
-    // cat /proc/self/maps
-    // cat /proc/meminf
-    // /proc/self/exe
-
-    for (int i = 0; i < actualSize; i++)
+    for (int i = 0; i < size; i++)
         fprintf(stderr, "%s\n", strings[i]),
         syslog(LOG_ERR, "%s\n", strings[i]);
 
@@ -42,7 +64,7 @@ export void assert(const bool condition) {
     syslog(LOG_ERR, message, returnAddr);
 
     printStackTrace();
-    abort();
+    abort(); // or __builtin_trap()
 }
 
 unsigned long xallocations(void) {
@@ -52,13 +74,54 @@ unsigned long xallocations(void) {
     return gAllocations;
 }
 
+static bool recursion(const void* const functionStart, const char* const footer) {
+    const int maxFunctionSize = 1024;
+    const void* const functionEnd = memmem(
+        functionStart,
+        maxFunctionSize,
+        footer,
+        strnlen(footer, 16)
+    );
+    assert(functionEnd);
+
+    byte addressesSize = 0xf;
+    const void* addresses[addressesSize];
+
+    addressesSize = (byte) backtrace((void**) addresses, addressesSize);
+    for (byte i = 3; i < addressesSize; i++) {
+        if (addresses[i] > functionStart && addresses[i] < functionEnd)
+            return true;
+    }
+
+    // cat /proc/self/maps
+    // cat /proc/meminf
+    // /proc/self/exe
+
+    return false;
+}
+#define recursion(x) recursion((void*) x, "footer_" #x)
+
+static int hashPointer(const void* nullable const pointer) {
+    return hashValue((const void*) &pointer, sizeof pointer);
+}
+
 void* nullable xmalloc(const unsigned long size) {
+    functionFooterDeclaration
     return xcalloc(size, 1);
 }
 
-void* nullable xcalloc(const unsigned long elements, const unsigned long size) {
+noinline void* nullable xcalloc(const unsigned long elements, const unsigned long size) {
     void* const memory = calloc(elements, size);
     if (memory) gAllocations++;
+
+    if (gAllocationsTreeMap && !recursion(xcalloc) && memory) {
+        Allocation* const allocation = xmalloc(sizeof *allocation);
+        assert(allocation);
+        *allocation = (Allocation) {returnAddr, memory, elements * size};
+        treeMapInsert(gAllocationsTreeMap, hashPointer(memory), allocation);
+    }
+
+    functionFooterDeclaration
     return memory;
 }
 
@@ -72,12 +135,18 @@ void* nullable xrealloc(void* nullable const pointer, const unsigned long size) 
         gAllocations--;
     }
 
+    functionFooterDeclaration
     return memory;
 }
 
 void xfree(void* nullable const memory) {
     free(memory);
     if (memory) gAllocations--;
+
+    if (gAllocationsTreeMap && !recursion(xfree) && memory)
+        treeMapDelete(gAllocationsTreeMap, hashPointer(memory));
+
+    functionFooterDeclaration
 }
 
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode) {
@@ -144,8 +213,13 @@ void patchFunction(void* const original, void* const replacement) {
     assert(!mprotect(pageStart, pageSize, PROT_READ | PROT_EXEC));
 }
 
+[[gnu::no_sanitize("unsigned-integer-overflow")]]
 int hashValue(const byte* value, int size) {
-    int hash = 0;
+    unsigned int hash = 0;
     for (; size--; hash = 31 * hash + *value++);
-    return hash;
+    return (int) hash;
 }
+
+// or just use [[gnu::constructor(1+)]]
+void (* nullable const START_HOOK)(void) = init;
+void (* nullable const END_HOOK)(void) = quit;

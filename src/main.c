@@ -14,8 +14,7 @@ static void b(void);
 
 void _start(void);
 
-[[clang::noinline]]
-static void a(void) {
+noinline static void a(void) {
     if (c++ > 1) return;
 
     const void* const aEnd = memmem(a, 1024, "footer"/*(byte[]) {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff}*/, 6);
@@ -34,7 +33,6 @@ static void a(void) {
     }
 
     printf("a=%p b=%p ret=%p aEnd=%p recursion=%d caller=%p\n", a, b, __builtin_return_address(0), aEnd, recursion, recursion >= 0 ? array[recursion] : 0);
-    printStackTrace();
     puts("");
     fprintf(stderr, "\n");
 
@@ -49,8 +47,7 @@ static void a(void) {
     );
 }
 
-[[clang::noinline]]
-static void b(void) {
+noinline static void b(void) {
     // create
     a();
     puts("@");
@@ -58,11 +55,17 @@ static void b(void) {
 
 // const int argc, const char* const* const argv, const char* const* const envp
 int main(void) {
+//    auto startHooks = START_HOOKS;
+//    void (* startHook)(void);
+//    while ((startHook = *(startHooks += sizeof(startHook))))
+//        startHook();
+
+    if (START_HOOK) START_HOOK();
 //    lifecycleInit();
 //    lifecycleLoop();
 //    lifecycleQuit();
 
-    a();
+//    a();
 
     TreeMap* const map = treeMapCreate(false, xfree);
 
@@ -92,6 +95,7 @@ int main(void) {
 
     treeMapDestroy(map);
 
-    assert(xallocations() == 0);
+    if (END_HOOK) END_HOOK();
+//    assert(xallocations() == 0);
     return 0;
 }

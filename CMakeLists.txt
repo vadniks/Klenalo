@@ -15,7 +15,7 @@ add_compile_options(-std=gnu2y)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
 add_compile_options(-Wformat -Wformat=2 -Wconversion -Wimplicit-fallthrough -Werror=format-security -Wstrict-prototypes -Wdeprecated-non-prototype -Wold-style-definition -Wthread-safety)
-add_compile_options(-O3)
+add_compile_options(-O0)
 add_compile_options(-ffast-math -fsemantic-interposition)
 add_compile_options(-Werror=return-type)
 #add_link_options("-s")
@@ -37,7 +37,7 @@ add_compile_options(-fsanitize=undefined)
 add_compile_options(-fsanitize-address-use-after-scope)
 add_compile_options(-fsanitize-trap=all)
 add_compile_options(-fcf-protection=full)
-add_compile_options(-fsanitize=bounds -fsanitize=null -fsanitize=object-size -fsanitize=nonnull-attribute -fsanitize=returns-nonnull-attribute -fsanitize=signed-integer-overflow -fsanitize=float-cast-overflow -fsanitize=pointer-overflow)
+add_compile_options(-fsanitize=bounds -fsanitize=null -fsanitize=object-size -fsanitize=nonnull-attribute -fsanitize=returns-nonnull-attribute -fsanitize=signed-integer-overflow -fsanitize=unsigned-integer-overflow -fsanitize=float-cast-overflow -fsanitize=pointer-overflow -fsanitize=bounds -fsanitize=enum -fsanitize=bool)
 #add_compile_options(-fhardened)
 add_compile_options(-fPIE)
 add_compile_options(-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-aliasing -ftrivial-auto-var-init=zero -Werror=implicit -Werror=incompatible-pointer-types -Werror=int-conversion -fstrict-flex-arrays=3 -fwrapv -fno-delete-null-pointer-checks)
@@ -69,8 +69,10 @@ add_compile_options(-Wno-sign-conversion)
 # -fcond-mismatch
 
 add_compile_options(-fblocks)
-add_compile_options(-fms-extensions -Wno-microsoft-anon-tag)
+add_compile_options(-fms-extensions -Wno-microsoft-anon-tag -Wno-microsoft-string-literal-from-predefined)
 add_compile_options(-fcommon)
+
+#add_compile_options(-E)
 
 add_compile_definitions("-D_GNU_SOURCE -D_THREAD_SAFE -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3")
 

@@ -206,10 +206,10 @@ void treeMapInsert(TreeMap* const map, const int key, void* const value) {
         y = x;
         if (key < x->key) x = x->left;
         else if (key > x->key) x = x->right;
-        else {
+        else assert(false); /*{
             xRwMutexCommand(map, RW_MUTEX_COMMAND_WRITE_UNLOCK);
             return;
-        }
+        }*/
     }
 
     if (!y) map->root = new;
