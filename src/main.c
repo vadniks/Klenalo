@@ -69,11 +69,9 @@ int main(void) {
 
     TreeMap* const map = treeMapCreate(false, xfree);
 
-    // 0x555541b58ab3
-    // 0x55564228
-
-    const int size = 10;
-    const int array[size] = {1, 5, 0, 8, 9, 7, 3, 2, 4, 6};
+    const int size = 11;
+    const int array[size] = //{1, 5, 0, 8, 9, 7, 3, 2, 4, 6};
+        {73913442, 9269314, -55374814, -120018942, -184663070, -249307198, -313951326, -378595454, 961417123, 896772995, 832128867};
 
     for (int i = 0; i < size; i++) {
         int* const value = xmalloc(sizeof(int));
@@ -81,21 +79,27 @@ int main(void) {
         treeMapInsert(map, array[i], value);
     }
 
-    for (int i = 0; i < size; i++)
-        assert(*(int*) treeMapSearchKey(map, i) == i);
+    const int arr2[size] = {-378595454, -313951326, -249307198, -184663070, -120018942, -55374814, 9269314, 73913442, 832128867, 896772995, 961417123};
 
     treeMapDelete(map, 9);
 
     TreeMapIterator* iterator;
     treeMapIterateBegin(map, iterator);
     int* value;
+    int a = 0;
     while ((value = treeMapIterate(iterator)))
-        printf("%d\n", *value);
+        assert(*value == arr2[a++]);
+//        printf("%d\n", *value);
     treeMapIterateEnd(iterator);
 
     treeMapDestroy(map);
 
+    if (xallocations()) {
+        xunfreedAllocations();
+//        assert(false);
+    }
+
     if (END_HOOK) END_HOOK();
-//    assert(xallocations() == 0);
+
     return 0;
 }

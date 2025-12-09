@@ -14,7 +14,7 @@ void listAddFront(List* const list, void* const value); // queuePush
 void* nullable listGet(List* const list, const int index);
 void* nullable listPopFirst(List* const list); // queuePop
 void* nullable listPopLast(List* const list); // stackPop
-void listRemove(List* const list, const int index);
+void listRemove(List* const list, const int index); // don't use in a loop - ConcurrentModificationException
 void* nullable listPeekFirst(List* const list); // queuePeek
 void* nullable listPeekLast(List* const list); // stackPeek
 int listSize(List* const list);
