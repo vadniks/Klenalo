@@ -5,9 +5,6 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/syslog.h>
-#include <string.h>
-#include "collections/treeMap.h"
-#include "collections/list.h"
 #include "rwMutex.h"
 #include "defs.h"
 
@@ -83,7 +80,7 @@ void* nullable xrealloc(void* nullable const pointer, const unsigned long size) 
     return memory;
 }
 
-noinline void xfree(void* nullable const memory) {
+void xfree(void* nullable const memory) {
     free(memory);
     if (memory) gAllocations--;
 }
