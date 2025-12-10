@@ -13,7 +13,7 @@ typedef struct _Node {
     const int key;
     void* const value;
     struct _Node
-        * nullable left,
+        * nullable left, // or could have used NIL instead - nonullable stub node to avoid numerous null checks
         * nullable parent,
         * nullable right;
     Color color;
