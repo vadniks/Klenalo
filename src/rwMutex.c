@@ -13,7 +13,6 @@ struct _RWMutex {
 
 RWMutex* rwMutexCreate(void) {
     RWMutex* const rwMutex = xmalloc(sizeof *rwMutex);
-    assert(rwMutex);
     assert(unconst(rwMutex->lock) = SDL_CreateRWLock());
     rwMutex->readers = 0;
     rwMutex->writers = 0;

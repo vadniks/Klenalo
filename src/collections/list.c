@@ -13,7 +13,6 @@ static const int MAX_SIZE = ~0u / 2u; // 0x7fffffff
 
 List* listCreate(const bool synchronized, const Deallocator nullable deallocator) {
     List* const list = xmalloc(sizeof *list);
-    assert(list);
     list->values = nullptr;
     list->size = 0;
     unconst(list->rwMutex) = synchronized ? rwMutexCreate() : nullptr;
@@ -40,7 +39,7 @@ List* nullable listCopy(List* const old, const bool synchronized, const ValueDup
 
     List* const new = listCreate(synchronized, old->deallocator);
 
-    assert(new->values = xmalloc(old->size * sizeof(void*)));
+    new->values = xmalloc(old->size * sizeof(void*));
     new->size = old->size;
     for (int i = 0; i < old->size; new->values[i] = duplicator ? duplicator(old->values[i]) : old->values[i], i++);
 
@@ -52,7 +51,7 @@ void listAddBack(List* const list, void* const value) {
     xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(list->size < MAX_SIZE);
 
-    assert(list->values = xrealloc(list->values, ++list->size * sizeof(void*)));
+    list->values = xrealloc(list->values, ++list->size * sizeof(void*));
     list->values[list->size - 1] = value;
 
     xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
@@ -63,7 +62,6 @@ void listAddFront(List* const list, void* const value) {
     assert(list->size < MAX_SIZE);
 
     void** const temp = xmalloc(++list->size * sizeof(void*));
-    assert(temp);
     temp[0] = value;
     for (int i = 1; i < list->size; temp[i] = list->values[i - 1], i++);
 
@@ -101,7 +99,7 @@ void* nullable listPopFirst(List* const list) {
     }
 
     xmemmove(list->values, (void*) list->values + sizeof(void*), list->size * sizeof(void*));
-    assert(list->values = xrealloc(list->values, list->size * sizeof(void*)));
+    list->values = xrealloc(list->values, list->size * sizeof(void*));
 
     xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
     return value;
@@ -119,7 +117,7 @@ void* nullable listPopLast(List* const list) {
     void* const value = list->values[list->size];
 
     if (list->size)
-        assert(list->values = xrealloc(list->values, list->size * sizeof(void*)));
+        list->values = xrealloc(list->values, list->size * sizeof(void*));
     else {
         xfree(list->values);
         list->values = nullptr;
@@ -137,7 +135,7 @@ void listRemove(List* const list, const int index) {
     for (int i = index; i < list->size - 1; list->values[i] = list->values[i + 1], i++);
 
     if (--list->size)
-        assert(list->values = xrealloc(list->values, list->size * sizeof(void*)));
+        list->values = xrealloc(list->values, list->size * sizeof(void*));
     else {
         xfree(list->values);
         list->values = nullptr;

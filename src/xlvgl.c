@@ -6,7 +6,7 @@ export used void lv_mem_init(void) {}
 
 export used void lv_mem_deinit(void) {}
 
-export used void* nullable lv_malloc_core(const unsigned long size) {
+export used void* lv_malloc_core(const unsigned long size) {
     return xmalloc(size);
 }
 

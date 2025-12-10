@@ -13,7 +13,6 @@ int main(void) {
 
     for (int i = 0; i < size; i++) {
         int* const value = xmalloc(sizeof(int));
-        assert(value);
         *value = i;
         listAddBack(list, value);
     }

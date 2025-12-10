@@ -57,22 +57,26 @@ unsigned long xallocations(void) {
     return gAllocations;
 }
 
-void* nullable xmalloc(const unsigned long size) {
+void* xmalloc(const unsigned long size) {
     return xcalloc(size, 1);
 }
 
-void* nullable xcalloc(const unsigned long elements, const unsigned long size) {
+void* xcalloc(const unsigned long elements, const unsigned long size) {
     void* const memory = calloc(elements, size);
-    if (memory) gAllocations++;
+    assert(memory);
+    gAllocations++;
     return memory;
 }
 
 void* nullable xrealloc(void* nullable const pointer, const unsigned long size) {
     void* const memory = realloc(pointer, size);
 
-    if (!pointer && memory)
+    if (!pointer) { // !pointer && size
+        assert(memory);
         gAllocations++;
-    else if (pointer && !size) {
+    } else if (size) { // pointer && size
+        assert(memory);
+    } else { // pointer && !size
         assert(!memory);
         gAllocations--;
     }

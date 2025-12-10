@@ -37,7 +37,6 @@ static const int MAX_SIZE = ~0u / 2u; // 0x7fffffff
 
 TreeMap* treeMapCreate(const bool synchronized, const Deallocator nullable deallocator) {
     TreeMap* const map = xmalloc(sizeof *map);
-    assert(map);
     unconst(map->deallocator) = deallocator;
     unconst(map->rwMutex) = synchronized ? rwMutexCreate() : nullptr;
     map->root = nullptr;
@@ -70,7 +69,6 @@ int treeMapIteratorSize(TreeMap* const map) {
 
 static Node* nodeCreate(TreeMap* const map, const int key, void* const value) {
     Node* const node = xmalloc(sizeof *node);
-    assert(node);
 
     unconst(node->key) = key;
     unconst(node->value) = value;

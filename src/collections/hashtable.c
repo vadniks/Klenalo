@@ -31,8 +31,7 @@ static const float LOAD_FACTOR = 0.75f;
 
 Hashtable* hashtableCreate(const bool synchronized, const Deallocator nullable deallocator) {
     Hashtable* const hashtable = xmalloc(sizeof *hashtable);
-    assert(hashtable);
-    assert(hashtable->nodes = xcalloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*)));
+    hashtable->nodes = xcalloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*));
     hashtable->count = 0;
     unconst(hashtable->deallocator) = deallocator;
     unconst(hashtable->rwMutex) = synchronized ? rwMutexCreate() : nullptr;
@@ -60,7 +59,6 @@ static void rehash(Hashtable* const hashtable) {
     if (newCapacity < hashtable->capacity) return; // overflow
 
     Node** const newNodes = xcalloc(newCapacity, sizeof(void*));
-    assert(newNodes);
 
     for (int index = 0; index < hashtable->capacity; index++) {
         for (Node* node = hashtable->nodes[index]; node;) {
@@ -102,7 +100,6 @@ void hashtablePut(Hashtable* const hashtable, const int hash, void* const value)
     }
 
     Node* const node = xmalloc(sizeof *node);
-    assert(node);
     assignToStructWithConsts(node, hash, value, *anchor)
     *anchor = node;
     hashtable->count++;

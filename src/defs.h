@@ -94,10 +94,9 @@ inline unsigned long swapLong(const long value) { return __builtin_bswap64(value
 #endif
 
 unsigned long xallocations(void);
-// TODO: xmalloc(size, ...) -> <...> contains flag to bypass tracking to avoid infinite recursion
-void* nullable /*TODO <--*/ xmalloc(const unsigned long size); // TODO: embed assert(<returned>) inside the mem funcs, making them non-nullable
-void* nullable xcalloc(const unsigned long elements, const unsigned long size);
-void* nullable xrealloc(void* nullable const pointer, const unsigned long size);
+void* xmalloc(const unsigned long size);
+void* xcalloc(const unsigned long elements, const unsigned long size);
+void* nullable xrealloc(void* nullable const pointer, const unsigned long size); // returns null only when size is zero, thus acting as xfree
 void xfree(void* nullable const memory);
 
 typedef void (* Deallocator)(void* const);
