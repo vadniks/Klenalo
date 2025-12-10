@@ -101,7 +101,7 @@ void xfree(void* nullable const memory);
 
 typedef void (* Deallocator)(void* const);
 
-typedef void* (* ValueDuplicator)(const void* const);
+typedef void* (* Duplicator)(const void* const);
 
 typedef enum : int /* not char for compatibility with stdlib's bsearch and qsort */ { // means: the first argument is [less, equal or greater] than the second one
     COMPARED_LESS = -1,

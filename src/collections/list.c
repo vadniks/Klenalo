@@ -28,7 +28,7 @@ static inline void xRwMutexCommand(List* const list, const RWMutexCommand comman
     if (list->rwMutex) rwMutexCommand(list->rwMutex, command);
 }
 
-List* nullable listCopy(List* const old, const bool synchronized, const ValueDuplicator nullable duplicator) {
+List* nullable listCopy(List* const old, const bool synchronized, const Duplicator nullable duplicator) {
     xRwMutexCommand(old, RW_MUTEX_COMMAND_READ_LOCK);
 
     if (!old->size) {

@@ -8,7 +8,7 @@
 typedef struct _List List;
 
 List* listCreate(const bool synchronized, const Deallocator nullable deallocator);
-List* nullable listCopy(List* const old, const bool synchronized, const ValueDuplicator nullable duplicator);
+List* nullable listCopy(List* const old, const bool synchronized, const Duplicator nullable duplicator);
 void listAddBack(List* const list, void* const value); // listAdd, stackPush
 void listAddFront(List* const list, void* const value); // queuePush
 void* nullable listGet(List* const list, const int index);
