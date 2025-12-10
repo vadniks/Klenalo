@@ -134,7 +134,7 @@ void listRemove(List* const list, const int index) {
     assert(list->size && list->values && index >= 0 && index < list->size);
 
     deallocateValue(list, list->values[index]);
-    for (int i = index; i < list->size; list->values[i] = list->values[i + 1], i++);
+    for (int i = index; i < list->size - 1; list->values[i] = list->values[i + 1], i++);
 
     if (--list->size)
         assert(list->values = xrealloc(list->values, list->size * sizeof(void*)));
