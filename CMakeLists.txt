@@ -15,7 +15,7 @@ add_compile_options(-std=gnu2y)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
 add_compile_options(-Wformat -Wformat=2 -Wconversion -Wimplicit-fallthrough -Werror=format-security -Wstrict-prototypes -Wdeprecated-non-prototype -Wold-style-definition -Wthread-safety)
-add_compile_options(-O0)
+add_compile_options(-O3)
 add_compile_options(-ffast-math -fsemantic-interposition)
 add_compile_options(-Werror=return-type)
 #add_link_options("-s")

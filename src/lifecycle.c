@@ -40,11 +40,6 @@ static unsigned getTicks(void);
 static int backgroundActionsLoop(void* nullable const);
 static int netActionsLoop(void* nullable const);
 
-#undef xmalloc
-static void* nullable xmalloc(const unsigned long size) {
-    return xcalloc(size, 1);
-}
-
 void lifecycleInit(void) {
     assert(!gInitialized);
     gInitialized = true;
