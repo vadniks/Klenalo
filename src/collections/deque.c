@@ -104,6 +104,7 @@ int dequeSize(Deque* const deque) {
     return size;
 }
 
+[[clang::no_sanitize("unsigned-integer-overflow")]]
 void* nullable dequePopFirst(Deque* const deque) {
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_LOCK);
     if (!deque->size) {
@@ -113,9 +114,10 @@ void* nullable dequePopFirst(Deque* const deque) {
         assert(deque->first);
 
     void* const value = deque->first->value;
+    Node* const next = deque->first->next;
     xfree(deque->first);
-    deque->first = deque->first->next;
-    deque->first->previous = nullptr;
+    deque->first = next;
+    if (next) deque->first->previous = nullptr;
 
     deque->size--;
 
@@ -124,7 +126,7 @@ void* nullable dequePopFirst(Deque* const deque) {
         deque->last->next = nullptr;
     } else if (!deque->size) {
         deque->last = nullptr;
-        deque->first->next = nullptr;
+        if (deque->first) deque->first->next = nullptr;
     }
 
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
@@ -140,9 +142,10 @@ void* nullable dequePopLast(Deque* const deque) {
         assert(deque->last);
 
     void* const value = deque->last->value;
+    Node* const previous = deque->last->previous;
     xfree(deque->last);
-    deque->last = deque->last->previous;
-    deque->last->next = nullptr;
+    deque->last = previous;
+    if (previous) deque->last->next = nullptr;
 
     deque->size--;
 
@@ -151,7 +154,7 @@ void* nullable dequePopLast(Deque* const deque) {
         deque->first->previous = nullptr;
     } else if (!deque->size) {
         deque->first = nullptr;
-        deque->last->previous = nullptr;
+        if (previous) deque->last->previous = nullptr;
     }
 
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
