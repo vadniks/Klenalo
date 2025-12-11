@@ -28,6 +28,8 @@ int main(void) {
     printf("a %d\n", *value);
     xfree(value);
 
+    dequeRemove(deque, 5);
+
     while ((value = dequePopFirst(deque))) {
         printf("%d\n", *value);
         xfree(value);

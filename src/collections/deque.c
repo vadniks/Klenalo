@@ -77,7 +77,7 @@ void dequePushFront(Deque* const deque, void* const value) {
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
-static Node* nullable search(Deque* const deque, const int index, const bool fromStartOrFromEnd) {
+static Node* nullable search(const Deque* const deque, const int index, const bool fromStartOrFromEnd) {
     int i = fromStartOrFromEnd ? 0 : deque->size - 1;
     for (
         Node* node = fromStartOrFromEnd ? deque->first : deque->last;
@@ -122,7 +122,7 @@ void* nullable dequePopFirst(Deque* const deque) {
 
     if (deque->size == 1) {
         deque->last = deque->first;
-        deque->last->next = nullptr;
+        if (deque->last) deque->last->next = nullptr;
     } else if (!deque->size) {
         deque->last = nullptr;
         if (deque->first) deque->first->next = nullptr;
@@ -150,10 +150,10 @@ void* nullable dequePopLast(Deque* const deque) {
 
     if (deque->size == 1) {
         deque->first = deque->last;
-        deque->first->previous = nullptr;
+        if (deque->first) deque->first->previous = nullptr;
     } else if (!deque->size) {
         deque->first = nullptr;
-        if (previous) deque->last->previous = nullptr;
+        if (deque->last) deque->last->previous = nullptr;
     }
 
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
@@ -179,6 +179,8 @@ void dequeRemove(Deque* const deque, const int index) {
         deque->first = next;
     if (deque->last == node)
         deque->last = previous;
+
+    deque->size--;
 
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 
