@@ -213,6 +213,7 @@ void dequeClear(Deque* const deque) {
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_LOCK);
     destroyNodes(deque);
     deque->size = 0;
+    deque->first = deque->last = nullptr;
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
