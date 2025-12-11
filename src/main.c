@@ -14,25 +14,23 @@ int main(void) {
     *value = 0;
     dequePushFront(deque, value);
 
-    value = dequePopLast(deque);
-    printf("a %d\n", *value);
-    xfree(value);
-
-    for (int i = 0; i < 10; i++) {
-        int* const value = xmalloc(sizeof(int));
-        *value = i;
-        dequePushBack(deque, value);
-    }
-
-    printf("b %d %d\n", *(int*) dequeGet(deque, 5, true), *(int*) dequeGet(deque, 5, false));
+    value = xmalloc(sizeof(int));
+    *value = 1;
+    dequePushBack(deque, value);
 
     value = dequePopLast(deque);
     printf("a %d\n", *value);
     xfree(value);
 
-    dequeRemove(deque, 8);
-    dequeRemove(deque, 5);
-    dequeRemove(deque, 0);
+    // TODO: add asserts (invariants checking) to public functions in Deck
+
+    value = dequePopLast(deque);
+    printf("a %d\n", *value);
+    xfree(value);
+
+    value = dequePopFirst(deque);
+    printf("a %d\n", value ? *value : -1);
+    xfree(value);
 
     while ((value = dequePopFirst(deque))) {
         printf("%d\n", *value);
