@@ -104,7 +104,6 @@ int dequeSize(Deque* const deque) {
     return size;
 }
 
-[[clang::no_sanitize("unsigned-integer-overflow")]]
 void* nullable dequePopFirst(Deque* const deque) {
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_LOCK);
     if (!deque->size) {
