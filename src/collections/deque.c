@@ -116,7 +116,7 @@ void* nullable dequePopFirst(Deque* const deque) {
     Node* const next = deque->first->next;
     xfree(deque->first);
     deque->first = next;
-    if (next) deque->first->previous = nullptr;
+    if (deque->first) deque->first->previous = nullptr;
 
     deque->size--;
 
@@ -144,7 +144,7 @@ void* nullable dequePopLast(Deque* const deque) {
     Node* const previous = deque->last->previous;
     xfree(deque->last);
     deque->last = previous;
-    if (previous) deque->last->next = nullptr;
+    if (deque->last) deque->last->next = nullptr;
 
     deque->size--;
 
