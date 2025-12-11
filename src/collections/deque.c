@@ -29,6 +29,10 @@ Deque* dequeCreate(const bool synchronized, const Deallocator deallocator) {
     return deque;
 }
 
+static inline void deallocateValue(const Deque* const deque, void* const value) {
+    if (deque->deallocator) deque->deallocator(value);
+}
+
 static inline void xRwMutexCommand(Deque* const deque, const RWMutexCommand command) {
     if (deque->rwMutex) rwMutexCommand(deque->rwMutex, command);
 }
@@ -111,35 +115,109 @@ void* nullable dequePopFirst(Deque* const deque) {
     void* const value = deque->first->value;
     xfree(deque->first);
     deque->first = deque->first->next;
+    deque->first->previous = nullptr;
 
     deque->size--;
 
-//    if (deque->size == 1, == 0) // adjust deque->last occurdingly
+    if (deque->size == 1) {
+        deque->last = deque->first;
+        deque->last->next = nullptr;
+    } else if (!deque->size) {
+        deque->last = nullptr;
+        deque->first->next = nullptr;
+    }
 
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
     return value;
 }
 
 void* nullable dequePopLast(Deque* const deque) {
-    return nullptr;
+    xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_LOCK);
+    if (!deque->size) {
+        xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+        return nullptr;
+    } else
+        assert(deque->last);
+
+    void* const value = deque->last->value;
+    xfree(deque->last);
+    deque->last = deque->last->previous;
+    deque->last->next = nullptr;
+
+    deque->size--;
+
+    if (deque->size == 1) {
+        deque->first = deque->last;
+        deque->first->previous = nullptr;
+    } else if (!deque->size) {
+        deque->first = nullptr;
+        deque->last->previous = nullptr;
+    }
+
+    xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+    return value;
 }
 
 void dequeRemove(Deque* const deque, const int index) {
+    xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_LOCK);
 
+    Node* const node = search(deque, index, deque->size - index > index);
+    if (!node) {
+        xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+        return;
+    }
+
+    Node* const previous = node->previous;
+    Node* const next = node->next;
+
+    if (previous) previous->next = next;
+    if (next) next->previous = previous;
+
+    if (deque->first == node)
+        deque->first = next;
+    if (deque->last == node)
+        deque->last = previous;
+
+    xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+
+    deallocateValue(deque, node->value);
+    xfree(node);
 }
 
 void* nullable dequePeekFirst(Deque* const deque) {
-    return nullptr;
+    xRwMutexCommand(deque, RW_MUTEX_COMMAND_READ_LOCK);
+    Node* const node = deque->first;
+    xRwMutexCommand(deque, RW_MUTEX_COMMAND_READ_UNLOCK);
+    return node ? node->value : nullptr;
 }
 
 void* nullable dequePeekLast(Deque* const deque) {
-    return nullptr;
+    xRwMutexCommand(deque, RW_MUTEX_COMMAND_READ_LOCK);
+    Node* const node = deque->last;
+    xRwMutexCommand(deque, RW_MUTEX_COMMAND_READ_UNLOCK);
+    return node ? node->value : nullptr;
+}
+
+static void destroyNodes(Deque* const deque) {
+    for (
+        Node* node = deque->first;
+        node;
+        node = node->next
+    ) {
+        deallocateValue(deque, node->value);
+        xfree(node);
+    }
 }
 
 void dequeClear(Deque* const deque) {
-
+    xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_LOCK);
+    destroyNodes(deque);
+    deque->size = 0;
+    xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
 void dequeDestroy(Deque* const deque) {
-
+    if (deque->rwMutex) rwMutexDestroy(deque->rwMutex);
+    destroyNodes(deque);
+    xfree(deque);
 }
