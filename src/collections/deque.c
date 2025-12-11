@@ -203,11 +203,12 @@ void* nullable dequePeekLast(Deque* const deque) {
 
 static void destroyNodes(Deque* const deque) {
     for (
-        Node* node = deque->first;
+        Node* node = deque->first, * next;
         node;
-        node = node->next
+        node = next
     ) {
         deallocateValue(deque, node->value);
+        next = node->next;
         xfree(node);
     }
 }

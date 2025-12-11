@@ -8,17 +8,26 @@
 int main(void) {
     Deque* const deque = dequeCreate(false, xfree);
 
-    for (int i = 0; i < 10; i++) {
-        int* const value = xmalloc(sizeof(int));
-        *value = i;
-        dequePushBack(deque, value);
-    }
-
     int* value;
-    while ((value = dequePopLast(deque))) {
-        printf("%d\n", *value);
-        xfree(value);
-    }
+
+    value = xmalloc(sizeof(int));
+    *value = 0;
+    dequePushFront(deque, value);
+
+    value = xmalloc(sizeof(int));
+    *value = 1;
+    dequePushBack(deque, value);
+
+//    for (int i = 0; i < 10; i++) {
+//        int* const value = xmalloc(sizeof(int));
+//        *value = i;
+//        dequePushBack(deque, value);
+//    }
+
+//    while ((value = dequePopFirst(deque))) {
+//        printf("%d\n", *value);
+//        xfree(value);
+//    }
 
     dequeDestroy(deque);
 
