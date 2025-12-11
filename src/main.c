@@ -24,16 +24,22 @@ int main(void) {
         dequePushBack(deque, value);
     }
 
+    printf("b %d %d\n", *(int*) dequeGet(deque, 5, true), *(int*) dequeGet(deque, 5, false));
+
     value = dequePopLast(deque);
     printf("a %d\n", *value);
     xfree(value);
 
     dequeRemove(deque, 8);
+    dequeRemove(deque, 5);
+    dequeRemove(deque, 0);
 
     while ((value = dequePopFirst(deque))) {
         printf("%d\n", *value);
         xfree(value);
     }
+
+    printf("%p %p\n", dequeGet(deque, 5, true), dequeGet(deque, 5, false));
 
     dequeDestroy(deque);
 
