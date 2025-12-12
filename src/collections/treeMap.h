@@ -9,7 +9,7 @@
 typedef struct _TreeMap TreeMap;
 typedef struct _TreeMapIterator TreeMapIterator;
 
-TreeMap* treeMapCreate(const bool synchronized, const Deallocator nullable deallocator);
+TreeMap* treeMapCreate(const Allocator* const internalAllocator, const bool synchronized, const Deallocator nullable deallocator);
 int treeMapCount(TreeMap* const map);
 int treeMapIteratorSize(TreeMap* const map);
 void treeMapInsert(TreeMap* const map, const int key, void* const value);

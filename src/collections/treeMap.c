@@ -4,6 +4,11 @@
 
 // inspired by the Java standard library's TreeMap
 
+#define xmalloc a
+#define xcalloc a
+#define xrealloc a
+#define xfree a
+
 typedef enum : byte {
     COLOR_RED,
     COLOR_BLACK
@@ -20,6 +25,7 @@ typedef struct _Node {
 } Node;
 
 struct _TreeMap {
+    const Allocator* const internalAllocator;
     const Deallocator nullable deallocator;
     RWMutex* nullable const rwMutex;
     Node* nullable root;
@@ -35,8 +41,9 @@ struct _TreeMapIterator {
 
 static const int MAX_SIZE = ~0u / 2u; // 0x7fffffff
 
-TreeMap* treeMapCreate(const bool synchronized, const Deallocator nullable deallocator) {
-    TreeMap* const map = xmalloc(sizeof *map);
+TreeMap* treeMapCreate(const Allocator* const internalAllocator, const bool synchronized, const Deallocator nullable deallocator) {
+    TreeMap* const map = internalAllocator->malloc(sizeof *map);
+    unconst(map->internalAllocator) = internalAllocator;
     unconst(map->deallocator) = deallocator;
     unconst(map->rwMutex) = synchronized ? rwMutexCreate() : nullptr;
     map->root = nullptr;
@@ -68,7 +75,7 @@ int treeMapIteratorSize(TreeMap* const map) {
 }
 
 static Node* nodeCreate(TreeMap* const map, const int key, void* const value) {
-    Node* const node = xmalloc(sizeof *node);
+    Node* const node = map->internalAllocator->malloc(sizeof *node);
 
     unconst(node->key) = key;
     unconst(node->value) = value;
@@ -87,7 +94,7 @@ static void nodeDestroy(TreeMap* const map, Node* nullable const node) {
     map->count--;
 
     if (map->deallocator) map->deallocator(node->value);
-    xfree(node);
+    map->internalAllocator->free(node);
 }
 
 static inline Node* nullable parentOf(const Node* nullable const node) {
@@ -437,5 +444,5 @@ void treeMapDestroy(TreeMap* const map) {
 
     treeMapIterateEnd(iterator); // unnecessary
 
-    xfree(map);
+    map->internalAllocator->free(map);
 }

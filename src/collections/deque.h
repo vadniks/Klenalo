@@ -7,7 +7,7 @@
 
 typedef struct _Deque Deque;
 
-Deque* dequeCreate(const bool synchronized, const Deallocator deallocator);
+Deque* dequeCreate(const Allocator* const internalAllocator, const bool synchronized, const Deallocator deallocator);
 void dequePushBack(Deque* const deque, void* const value); // vectorAdd, stackPush
 void dequePushFront(Deque* const deque, void* const value); // queuePush
 void* nullable dequeGet(Deque* const deque, const int index, const bool fromStartOrFromEnd);

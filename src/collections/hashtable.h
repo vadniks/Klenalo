@@ -10,7 +10,7 @@ typedef struct _HashtableIterator HashtableIterator;
 
 extern const int HASHTABLE_ITERATOR_SIZE;
 
-Hashtable* hashtableCreate(const bool synchronized, const Deallocator nullable valueDeallocator);
+Hashtable* hashtableCreate(const Allocator* const internalAllocator, const bool synchronized, const Deallocator nullable valueDeallocator);
 void hashtablePut(Hashtable* const hashtable, const int hash, void* const value); // hashes are the keys and they must be unique
 void* nullable hashtableGet(Hashtable* const hashtable, const int hash);
 void* nullable hashtableRemove(Hashtable* const hashtable, const int hash, const bool deallocate);

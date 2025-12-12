@@ -11,7 +11,7 @@
 
 typedef struct _List List;
 
-List* listCreate(const bool synchronized, const Deallocator nullable deallocator);
+List* listCreate(const Allocator* const internalAllocator, const bool synchronized, const Deallocator nullable deallocator);
 List* nullable listCopy(List* const old, const bool synchronized, const Duplicator nullable duplicator);
 void listAddBack(List* const list, void* const value); // listAdd, stackPush
 void listAddFront(List* const list, void* const value); // queuePush

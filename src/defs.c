@@ -16,10 +16,6 @@ static atomic unsigned long gAllocations = 0;
 }
 #endif
 
-static void init(void) {}
-
-static void quit(void) {}
-
 static void printStackTrace(void) {
     int size = 0xf;
     const void* array[size];
@@ -44,10 +40,6 @@ export void assert(const bool condition) {
 
     printStackTrace();
     abort(); // or __builtin_trap()
-}
-
-static inline void xRwMutexCommand(RWMutex* const rwMutex, const RWMutexCommand command) {
-    if (rwMutex) rwMutexCommand(rwMutex, command);
 }
 
 unsigned long xallocations(void) {
@@ -88,6 +80,9 @@ void xfree(void* nullable const memory) {
     free(memory);
     if (memory) gAllocations--;
 }
+
+#undef DEFAULT_ALLOCATOR
+const Allocator DEFAULT_ALLOCATOR = {xmalloc, xcalloc, xrealloc, xfree};
 
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode) {
     const char* format, * divider;
@@ -160,7 +155,3 @@ int hashValue(const byte* value, int size) {
     for (; size--; hash = 31 * hash + *value++);
     return (int) hash;
 }
-
-// or just use [[gnu::constructor(1+)]]
-void (* nullable const START_HOOK)(void) = init;
-void (* nullable const END_HOOK)(void) = quit;

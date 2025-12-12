@@ -6,7 +6,7 @@
 
 // const int argc, const char* const* const argv, const char* const* const envp
 int main(void) {
-    Deque* const deque = dequeCreate(false, xfree);
+    Deque* const deque = dequeCreate(DEFAULT_ALLOCATOR, false, xfree);
 
     int* value;
 

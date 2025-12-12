@@ -11,6 +11,7 @@ typedef struct Node {
 } Node;
 
 struct _Hashtable {
+    const Allocator* const internalAllocator;
     Node* nullable* nodes;
     int capacity, count;
     const Deallocator nullable deallocator;
@@ -29,9 +30,10 @@ static const int SINT32_MAX = ~0u / 2u; // 0x7fffffff
 static const int INITIAL_CAPACITY = 11;
 static const float LOAD_FACTOR = 0.75f;
 
-Hashtable* hashtableCreate(const bool synchronized, const Deallocator nullable deallocator) {
-    Hashtable* const hashtable = xmalloc(sizeof *hashtable);
-    hashtable->nodes = xcalloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*));
+Hashtable* hashtableCreate(const Allocator* const internalAllocator, const bool synchronized, const Deallocator nullable deallocator) {
+    Hashtable* const hashtable = internalAllocator->malloc(sizeof *hashtable);
+    unconst(hashtable->internalAllocator) = internalAllocator;
+    hashtable->nodes = hashtable->internalAllocator->calloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*));
     hashtable->count = 0;
     unconst(hashtable->deallocator) = deallocator;
     unconst(hashtable->rwMutex) = synchronized ? rwMutexCreate() : nullptr;
@@ -58,7 +60,7 @@ static void rehash(Hashtable* const hashtable) {
     const int newCapacity = hashtable->capacity * 2 + 1;
     if (newCapacity < hashtable->capacity) return; // overflow
 
-    Node** const newNodes = xcalloc(newCapacity, sizeof(void*));
+    Node** const newNodes = hashtable->internalAllocator->calloc(newCapacity, sizeof(void*));
 
     for (int index = 0; index < hashtable->capacity; index++) {
         for (Node* node = hashtable->nodes[index]; node;) {
@@ -73,7 +75,7 @@ static void rehash(Hashtable* const hashtable) {
     }
 
     hashtable->capacity = newCapacity;
-    xfree(hashtable->nodes);
+    hashtable->internalAllocator->free(hashtable->nodes);
     hashtable->nodes = newNodes;
 }
 
@@ -99,7 +101,7 @@ void hashtablePut(Hashtable* const hashtable, const int hash, void* const value)
         return;
     }
 
-    Node* const node = xmalloc(sizeof *node);
+    Node* const node = hashtable->internalAllocator->malloc(sizeof *node);
     assignToStructWithConsts(node, hash, value, *anchor)
     *anchor = node;
     hashtable->count++;
@@ -139,7 +141,7 @@ void* nullable hashtableRemove(Hashtable* const hashtable, const int hash, const
         if (deallocate) deallocateValue(hashtable, node->value);
         else value = node->value;
 
-        xfree(node);
+        hashtable->internalAllocator->free(node);
         hashtable->count--;
         break;
     }
@@ -212,12 +214,12 @@ void hashtableDestroy(Hashtable* const hashtable) {
     for (int index = 0; index < hashtable->capacity; index++) {
         for (Node* node = hashtable->nodes[index]; node; node = node->next) {
             deallocateValue(hashtable, node->value);
-            xfree(node);
+            hashtable->internalAllocator->free(node);
         }
     }
 
-    xfree(hashtable->nodes);
-    xfree(hashtable);
+    hashtable->internalAllocator->free(hashtable->nodes);
+    hashtable->internalAllocator->free(hashtable);
 }
 
 // TODO: add shrinkToFit() - allocate only minimal nodes to fit all the values so that each node contains only one value and call it after remove()

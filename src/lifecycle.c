@@ -54,8 +54,8 @@ void lifecycleInit(void) {
 
     gUIRWMutex = rwMutexCreate();
 
-    gMainActionsLooper.queue = listCreate(true, xfree);
-    gBackgroundActionsLooper.queue = listCreate(true, xfree);
+    gMainActionsLooper.queue = listCreate(DEFAULT_ALLOCATOR, true, xfree);
+    gBackgroundActionsLooper.queue = listCreate(DEFAULT_ALLOCATOR, true, xfree);
 
     videoInit();
     inputInit();

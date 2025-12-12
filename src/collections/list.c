@@ -3,6 +3,7 @@
 #include "list.h"
 
 struct _List {
+    const Allocator* const internalAllocator;
     void** nullable values;
     int size;
     RWMutex* nullable const rwMutex;
@@ -11,8 +12,9 @@ struct _List {
 
 static const int MAX_SIZE = ~0u / 2u; // 0x7fffffff
 
-List* listCreate(const bool synchronized, const Deallocator nullable deallocator) {
-    List* const list = xmalloc(sizeof *list);
+List* listCreate(const Allocator* const internalAllocator, const bool synchronized, const Deallocator nullable deallocator) {
+    List* const list = internalAllocator->malloc(sizeof *list);
+    unconst(list->internalAllocator) = internalAllocator;
     list->values = nullptr;
     list->size = 0;
     unconst(list->rwMutex) = synchronized ? rwMutexCreate() : nullptr;
@@ -37,9 +39,9 @@ List* nullable listCopy(List* const old, const bool synchronized, const Duplicat
     } else
         assert(old->values);
 
-    List* const new = listCreate(synchronized, old->deallocator);
+    List* const new = listCreate(old->internalAllocator, synchronized, old->deallocator);
 
-    new->values = xmalloc(old->size * sizeof(void*));
+    new->values = old->internalAllocator->malloc(old->size * sizeof(void*));
     new->size = old->size;
     for (int i = 0; i < old->size; new->values[i] = duplicator ? duplicator(old->values[i]) : old->values[i], i++);
 
@@ -51,7 +53,7 @@ void listAddBack(List* const list, void* const value) {
     xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(list->size < MAX_SIZE);
 
-    list->values = xrealloc(list->values, ++list->size * sizeof(void*));
+    list->values = list->internalAllocator->realloc(list->values, ++list->size * sizeof(void*));
     list->values[list->size - 1] = value;
 
     xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
@@ -61,11 +63,11 @@ void listAddFront(List* const list, void* const value) {
     xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(list->size < MAX_SIZE);
 
-    void** const temp = xmalloc(++list->size * sizeof(void*));
+    void** const temp = list->internalAllocator->malloc(++list->size * sizeof(void*));
     temp[0] = value;
     for (int i = 1; i < list->size; temp[i] = list->values[i - 1], i++);
 
-    xfree(list->values);
+    list->internalAllocator->free(list->values);
     list->values = temp;
 
     xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
@@ -91,7 +93,7 @@ void* nullable listPopFirst(List* const list) {
     list->size--;
 
     if (!list->size) {
-        xfree(list->values);
+        list->internalAllocator->free(list->values);
         list->values = nullptr;
 
         xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
@@ -99,7 +101,7 @@ void* nullable listPopFirst(List* const list) {
     }
 
     xmemmove(list->values, (void*) list->values + sizeof(void*), list->size * sizeof(void*));
-    list->values = xrealloc(list->values, list->size * sizeof(void*));
+    list->values = list->internalAllocator->realloc(list->values, list->size * sizeof(void*));
 
     xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
     return value;
@@ -117,9 +119,9 @@ void* nullable listPopLast(List* const list) {
     void* const value = list->values[list->size];
 
     if (list->size)
-        list->values = xrealloc(list->values, list->size * sizeof(void*));
+        list->values = list->internalAllocator->realloc(list->values, list->size * sizeof(void*));
     else {
-        xfree(list->values);
+        list->internalAllocator->free(list->values);
         list->values = nullptr;
     }
 
@@ -135,9 +137,9 @@ void listRemove(List* const list, const int index) {
     for (int i = index; i < list->size - 1; list->values[i] = list->values[i + 1], i++);
 
     if (--list->size)
-        list->values = xrealloc(list->values, list->size * sizeof(void*));
+        list->values = list->internalAllocator->realloc(list->values, list->size * sizeof(void*));
     else {
-        xfree(list->values);
+        list->internalAllocator->free(list->values);
         list->values = nullptr;
     }
 
@@ -213,7 +215,7 @@ void listClear(List* const list) {
     destroyValuesIfNotEmpty(list);
     list->size = 0;
 
-    xfree(list->values);
+    list->internalAllocator->free(list->values);
     list->values = nullptr;
 
     xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
@@ -222,6 +224,6 @@ void listClear(List* const list) {
 void listDestroy(List* const list) {
     if (list->rwMutex) rwMutexDestroy(list->rwMutex);
     destroyValuesIfNotEmpty(list);
-    xfree(list->values);
-    xfree(list);
+    list->internalAllocator->free(list->values);
+    list->internalAllocator->free(list);
 }

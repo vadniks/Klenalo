@@ -10,6 +10,7 @@ typedef struct _Node {
 } Node;
 
 struct _Deque {
+    const Allocator* const internalAllocator;
     Node
         * nullable first,
         * nullable last;
@@ -20,8 +21,11 @@ struct _Deque {
 
 static const int MAX_SIZE = ~0u / 2u; // 0x7fffffff
 
-Deque* dequeCreate(const bool synchronized, const Deallocator deallocator) {
-    Deque* const deque = xmalloc(sizeof *deque);
+// TODO: unify back/front and first/last functions
+
+Deque* dequeCreate(const Allocator* const internalAllocator, const bool synchronized, const Deallocator deallocator) {
+    Deque* const deque = internalAllocator->malloc(sizeof *deque);
+    unconst(deque->internalAllocator) = internalAllocator;
     deque->first = deque->last = nullptr;
     deque->size = 0;
     unconst(deque->rwMutex) = synchronized ? rwMutexCreate() : nullptr;
@@ -41,7 +45,7 @@ void dequePushBack(Deque* const deque, void* const value) {
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(deque->size < MAX_SIZE);
 
-    Node* const node = xmalloc(sizeof *node);
+    Node* const node = deque->internalAllocator->malloc(sizeof *node);
     unconst(node->value) = value;
     node->next = nullptr;
     node->previous = deque->last;
@@ -61,7 +65,7 @@ void dequePushFront(Deque* const deque, void* const value) {
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(deque->size < MAX_SIZE);
 
-    Node* const node = xmalloc(sizeof *node);
+    Node* const node = deque->internalAllocator->malloc(sizeof *node);
     unconst(node->value) = value;
     node->next = deque->first;
     node->previous = nullptr;
@@ -114,7 +118,7 @@ void* nullable dequePopFirst(Deque* const deque) {
 
     void* const value = deque->first->value;
     Node* const next = deque->first->next;
-    xfree(deque->first);
+    deque->internalAllocator->free(deque->first);
     deque->first = next;
     if (deque->first) deque->first->previous = nullptr;
 
@@ -142,7 +146,7 @@ void* nullable dequePopLast(Deque* const deque) {
 
     void* const value = deque->last->value;
     Node* const previous = deque->last->previous;
-    xfree(deque->last);
+    deque->internalAllocator->free(deque->last);
     deque->last = previous;
     if (deque->last) deque->last->next = nullptr;
 
@@ -185,7 +189,7 @@ void dequeRemove(Deque* const deque, const int index) {
     xRwMutexCommand(deque, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 
     deallocateValue(deque, node->value);
-    xfree(node);
+    deque->internalAllocator->free(node);
 }
 
 void* nullable dequePeekFirst(Deque* const deque) {
@@ -210,7 +214,7 @@ static void destroyNodes(Deque* const deque) {
     ) {
         deallocateValue(deque, node->value);
         next = node->next;
-        xfree(node);
+        deque->internalAllocator->free(node);
     }
 }
 
@@ -225,5 +229,5 @@ void dequeClear(Deque* const deque) {
 void dequeDestroy(Deque* const deque) {
     if (deque->rwMutex) rwMutexDestroy(deque->rwMutex);
     destroyNodes(deque);
-    xfree(deque);
+    deque->internalAllocator->free(deque);
 }

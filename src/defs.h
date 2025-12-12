@@ -99,6 +99,16 @@ void* xcalloc(const unsigned long elements, const unsigned long size);
 void* nullable xrealloc(void* nullable const pointer, const unsigned long size); // returns null only when size is zero, thus acting as xfree
 void xfree(void* nullable const memory);
 
+typedef struct {
+    void* (* malloc)(const unsigned long size);
+    void* (* calloc)(const unsigned long elements, const unsigned long size);
+    void* (* realloc)(void* nullable const pointer, const unsigned long size);
+    void (* free)(void* nullable const);
+} Allocator;
+
+extern const Allocator DEFAULT_ALLOCATOR;
+#define DEFAULT_ALLOCATOR &DEFAULT_ALLOCATOR
+
 typedef void (* Deallocator)(void* const);
 
 typedef void* (* Duplicator)(const void* const);
@@ -154,8 +164,6 @@ void patchFunction(void* const original, void* const replacement); // overrides 
 
 int hashValue(const byte* value, int size); // non-cryptographic
 #define hashPrimitive(x) hashValue((const byte*) &(typeof(x)) {x}, _Generic((x), byte: 1, short: 2, int: 4, long: 8))
-
-extern void (* nullable const START_HOOK)(void), (* nullable const END_HOOK)(void);
 
 // TODO: add logger with various logging modes; add dynamic memory allocation tracker - store allocated memory addresses and corresponding addresses of *alloc callers; render lvgl via opengl optimized textures via embedded support via lvgl's generic opengl driver
 // TODO: make stack and queue use (double) linked list instead of growable array, and make a 'fast' list - also utilizing (double) linked list - create a deque
