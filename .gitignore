@@ -4,3 +4,4 @@
 !lib/lvgl/include/lvgl/lv_conf.h
 !.gitignore
 /.cache
+/res/*.ttf
