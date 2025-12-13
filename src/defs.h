@@ -72,8 +72,6 @@ void _deferHandler(void (^ const* const block)(void));
 
 typedef struct packed {byte _[];} VariableSizedStruct;
 
-// TODO: add allocations tracker to dynamic allocator wrappers via hashtable (bypass wrappers or use arena on stack)
-
 // TODO: add locks for each module's quit func
 
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
@@ -93,7 +91,7 @@ inline unsigned int swapInt(const int value) { return __builtin_bswap32(value); 
 inline unsigned long swapLong(const long value) { return __builtin_bswap64(value); }
 #endif
 
-void checkUnfreedAllocations(void);
+void checkUnfreedAllocations(void); // should only be called once and at the end of main()
 void* xmalloc(const unsigned long size);
 void* xcalloc(const unsigned long elements, const unsigned long size);
 void* nullable xrealloc(void* nullable const pointer, const unsigned long size); // returns null only when size is zero, thus acting as xfree
@@ -168,7 +166,6 @@ int hashValue(const byte* value, int size); // non-cryptographic
 // TODO: add logger with various logging modes; add dynamic memory allocation tracker - store allocated memory addresses and corresponding addresses of *alloc callers; render lvgl via opengl optimized textures via embedded support via lvgl's generic opengl driver
 // TODO: make stack and queue use (double) linked list instead of growable array, and make a 'fast' list - also utilizing (double) linked list - create a deque
 
-// TODO: separate data structures into a standalone library and add red-black/(avl<--) tree (self-balancing binary search tree)
 // TODO: separate crypto routines into a standalone library
 // TODO: separate networking module into a standalone library
 

@@ -63,7 +63,7 @@ export void assert(const bool condition) {
     treeMapDestroy(gAllocationsTreeMap);
 }
 
-static int dlIteratePhdrCallback(struct dl_phdr_info* const info, const size_t size, void* const data) {
+static int dlIteratePhdrCallback(struct dl_phdr_info* const info, const size_t, void* const data) {
     unsigned long* const xdata = data;
     if (!*xdata || !info->dlpi_name[0]) *xdata = info->dlpi_addr;
     return 0;
@@ -83,10 +83,7 @@ void checkUnfreedAllocations(void) {
     TreeMapIterator* iterator;
     treeMapIterateBegin(gAllocationsTreeMap, iterator);
 
-//#pragma clang diagnostic push
-//#pragma ide diagnostic ignored "UnusedLocalVariable"
-//    extern const byte __executable_start; // void* ... = &__executable_start;
-//#pragma clang diagnostic pop
+//    used extern const byte __executable_start; // void* ... = &__executable_start; // linker trick, works on PIE too
 
     const byte bufSize = 0xff;
     char buf[bufSize];
