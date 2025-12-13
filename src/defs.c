@@ -233,8 +233,7 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
 static void trampoline(void);
 asm(
     "trampoline:\n"
-    // TODO: add endbr64 or just skip first 4 bytes in the target function
-    // if this function gets called accidentally, it just fails, these bytes are ignored
+    // if this function gets called accidentally, it just fails, these bytes are ignored, call to this function also can fail due to absence of the endbr64 instruction in the beginning (Control-flow Enforcement Technology)
     "xorl %edi,%edi\n" // 2 bytes
     "jmp assert\n" // 5 bytes
     // these bytes are copied and the address is replaced with the actual one
@@ -249,8 +248,10 @@ void patchFunction(void* const original, void* const replacement) {
 
     assert(!mprotect(pageStart, pageSize, PROT_READ | PROT_WRITE | PROT_EXEC));
 
-    xmemcpy(original, (void*) trampoline + 7, 12);
-    xmemcpy(original + 2, &replacement, 8);
+    // skips first 4 bytes in a target function for the sake of preserving the endbr64 instruction in the beginning of that function
+    // TODO: test this!
+    xmemcpy(4 + original, (void*) trampoline + 7, 12);
+    xmemcpy(4 + original + 2, &replacement, 8);
 
     assert(!mprotect(pageStart, pageSize, PROT_READ | PROT_EXEC));
 }
