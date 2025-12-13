@@ -11,6 +11,8 @@
 #include "collections/treeMap.h"
 #include "defs.h"
 
+#undef DEFAULT_ALLOCATOR
+
 #ifdef DEBUG
 typedef struct {
     unsigned long caller, memory, size;
@@ -22,6 +24,7 @@ static const Allocator NON_TRACKED_ALLOCATOR = {malloc, calloc, realloc, free};
 #endif // DEBUG
 
 static atomic unsigned long gAllocations = 0;
+const Allocator DEFAULT_ALLOCATOR = {xmalloc, xcalloc, xrealloc, xfree};
 
 #ifdef __clang__
 [[maybe_unused]] void _deferHandler(void (^ const* const block)(void)) {
@@ -187,9 +190,6 @@ void xfree(void* nullable const memory) {
     removeAllocation(memory);
 #endif
 }
-
-#undef DEFAULT_ALLOCATOR
-const Allocator DEFAULT_ALLOCATOR = {xmalloc, xcalloc, xrealloc, xfree};
 
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode) {
     const char* format, * divider;
