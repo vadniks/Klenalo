@@ -232,7 +232,7 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
 static void trampoline(void);
 asm(
     "trampoline:\n"
-    // TODO: add endbr64
+    // TODO: add endbr64 or just skip first 4 bytes in the target function
     // if this function gets called accidentally, it just fails, these bytes are ignored
     "xorl %edi,%edi\n" // 2 bytes
     "jmp assert\n" // 5 bytes
