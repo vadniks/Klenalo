@@ -257,6 +257,6 @@ void patchFunction(void* const original, void* const replacement) {
 }
 
 int hashValue(const void* const value, const int size) {
-    unsigned XXH32(const void* const input, const unsigned long length, const unsigned seed);
+    [[gnu::pure]] unsigned XXH32(const void* const input, const unsigned long length, const unsigned seed);
     return (int) XXH32(value, size, 0);
 }
