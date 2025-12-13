@@ -263,9 +263,4 @@ int hashValue(const void* const value, const int size) {
     assert(XXH32_reset(state, 0) == XXH_OK);
     assert(XXH32_update(state, value, size) == XXH_OK);
     return (int) XXH32_digest(state);
-
-// [[gnu::no_sanitize("unsigned-integer-overflow")]]
-//    unsigned int hash = 0;
-//    for (; size--; hash = 31 * hash + *value++);
-//    return (int) hash;
 }
