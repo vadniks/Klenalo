@@ -83,6 +83,7 @@ add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 add_compile_definitions(-DLV_CONF_PATH="../lv_conf.h")
 include_directories(lib/lvgl/include)
 include_directories(lib/sdl3net/include)
+include_directories(lib/xxHash/include)
 include_directories(/usr/include/freetype2)
 
 add_compile_options(-flto)
@@ -102,6 +103,7 @@ target_link_libraries(${PROJECT_NAME}
     sodium
     ${PROJECT_SOURCE_DIR}/lib/sdl3net/bin/libSDL3_net.so # SDL3_net TODO
     BlocksRuntime
+    ${PROJECT_SOURCE_DIR}/lib/xxHash/bin/libxxhash.so
     # sqlite3 # TODO
     # sqlcipher
     # dbus

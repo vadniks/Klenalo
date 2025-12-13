@@ -7,6 +7,8 @@
 #include <sys/syslog.h>
 #include <link.h>
 #include <pthread.h>
+#define XXH_STATIC_LINKING_ONLY
+#include <xxHash/xxhash.h>
 #include "collections/treeMap.h"
 #include "defs.h"
 
@@ -106,8 +108,17 @@ void checkUnfreedAllocations(void) {
     abort();
 }
 
-static inline int hashAddress(const unsigned long address) {
-    return hashValue((const void*) &address, sizeof address);
+[[gnu::no_sanitize("unsigned-integer-overflow")]]
+static int hashAddress(const unsigned long address) {
+    struct XXH32_state_s state;
+
+    assert(XXH32_reset(&state, 0) == XXH_OK);
+    assert(XXH32_update(&state, &address, sizeof address) == XXH_OK);
+    unsigned hash = XXH32_digest(&state);
+
+    return (int) hash;
+
+//    return (int) ((address >> 32) ^ (address & 0xfffffffful));
 }
 
 static void addAllocation(const unsigned long caller, const unsigned long memory, const unsigned long size) {
