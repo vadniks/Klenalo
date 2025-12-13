@@ -94,7 +94,9 @@ void checkUnfreedAllocations(void) {
         snprintf(
             buf, bufSize,
             "\tunfreed allocation caller=0x%lx (<elf>+0x%lx) memory=0x%lx size=%lu\n",
-            allocation->caller, allocation->caller - executableStartAddress, allocation->memory, allocation->size
+            allocation->caller,
+            (byte) (allocation->caller >> 44ul) == 5 ? allocation->caller - executableStartAddress : -1ul, // if true - it's inside this executable, otherwise it's inside one of its shared libraries
+            allocation->memory, allocation->size
         );
 
         fputs(buf, stderr);
