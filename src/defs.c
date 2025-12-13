@@ -16,7 +16,7 @@ typedef struct {
     unsigned long caller, memory, size;
 } Allocation;
 
-static TreeMap* gAllocationsTreeMap = nullptr;
+static TreeMap* gAllocationsTreeMap = nullptr; // <Allocation*>
 static pthread_rwlock_t gAllocationsMapRwLock = PTHREAD_RWLOCK_INITIALIZER; // not our own RwMutex (SDL_ReadWriteLock under the hood) cuz it uses the tracked allocator
 static const Allocator NON_TRACKED_ALLOCATOR = {malloc, calloc, realloc, free};
 #endif // DEBUG
