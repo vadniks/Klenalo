@@ -4,11 +4,6 @@
 
 // inspired by the Java standard library's TreeMap
 
-#define xmalloc a
-#define xcalloc a
-#define xrealloc a
-#define xfree a
-
 typedef enum : byte {
     COLOR_RED,
     COLOR_BLACK

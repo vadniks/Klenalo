@@ -7,7 +7,6 @@
 #include <sys/syslog.h>
 #include <link.h>
 #include <pthread.h>
-#define XXH_STATIC_LINKING_ONLY
 #include <xxHash/xxhash.h>
 #include "collections/treeMap.h"
 #include "defs.h"
@@ -29,6 +28,10 @@ static atomic unsigned long gAllocations = 0;
     (*block)();
 }
 #endif
+
+[[gnu::constructor(2)]] used static void init2(void) {
+    assert(XXH_versionNumber() == 803);
+}
 
 static void printStackTrace(void) {
     int addressesSize = 0xf;
@@ -108,19 +111,6 @@ void checkUnfreedAllocations(void) {
     abort();
 }
 
-[[gnu::no_sanitize("unsigned-integer-overflow")]]
-static int hashAddress(const unsigned long address) {
-    struct XXH32_state_s state;
-
-    assert(XXH32_reset(&state, 0) == XXH_OK);
-    assert(XXH32_update(&state, &address, sizeof address) == XXH_OK);
-    unsigned hash = XXH32_digest(&state);
-
-    return (int) hash;
-
-//    return (int) ((address >> 32) ^ (address & 0xfffffffful));
-}
-
 static void addAllocation(const unsigned long caller, const unsigned long memory, const unsigned long size) {
     Allocation* const allocation = malloc(sizeof *allocation);
     assert(allocation);
@@ -129,14 +119,14 @@ static void addAllocation(const unsigned long caller, const unsigned long memory
     allocation->size = size;
 
     pthread_rwlock_wrlock(&gAllocationsMapRwLock);
-    treeMapInsert(gAllocationsTreeMap, hashAddress(memory), allocation);
+    treeMapInsert(gAllocationsTreeMap, hashPrimitive(memory), allocation);
     pthread_rwlock_unlock(&gAllocationsMapRwLock);
 }
 #define addAllocation(x, y) addAllocation((unsigned long) returnAddr, (unsigned long) x, y)
 
 static void removeAllocation(const unsigned long memory) {
     pthread_rwlock_wrlock(&gAllocationsMapRwLock);
-    treeMapDelete(gAllocationsTreeMap, hashAddress(memory));
+    treeMapDelete(gAllocationsTreeMap, hashPrimitive(memory));
     pthread_rwlock_unlock(&gAllocationsMapRwLock);
 }
 #define removeAllocation(x) removeAllocation((unsigned long) x)
@@ -268,9 +258,14 @@ void patchFunction(void* const original, void* const replacement) {
     assert(!mprotect(pageStart, pageSize, PROT_READ | PROT_EXEC));
 }
 
-[[gnu::no_sanitize("unsigned-integer-overflow")]]
-int hashValue(const byte* value, int size) {
-    unsigned int hash = 0;
-    for (; size--; hash = 31 * hash + *value++);
-    return (int) hash;
+int hashValue(const void* const value, const int size) {
+    XXH32_state_t* const state = xalloca(48);
+    assert(XXH32_reset(state, 0) == XXH_OK);
+    assert(XXH32_update(state, value, size) == XXH_OK);
+    return (int) XXH32_digest(state);
+
+// [[gnu::no_sanitize("unsigned-integer-overflow")]]
+//    unsigned int hash = 0;
+//    for (; size--; hash = 31 * hash + *value++);
+//    return (int) hash;
 }

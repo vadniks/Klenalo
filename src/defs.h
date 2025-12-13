@@ -160,8 +160,8 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
 
 void patchFunction(void* const original, void* const replacement); // overrides first 12 bytes of the original function with a trampoline to the replacement function
 
-int hashValue(const byte* value, int size); // non-cryptographic
-#define hashPrimitive(x) hashValue((const byte*) &(typeof(x)) {x}, _Generic((x), byte: 1, short: 2, int: 4, long: 8))
+int hashValue(const void* const value, const int size); // fast non-cryptographic collision-resistant general purpose hash function (xxhash)
+#define hashPrimitive(x) hashValue(&(typeof(x)) {x}, sizeof x) // _Generic((x), byte: 1, char: 1, unsigned short: 2, short: 2, unsigned int: 4, int: 4, unsigned long: 8, long: 8)
 
 // TODO: add logger with various logging modes; add dynamic memory allocation tracker - store allocated memory addresses and corresponding addresses of *alloc callers; render lvgl via opengl optimized textures via embedded support via lvgl's generic opengl driver
 // TODO: make stack and queue use (double) linked list instead of growable array, and make a 'fast' list - also utilizing (double) linked list - create a deque
