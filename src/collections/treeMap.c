@@ -412,7 +412,7 @@ void* nullable treeMapIterate(TreeMapIterator* const iterator) {
     if (rightOf(node))
         iteratePutLeftChildrenIntoStack(iterator, node->right);
 
-    return node;
+    return node ? node->value : nullptr;
 }
 
 void treeMapIterateEnd(TreeMapIterator* const iterator) {
