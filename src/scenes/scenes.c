@@ -1,8 +1,8 @@
 
 #include <SDL3/SDL.h>
-#include "xlvgl.h"
-#include "defs.h"
-#include "video.h"
+#include "../integration/xlvgl.h"
+#include "../defs.h"
+#include "../integration/video.h"
 #include "splashScene.h"
 #include "loginScene.h"
 #include "scenes.h"

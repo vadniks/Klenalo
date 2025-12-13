@@ -1,5 +1,5 @@
 
-#include "../rwMutex.h"
+#include "../utils/rwMutex.h"
 #include "treeMap.h"
 
 // inspired by the Java standard library's TreeMap

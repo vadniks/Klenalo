@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "defs.h"
+#include "../defs.h"
 
 typedef enum : byte {
     CONDITION_OBSERVER_VARIABLE_TYPE_BYTE = sizeof(byte),

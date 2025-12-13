@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "defs.h"
+#include "../defs.h"
 
 enum : int {
     CRYPTO_GENERIC_KEY_SIZE = 32,

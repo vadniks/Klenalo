@@ -1,9 +1,9 @@
 
 #include <SDL3/SDL.h>
 #include "xlvgl.h"
-#include "defs.h"
-#include "lifecycle.h"
-#include "consts.h"
+#include "../defs.h"
+#include "../core/lifecycle.h"
+#include "../consts.h"
 #include "video.h"
 
 static atomic bool gInitialized = false;

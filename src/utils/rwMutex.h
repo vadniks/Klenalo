@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "defs.h"
+#include "../defs.h"
 
 typedef struct _RWMutex RWMutex;
 

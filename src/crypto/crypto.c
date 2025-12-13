@@ -1,6 +1,6 @@
 
 #include <sodium.h>
-#include "lifecycle.h"
+#include "../core/lifecycle.h"
 #include "crypto.h"
 
 staticAssert(

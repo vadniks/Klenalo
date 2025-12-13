@@ -1,7 +1,7 @@
 
 #include <SDL3/SDL.h>
 #include "xlvgl.h"
-#include "defs.h"
+#include "../defs.h"
 #include "video.h"
 #include "input.h"
 

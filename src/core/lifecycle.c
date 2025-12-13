@@ -1,13 +1,13 @@
 
 #include <SDL3/SDL.h>
-#include "xlvgl.h"
-#include "video.h"
-#include "input.h"
-#include "resources.h"
-#include "scenes.h"
-#include "crypto.h"
-#include "collections/list.h"
-#include "consts.h"
+#include "../integration/xlvgl.h"
+#include "../integration/video.h"
+#include "../integration/input.h"
+#include "../integration/resources.h"
+#include "../scenes/scenes.h"
+#include "../crypto/crypto.h"
+#include "../collections/list.h"
+#include "../consts.h"
 #include "lifecycle.h"
 
 typedef struct {

@@ -1,10 +1,10 @@
 
-#include "xlvgl.h"
-#include "defs.h"
+#include "../integration/xlvgl.h"
+#include "../defs.h"
 #include "scenes.h"
-#include "consts.h"
-#include "input.h"
-#include "resources.h"
+#include "../consts.h"
+#include "../integration/input.h"
+#include "../integration/resources.h"
 #include "loginScene.h"
 
 static atomic bool gInitialized = false;

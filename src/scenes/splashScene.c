@@ -1,10 +1,10 @@
 
-#include "xlvgl.h"
+#include "../integration/xlvgl.h"
 #include "scenes.h"
-#include "defs.h"
-#include "lifecycle.h"
-#include "consts.h"
-#include "resources.h"
+#include "../defs.h"
+#include "../core/lifecycle.h"
+#include "../consts.h"
+#include "../integration/resources.h"
 #include "splashScene.h"
 
 static const int PROGRESS_BAR_MAX = 100, PROGRESS_BAR_INCREMENT = 5;

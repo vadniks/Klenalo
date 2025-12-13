@@ -1,6 +1,6 @@
 
-#include <lvgl/src/stdlib/lv_mem.h>
-#include "defs.h"
+#include "lvgl/src/stdlib/lv_mem.h"
+#include "../defs.h"
 
 export used void lv_mem_init(void) {}
 

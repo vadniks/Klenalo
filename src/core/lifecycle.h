@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include "defs.h"
-#include "rwMutex.h"
+#include "../defs.h"
+#include "../utils/rwMutex.h"
 
 typedef void (* LifecycleAsyncActionFunction)(void* nullable const);
 

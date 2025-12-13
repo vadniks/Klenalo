@@ -2,7 +2,7 @@
 #include <SDL3/SDL.h>
 #include <freetype/freetype.h>
 #include "xlvgl.h"
-#include "defs.h"
+#include "../defs.h"
 #include "video.h"
 #include "resources.h"
 
