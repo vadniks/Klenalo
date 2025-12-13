@@ -29,10 +29,6 @@ static atomic unsigned long gAllocations = 0;
 }
 #endif
 
-[[gnu::constructor(2)]] used static void init2(void) {
-    assert(XXH_versionNumber() == 803);
-}
-
 static void printStackTrace(void) {
     int addressesSize = 0xf;
     const void* addresses[addressesSize];
@@ -259,8 +255,5 @@ void patchFunction(void* const original, void* const replacement) {
 }
 
 int hashValue(const void* const value, const int size) {
-    XXH32_state_t* const state = xalloca(48);
-    assert(XXH32_reset(state, 0) == XXH_OK);
-    assert(XXH32_update(state, value, size) == XXH_OK);
-    return (int) XXH32_digest(state);
+    return (int) XXH32(value, size, 0);
 }
