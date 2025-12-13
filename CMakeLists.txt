@@ -69,7 +69,7 @@ add_compile_options(-Wno-sign-conversion)
 # -fcond-mismatch
 
 add_compile_options(-fblocks)
-add_compile_options(-fms-extensions -Wno-microsoft-anon-tag -Wno-microsoft-string-literal-from-predefined)
+add_compile_options(-fms-extensions -Wno-microsoft-anon-tag -Wno-microsoft-string-literal-from-predefined) # or just prepend the line on which the statement containing the nonstandard stuff is written with __extension__
 add_compile_options(-fcommon)
 
 #add_compile_options(-E)

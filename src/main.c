@@ -6,51 +6,20 @@
 
 // const int argc, const char* const* const argv, const char* const* const envp
 int main(void) {
-    Deque* const deque = dequeCreate(DEFAULT_ALLOCATOR, false, xfree);
+    xmalloc(10);
+    xmalloc(20);
+    xfree(xmalloc(30));
+    xmalloc(40);
 
-    int* value;
+    xrealloc(nullptr, 11);
+    xrealloc(xmalloc(50), 52);
+    xrealloc(xmalloc(60), 0);
 
-    value = xmalloc(sizeof(int));
-    *value = 0;
-    dequePushFront(deque, value);
-
-    value = xmalloc(sizeof(int));
-    *value = 1;
-    dequePushBack(deque, value);
-
-//    value = dequePopLast(deque);
-//    printf("a %d\n", *value);
-//    xfree(value);
-
-    // TODO: add asserts (invariants checking) to public functions in Deck
-
-//    value = dequePopLast(deque);
-//    printf("a %d\n", *value);
-//    xfree(value);
-//
-//    value = dequePopFirst(deque);
-//    printf("a %d\n", value ? *value : -1);
-//    xfree(value);
-
-//    printf("! %d\n", *(int*) dequeGet(deque, 0, true));
-    dequeRemove(deque, 0);
-
-//    value = xmalloc(sizeof(int));
-//    *value = 2;
-//    dequePushBack(deque, value);
-
-    while ((value = dequePopFirst(deque))) {
-        printf("%d\n", *value);
-        xfree(value);
-    }
-
-    printf("%p %p\n", dequeGet(deque, 5, true), dequeGet(deque, 5, false));
-
-    dequeDestroy(deque);
+    xfree(xrealloc(xmalloc(70), 73));
 
 //    lifecycleInit();
 //    lifecycleLoop();
 //    lifecycleQuit();
-    assert(!xallocations());
+    checkUnfreedAllocations();
     return 0;
 }

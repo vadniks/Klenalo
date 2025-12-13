@@ -93,7 +93,7 @@ inline unsigned int swapInt(const int value) { return __builtin_bswap32(value); 
 inline unsigned long swapLong(const long value) { return __builtin_bswap64(value); }
 #endif
 
-unsigned long xallocations(void);
+void checkUnfreedAllocations(void);
 void* xmalloc(const unsigned long size);
 void* xcalloc(const unsigned long elements, const unsigned long size);
 void* nullable xrealloc(void* nullable const pointer, const unsigned long size); // returns null only when size is zero, thus acting as xfree

@@ -5,10 +5,27 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/syslog.h>
-#include "rwMutex.h"
+#include <link.h>
+#include <pthread.h>
+#include "collections/treeMap.h"
 #include "defs.h"
 
+typedef struct {
+    unsigned long caller, memory, size;
+} Allocation;
+
 static atomic unsigned long gAllocations = 0;
+static TreeMap* gAllocationsTreeMap = nullptr;
+static pthread_rwlock_t gAllocationsMapRwLock = PTHREAD_RWLOCK_INITIALIZER;
+static const Allocator NON_TRACKED_ALLOCATOR = {malloc, calloc, realloc, free};
+
+[[gnu::constructor(1)]] used static void init(void) {
+    gAllocationsTreeMap = treeMapCreate(&NON_TRACKED_ALLOCATOR, false, free);
+}
+
+[[gnu::destructor(1)]] used static void quit(void) {
+    treeMapDestroy(gAllocationsTreeMap);
+}
 
 #ifdef __clang__
 [[maybe_unused]] void _deferHandler(void (^ const* const block)(void)) {
@@ -17,14 +34,14 @@ static atomic unsigned long gAllocations = 0;
 #endif
 
 static void printStackTrace(void) {
-    int size = 0xf;
-    const void* array[size];
+    int addressesSize = 0xf;
+    const void* addresses[addressesSize];
 
-    size = backtrace((void**) array, size);
-    char** const strings = backtrace_symbols((void**) array, size);
+    addressesSize = backtrace((void**) addresses, addressesSize);
+    char** const strings = backtrace_symbols((void**) addresses, addressesSize);
     if (!strings) return;
 
-    for (int i = 0; i < size; i++)
+    for (int i = 2; i < addressesSize; i++)
         fprintf(stderr, "%s\n", strings[i]),
         syslog(LOG_ERR, "%s\n", strings[i]);
 
@@ -42,12 +59,75 @@ export void assert(const bool condition) {
     abort(); // or __builtin_trap()
 }
 
-unsigned long xallocations(void) {
-    const char message[] = "Allocations: %lu\n";
+static int dlIteratePhdrCallback(struct dl_phdr_info* const info, const size_t size, void* const data) {
+    unsigned long* const xdata = data;
+    if (!*xdata || !info->dlpi_name[0]) *xdata = info->dlpi_addr;
+    return 0;
+}
+
+void checkUnfreedAllocations(void) {
+    if (!gAllocations) return;
+
+    unsigned long executableStartAddress = 0;
+    dl_iterate_phdr(dlIteratePhdrCallback, &executableStartAddress);
+
+    const char message[] = "Unfreed allocations found: %lu\n";
     fprintf(stderr, message, gAllocations);
     syslog(LOG_ERR, message, gAllocations);
-    return gAllocations;
+
+    pthread_rwlock_rdlock(&gAllocationsMapRwLock);
+    TreeMapIterator* iterator;
+    treeMapIterateBegin(gAllocationsTreeMap, iterator);
+
+//#pragma clang diagnostic push
+//#pragma ide diagnostic ignored "UnusedLocalVariable"
+//    extern const byte __executable_start; // void* ... = &__executable_start;
+//#pragma clang diagnostic pop
+
+    const byte bufSize = 0xff;
+    char buf[bufSize];
+
+    Allocation* allocation;
+    while ((allocation = treeMapIterate(iterator))) {
+        snprintf(
+            buf, bufSize,
+            "\tunfreed allocation caller=0x%lx (<elf>+0x%lx) memory=0x%lx size=%lu\n",
+            allocation->caller, allocation->caller - executableStartAddress, allocation->memory, allocation->size
+        );
+
+        fputs(buf, stderr);
+        syslog(LOG_ERR, "%s", buf);
+    }
+
+    treeMapIterateEnd(iterator);
+    pthread_rwlock_unlock(&gAllocationsMapRwLock);
+
+    abort();
 }
+
+static inline int hashAddress(const unsigned long address) {
+    return hashValue((const void*) &address, sizeof address);
+}
+
+static void addAllocation(const unsigned long caller, const unsigned long memory, const unsigned long size) {
+    Allocation* const allocation = malloc(sizeof *allocation);
+    assert(allocation);
+    allocation->caller = caller;
+    allocation->memory = memory;
+    allocation->size = size;
+
+    pthread_rwlock_wrlock(&gAllocationsMapRwLock);
+    treeMapInsert(gAllocationsTreeMap, hashAddress(memory), allocation);
+    pthread_rwlock_unlock(&gAllocationsMapRwLock);
+}
+#define addAllocation(x, y) addAllocation((unsigned long) returnAddr, (unsigned long) x, y)
+
+static void removeAllocation(const unsigned long memory) {
+    pthread_rwlock_wrlock(&gAllocationsMapRwLock);
+    treeMapDelete(gAllocationsTreeMap, hashAddress(memory));
+    pthread_rwlock_unlock(&gAllocationsMapRwLock);
+}
+#define removeAllocation(x) removeAllocation((unsigned long) x)
 
 void* xmalloc(const unsigned long size) {
     return xcalloc(size, 1);
@@ -57,6 +137,19 @@ void* xcalloc(const unsigned long elements, const unsigned long size) {
     void* const memory = calloc(elements, size);
     assert(memory);
     gAllocations++;
+
+    addAllocation(memory, elements * size);
+
+//    Allocation* const allocation = malloc(sizeof *allocation);
+//    assert(allocation);
+//    allocation->caller = (unsigned long) returnAddr;
+//    allocation->memory = (unsigned long) memory;
+//    allocation->size = elements * size;
+//
+//    pthread_rwlock_wrlock(&gAllocationsMapRwLock);
+//    treeMapInsert(gAllocationsTreeMap, hashPointer(memory), allocation);
+//    pthread_rwlock_unlock(&gAllocationsMapRwLock);
+
     return memory;
 }
 
@@ -66,11 +159,16 @@ void* nullable xrealloc(void* nullable const pointer, const unsigned long size) 
     if (!pointer) { // !pointer && size
         assert(memory);
         gAllocations++;
+        addAllocation(memory, size);
     } else if (size) { // pointer && size
         assert(memory);
+
+        removeAllocation(pointer);
+        addAllocation(memory, size);
     } else { // pointer && !size
         assert(!memory);
         gAllocations--;
+        removeAllocation(pointer);
     }
 
     return memory;
@@ -78,7 +176,14 @@ void* nullable xrealloc(void* nullable const pointer, const unsigned long size) 
 
 void xfree(void* nullable const memory) {
     free(memory);
-    if (memory) gAllocations--;
+    if (!memory) return;
+    gAllocations--;
+
+    removeAllocation(memory);
+
+//    pthread_rwlock_wrlock(&gAllocationsMapRwLock);
+//    treeMapDelete(gAllocationsTreeMap, hashPointer(memory));
+//    pthread_rwlock_unlock(&gAllocationsMapRwLock);
 }
 
 #undef DEFAULT_ALLOCATOR
