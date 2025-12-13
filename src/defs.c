@@ -10,22 +10,17 @@
 #include "collections/treeMap.h"
 #include "defs.h"
 
+#ifdef DEBUG
 typedef struct {
     unsigned long caller, memory, size;
 } Allocation;
 
-static atomic unsigned long gAllocations = 0;
 static TreeMap* gAllocationsTreeMap = nullptr;
-static pthread_rwlock_t gAllocationsMapRwLock = PTHREAD_RWLOCK_INITIALIZER;
+static pthread_rwlock_t gAllocationsMapRwLock = PTHREAD_RWLOCK_INITIALIZER; // not our own RwMutex (SDL_ReadWriteLock under the hood) cuz it uses the tracked allocator
 static const Allocator NON_TRACKED_ALLOCATOR = {malloc, calloc, realloc, free};
+#endif // DEBUG
 
-[[gnu::constructor(1)]] used static void init(void) {
-    gAllocationsTreeMap = treeMapCreate(&NON_TRACKED_ALLOCATOR, false, free);
-}
-
-[[gnu::destructor(1)]] used static void quit(void) {
-    treeMapDestroy(gAllocationsTreeMap);
-}
+static atomic unsigned long gAllocations = 0;
 
 #ifdef __clang__
 [[maybe_unused]] void _deferHandler(void (^ const* const block)(void)) {
@@ -57,6 +52,15 @@ export void assert(const bool condition) {
 
     printStackTrace();
     abort(); // or __builtin_trap()
+}
+
+#ifdef DEBUG
+[[gnu::constructor(1)]] used static void init(void) {
+    gAllocationsTreeMap = treeMapCreate(&NON_TRACKED_ALLOCATOR, false, free);
+}
+
+[[gnu::destructor(1)]] used static void quit(void) {
+    treeMapDestroy(gAllocationsTreeMap);
 }
 
 static int dlIteratePhdrCallback(struct dl_phdr_info* const info, const size_t size, void* const data) {
@@ -128,6 +132,11 @@ static void removeAllocation(const unsigned long memory) {
     pthread_rwlock_unlock(&gAllocationsMapRwLock);
 }
 #define removeAllocation(x) removeAllocation((unsigned long) x)
+#else // DEBUG
+void checkUnfreedAllocations(void) {
+    assert(!gAllocations);
+}
+#endif // DEBUG
 
 void* xmalloc(const unsigned long size) {
     return xcalloc(size, 1);
@@ -138,18 +147,9 @@ void* xcalloc(const unsigned long elements, const unsigned long size) {
     assert(memory);
     gAllocations++;
 
+#ifdef DEBUG
     addAllocation(memory, elements * size);
-
-//    Allocation* const allocation = malloc(sizeof *allocation);
-//    assert(allocation);
-//    allocation->caller = (unsigned long) returnAddr;
-//    allocation->memory = (unsigned long) memory;
-//    allocation->size = elements * size;
-//
-//    pthread_rwlock_wrlock(&gAllocationsMapRwLock);
-//    treeMapInsert(gAllocationsTreeMap, hashPointer(memory), allocation);
-//    pthread_rwlock_unlock(&gAllocationsMapRwLock);
-
+#endif
     return memory;
 }
 
@@ -159,16 +159,24 @@ void* nullable xrealloc(void* nullable const pointer, const unsigned long size) 
     if (!pointer) { // !pointer && size
         assert(memory);
         gAllocations++;
+
+#ifdef DEBUG
         addAllocation(memory, size);
+#endif
     } else if (size) { // pointer && size
         assert(memory);
 
+#ifdef DEBUG
         removeAllocation(pointer);
         addAllocation(memory, size);
+#endif
     } else { // pointer && !size
         assert(!memory);
         gAllocations--;
+
+#ifdef DEBUG
         removeAllocation(pointer);
+#endif
     }
 
     return memory;
@@ -179,11 +187,9 @@ void xfree(void* nullable const memory) {
     if (!memory) return;
     gAllocations--;
 
+#ifdef DEBUG
     removeAllocation(memory);
-
-//    pthread_rwlock_wrlock(&gAllocationsMapRwLock);
-//    treeMapDelete(gAllocationsTreeMap, hashPointer(memory));
-//    pthread_rwlock_unlock(&gAllocationsMapRwLock);
+#endif
 }
 
 #undef DEFAULT_ALLOCATOR
