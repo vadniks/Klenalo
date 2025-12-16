@@ -39,7 +39,7 @@ add_compile_options(-fsanitize-trap=all)
 add_compile_options(-fcf-protection=full)
 add_compile_options(-fsanitize=bounds -fsanitize=null -fsanitize=object-size -fsanitize=nonnull-attribute -fsanitize=returns-nonnull-attribute -fsanitize=signed-integer-overflow -fsanitize=unsigned-integer-overflow -fsanitize=float-cast-overflow -fsanitize=pointer-overflow -fsanitize=enum -fsanitize=bool)
 #add_compile_options(-fhardened)
-add_compile_options(-fPIE)
+add_compile_options(-fPIE -fpie)
 add_compile_options(-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-aliasing -ftrivial-auto-var-init=zero -Werror=implicit -Werror=incompatible-pointer-types -Werror=int-conversion -fstrict-flex-arrays=3 -fwrapv -fno-delete-null-pointer-checks)
 add_compile_options(-ftrapv)
 add_link_options(-pie -Wl,-z,relro -Wl,-z,now -Wl,-z,nodlopen -Wl,-z,noexecstack -Wl,--as-needed -Wl,--no-copy-dt-needed-entries) #add_link_options(-pie -z relro)
@@ -76,23 +76,20 @@ add_compile_options(-fcommon)
 
 add_compile_definitions("-D_GNU_SOURCE -D_THREAD_SAFE -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3")
 
-#file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h src/*/*.c src/*/*.h)
-file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h)
-add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+add_compile_options(-flto)
+add_link_options(-flto)
+#add_link_options(-fuse-ld=bfd) lld
+
+add_link_options(-static-libasan)
 
 add_compile_definitions(-DLV_CONF_PATH="../lv_conf.h")
+
 include_directories(lib/lvgl/include)
 include_directories(lib/sdl3net/include)
 include_directories(lib/xxHash/include)
 include_directories(/usr/include/freetype2)
 
-add_compile_options(-flto)
-add_link_options(-flto)
-add_link_options(-fuse-ld=lld)
-
-add_link_options(-static-libasan)
-
-target_link_libraries(${PROJECT_NAME}
+link_libraries(
     asan
     c
     m
@@ -118,6 +115,10 @@ target_link_libraries(${PROJECT_NAME}
     # ffmpeg
 )
 
+#file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h src/*/*.c src/*/*.h)
+file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h)
+add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+
 #file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
 
 #add_compile_definitions(TESTING)
@@ -128,3 +129,22 @@ target_link_libraries(${PROJECT_NAME}
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # initial clangd flags for clion (remove) -Wno-unused-variable,-Wno-infinite-recursion,-Wno-array-bounds,-Wno-return-stack-address,-Werror=implicit-function-declaration,-Wshadow,-Wno-shadow-field-in-constructor-modified,-Wno-shadow-ivar,-Wuninitialized,-Wunused-label,-Wunused-lambda-capture
+
+set(ENABLE_TESTS true)
+if(ENABLE_TESTS)
+    file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS src/* tests/*)
+    list(FILTER TEST_SOURCES EXCLUDE REGEX main.c)
+
+    set(TESTS_EXE "tests")
+    add_executable(${TESTS_EXE} ${TEST_SOURCES})
+
+    get_target_property(PROJECT_LIBS_LIST ${PROJECT_NAME} LINK_LIBRARIES)
+#    target_link_libraries(${TESTS_EXE} ${PROJECT_LIBS_LIST})
+
+    enable_testing()
+    target_compile_definitions(${TESTS_EXE} PRIVATE TESTING)
+
+    foreach(INDEX RANGE 3)
+        add_test(NAME test${INDEX} COMMAND $<TARGET_FILE:${TESTS_EXE}> ${INDEX})
+    endforeach()
+endif()

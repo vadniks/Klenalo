@@ -114,7 +114,11 @@ static int netActionsLoop(void* nullable const) {
 }
 
 bool lifecycleInitialized(void) {
+#ifndef TESTING
     return gInitialized;
+#else
+    return true;
+#endif
 }
 
 bool lifecycleRunning(void) {

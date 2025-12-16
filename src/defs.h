@@ -2,6 +2,7 @@
 #pragma once
 
 #define DEBUG
+//#define TESTING
 
 #if __STDC_VERSION__ < 202400L /*C2Y*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) /*glibc*/ || \
     !defined(__linux__) /*api*/ || !defined(_GNU_SOURCE) /*api*/ || !defined(__x86_64__) || !__LITTLE_ENDIAN__ || \

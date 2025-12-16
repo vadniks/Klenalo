@@ -39,7 +39,7 @@ static void printStackTrace(void) {
     char** const strings = backtrace_symbols((void**) addresses, addressesSize);
     if (!strings) return;
 
-    for (int i = 2; i < addressesSize; i++)
+    for (int i = 3; i < addressesSize; i++)
         fprintf(stderr, "%s\n", strings[i]),
         syslog(LOG_ERR, "%s\n", strings[i]);
 
@@ -235,10 +235,12 @@ asm(
     "trampoline:\n"
     // if this function gets called accidentally, it just fails, these bytes are ignored, call to this function also can fail due to absence of the endbr64 instruction in the beginning (Control-flow Enforcement Technology)
     "xorl %edi,%edi\n" // 2 bytes
-    "jmp assert\n" // 5 bytes
+    "jmp assert\n" // 5 bytes - not a ud2 to get the backtrace and generate core dump
     // these bytes are copied and the address is replaced with the actual one
     "movabsq $-1,%rax\n" // 2 + 8 bytes
-    "jmpq *%rax" // 2 bytes
+    "jmpq *%rax\n" // 2 bytes
+    // undefined instruction aka trap aka abort - gonna fail if gets reached after the jump which cannot happen anyway
+    "ud2" // 2 bytes
 );
 #pragma clang diagnostic pop
 
@@ -249,9 +251,8 @@ void patchFunction(void* const original, void* const replacement) {
     assert(!mprotect(pageStart, pageSize, PROT_READ | PROT_WRITE | PROT_EXEC));
 
     // skips first 4 bytes in a target function for the sake of preserving the endbr64 instruction in the beginning of that function
-    // TODO: test this!
-    xmemcpy(4 + original, (void*) trampoline + 7, 12);
-    xmemcpy(4 + original + 2, &replacement, 8);
+    xmemcpy(4 + original, (void*) trampoline + 7, 14); // copies the first instruction, fake address, register, the second and the third instructions
+    xmemcpy(4 + original + 2, &replacement, 8); // replaces the fake address with the actual one
 
     assert(!mprotect(pageStart, pageSize, PROT_READ | PROT_EXEC));
 }

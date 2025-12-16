@@ -26,19 +26,11 @@ staticAssert(
 
 static atomic bool gInitialized = false;
 
-#ifdef DEBUG
-static void tests(void);
-#endif
-
 void cryptoInit(void) {
     assert(lifecycleInitialized() && !gInitialized);
     gInitialized = true;
 
     assert(!sodium_init()); // there's no quit counterpart function linke sodium_quit()
-
-#ifdef DEBUG
-    tests();
-#endif
 }
 
 void cryptoQuit(void) {
@@ -286,8 +278,6 @@ void cryptoHash(
         assert(false);
 }
 
-#ifdef DEBUG
-
 static void tests(void) {
     CryptoGenericKey publicKey, secretKey;
     cryptoMakeKeypair(&publicKey, &secretKey);
@@ -419,5 +409,3 @@ static void tests(void) {
         assert(!xmemcmp(buffer1, buffer2, CRYPTO_HASH_LARGE_SIZE));
     }
 }
-
-#endif
