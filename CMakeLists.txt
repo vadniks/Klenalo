@@ -26,21 +26,24 @@ add_compile_options(-g3)
 add_compile_options(-fstack-protector-all)
 add_compile_options(-fstack-check)
 add_compile_options(-fstack-clash-protection)
-add_compile_options(-fsanitize=address) # abort_on_error=1:detect_leaks=0 as SDL has memory leaks
-#add_link_options(-fsanitize=address)
+# TODO: asan refuses to deal with lto and other hardenings
+#add_compile_options(-fsanitize=address) # abort_on_error=1:detect_leaks=0 as SDL has memory leaks
+#add_link_options(-fsanitize=address) # TODO: -shared-libasan
 #add_compile_options(-fsanitize=memory)
 #add_link_options(-fsanitize=memory)
 add_compile_options(-fno-omit-frame-pointer)
+#add_compile_options(-fno-optimize-sibling-calls)
 #add_compile_options(-fsanitize=thread)
 #add_link_options(-fsanitize=thread)
 add_compile_options(-fsanitize=undefined)
-add_compile_options(-fsanitize-address-use-after-scope)
+#add_compile_options(-fsanitize-address-use-after-scope)
 add_compile_options(-fsanitize-trap=all)
 add_compile_options(-fcf-protection=full)
-add_compile_options(-fsanitize=bounds -fsanitize=null -fsanitize=object-size -fsanitize=nonnull-attribute -fsanitize=returns-nonnull-attribute -fsanitize=signed-integer-overflow -fsanitize=unsigned-integer-overflow -fsanitize=float-cast-overflow -fsanitize=pointer-overflow -fsanitize=enum -fsanitize=bool)
+add_compile_options(-fsanitize=bounds -fsanitize=vla-bound -fsanitize=null -fsanitize=object-size -fsanitize=nonnull-attribute -fsanitize=returns-nonnull-attribute -fsanitize=signed-integer-overflow -fsanitize=unsigned-integer-overflow -fsanitize=float-cast-overflow -fsanitize=pointer-overflow -fsanitize=enum -fsanitize=bool)
 #add_compile_options(-fhardened)
 add_compile_options(-fPIE -fpie)
 add_compile_options(-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-aliasing -ftrivial-auto-var-init=zero -Werror=implicit -Werror=incompatible-pointer-types -Werror=int-conversion -fstrict-flex-arrays=3 -fwrapv -fno-delete-null-pointer-checks)
+#                                             TODO: why 'no' ^ ?
 add_compile_options(-ftrapv)
 add_link_options(-pie -Wl,-z,relro -Wl,-z,now -Wl,-z,nodlopen -Wl,-z,noexecstack -Wl,--as-needed -Wl,--no-copy-dt-needed-entries) #add_link_options(-pie -z relro)
 # linker (man ld) -rpath=dir # gdb info symbol <addr>
@@ -80,7 +83,7 @@ add_compile_options(-flto)
 add_link_options(-flto)
 #add_link_options(-fuse-ld=bfd) lld
 
-add_link_options(-static-libasan)
+#add_link_options(-static-libasan)
 
 add_compile_definitions(-DLV_CONF_PATH="../lv_conf.h")
 
@@ -90,7 +93,7 @@ include_directories(lib/xxHash/include)
 include_directories(/usr/include/freetype2)
 
 link_libraries(
-    asan
+#    asan
     c
     m
     atomic

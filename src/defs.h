@@ -40,7 +40,7 @@ typedef unsigned char byte;
 #define overloadable [[clang::overloadable]]
 #define offsetof(x, y) __builtin_offsetof(x, y)
 #define returnAddr __builtin_return_address(0)
-#define cleanup(x) [[gnu::cleanup(x)]]
+#define cleanup(x) [[gnu::cleanup(x)]] // aka destructor, raii, deffer, auto freeing
 #define concatActual(x, y) x ## y
 #define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
 #define stringifyActual(x) #x

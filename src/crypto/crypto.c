@@ -1,6 +1,5 @@
 
 #include <sodium.h>
-#include "../core/lifecycle.h"
 #include "crypto.h"
 
 staticAssert(
@@ -27,7 +26,7 @@ staticAssert(
 static atomic bool gInitialized = false;
 
 void cryptoInit(void) {
-    assert(lifecycleInitialized() && !gInitialized);
+    assert(!gInitialized);
     gInitialized = true;
 
     assert(!sodium_init()); // there's no quit counterpart function linke sodium_quit()
@@ -39,12 +38,12 @@ void cryptoQuit(void) {
 }
 
 void cryptoMakeSignKeypair(CryptoGenericKey* const publicKey, CryptoSignSecretKey* const secretKey) {
-    assert(lifecycleInitialized() && gInitialized);
+    assert(gInitialized);
     assert(!crypto_sign_keypair((byte*) publicKey, (byte*) secretKey));
 }
 
 void cryptoSign(CryptoSignedBundle* const bundle, const int dataSize, const CryptoSignSecretKey* const secretKey) {
-    assert(lifecycleInitialized() && gInitialized && dataSize > 0);
+    assert(gInitialized && dataSize > 0);
 
     assert(!crypto_sign_detached(
         bundle->signature,
@@ -56,7 +55,7 @@ void cryptoSign(CryptoSignedBundle* const bundle, const int dataSize, const Cryp
 }
 
 bool cryptoSignVerify(CryptoSignedBundle* const bundle, const int dataSize, const CryptoGenericKey* const publicKey) {
-    assert(lifecycleInitialized() && gInitialized && dataSize > 0);
+    assert(gInitialized && dataSize > 0);
 
     return !crypto_sign_verify_detached(
         bundle->signature,
@@ -67,12 +66,12 @@ bool cryptoSignVerify(CryptoSignedBundle* const bundle, const int dataSize, cons
 }
 
 void cryptoMakeKeypair(CryptoGenericKey* const publicKey, CryptoGenericKey* const secretKey) {
-    assert(lifecycleInitialized() && gInitialized);
+    assert(gInitialized);
     assert(!crypto_box_keypair((byte*) publicKey, (byte*) secretKey));
 }
 
 void cryptoPublicEncrypt(CryptoPublicEncryptedBundle* const bundle, const int dataSize, const CryptoGenericKey* const publicKey) {
-    assert(lifecycleInitialized() && gInitialized && dataSize > 0);
+    assert(gInitialized && dataSize > 0);
 
     byte data[dataSize];
     xmemcpy(data, bundle->data, dataSize);
@@ -87,18 +86,18 @@ bool cryptoPublicDecrypt(
     const CryptoGenericKey* const publicKey,
     const CryptoGenericKey* const secretKey
 ) {
-    assert(lifecycleInitialized() && gInitialized && dataSize > 0);
+    assert(gInitialized && dataSize > 0);
 
     const int bundleSize = (int) sizeof *bundle + dataSize;
 
-    byte bundleCopy[bundleSize];
-    xmemcpy(bundleCopy, bundle, bundleSize);
+    CryptoPublicEncryptedBundle* const bundleCopy = xalloca2(bundleSize);
+    xmemcpy((byte*) bundleCopy, (byte*) bundle, bundleSize);
 
-    return !crypto_box_seal_open(bundle->data, bundleCopy, bundleSize, (byte*) publicKey, (byte*) secretKey);
+    return !crypto_box_seal_open(bundle->data, (byte*) bundleCopy, bundleSize, (byte*) publicKey, (byte*) secretKey);
 }
 
 void cryptoSingleEncrypt(CryptoSingleEncryptedBundle* const bundle, const int dataSize, const CryptoGenericKey* const key) {
-    assert(lifecycleInitialized() && gInitialized && dataSize > 0);
+    assert(gInitialized && dataSize > 0);
 
     byte data[dataSize];
     xmemcpy(data, bundle->data, dataSize);
@@ -115,7 +114,7 @@ void cryptoSingleEncrypt(CryptoSingleEncryptedBundle* const bundle, const int da
 }
 
 bool cryptoSingleDecrypt(CryptoSingleEncryptedBundle* const bundle, const int dataSize, const CryptoGenericKey* const key) {
-    assert(lifecycleInitialized() && gInitialized && dataSize > 0);
+    assert(gInitialized && dataSize > 0);
 
     byte data[dataSize];
     xmemcpy(data, bundle->data, dataSize);
@@ -131,17 +130,17 @@ bool cryptoSingleDecrypt(CryptoSingleEncryptedBundle* const bundle, const int da
 }
 
 void cryptoStreamCreateEncoder(CryptoStreamCoder* const coder, CryptoStreamHeader* const header, const CryptoGenericKey* const key) {
-    assert(lifecycleInitialized() && gInitialized);
+    assert(gInitialized);
     assert(!crypto_secretstream_xchacha20poly1305_init_push((void*) coder, (void*) header, (void*) key));
 }
 
 bool cryptoStreamCreateDecoder(CryptoStreamCoder* const coder, const CryptoStreamHeader* const header, const CryptoGenericKey* const key) {
-    assert(lifecycleInitialized() && gInitialized);
+    assert(gInitialized);
     return !crypto_secretstream_xchacha20poly1305_init_pull((void*) coder, (void*) header, (void*) key);
 }
 
 void cryptoStreamEncrypt(CryptoStreamCoder* const coder, CryptoStreamEncryptedChunkBundle* const bundle, const int dataSize) {
-    assert(lifecycleInitialized() && gInitialized && dataSize > 0);
+    assert(gInitialized && dataSize > 0);
 
     const int encryptedSize = (int) sizeof *bundle + dataSize;
     byte encrypted[encryptedSize];
@@ -165,7 +164,7 @@ void cryptoStreamEncrypt(CryptoStreamCoder* const coder, CryptoStreamEncryptedCh
 }
 
 bool cryptoStreamDecrypt(CryptoStreamCoder* const coder, CryptoStreamEncryptedChunkBundle* const bundle, const int dataSize) {
-    assert(lifecycleInitialized() && gInitialized && dataSize > 0);
+    assert(gInitialized && dataSize > 0);
 
     const int encryptedSize = (int) sizeof *bundle + dataSize;
     byte encrypted[encryptedSize];
@@ -191,33 +190,33 @@ bool cryptoStreamDecrypt(CryptoStreamCoder* const coder, CryptoStreamEncryptedCh
 }
 
 void cryptoRandomBytes(byte* const buffer, const int size) {
-    assert(lifecycleInitialized() && gInitialized && size > 0);
+    assert(gInitialized && size > 0);
     randombytes_buf(buffer, size);
 }
 
 void cryptoZeroOutMemory(void* const memory, const int size) {
-    assert(lifecycleInitialized() && gInitialized && size > 0);
+    assert(gInitialized && size > 0);
     sodium_memzero(memory, size);
 }
 
 bool cryptoNonceIncrementOverflowChecked(byte* const nonce, const int size) {
-    assert(lifecycleInitialized() && gInitialized && size > 0);
+    assert(gInitialized && size > 0);
     sodium_increment(nonce, size);
     return sodium_is_zero(nonce, size);
 }
 
 int cryptoBase64ResultSize(const int binarySize) {
-    assert(lifecycleInitialized() && gInitialized && binarySize > 0);
+    assert(gInitialized && binarySize > 0);
     return (int) sodium_base64_encoded_len(binarySize, sodium_base64_VARIANT_URLSAFE);
 }
 
 void cryptoBase64Encode(const byte* const binary, const int binarySize, char* const string, const int stringSize) {
-    assert(lifecycleInitialized() && gInitialized && binarySize > 0 && stringSize > 0);
+    assert(gInitialized && binarySize > 0 && stringSize > 0);
     assert(sodium_bin2base64(string, stringSize, binary, binarySize, sodium_base64_VARIANT_URLSAFE) == string);
 }
 
 int cryptoBase64Decode(const char* const string, const int stringSize, byte* const binary, const int binarySize) {
-    assert(lifecycleInitialized() && gInitialized && stringSize - 1 > 0 && binarySize > 0);
+    assert(gInitialized && stringSize - 1 > 0 && binarySize > 0);
 
     unsigned long resultSize = 0;
     return !sodium_base642bin(
@@ -233,7 +232,7 @@ int cryptoBase64Decode(const char* const string, const int stringSize, byte* con
 }
 
 int cryptoPaddingAdd(byte* const padded, const int size) {
-    assert(lifecycleInitialized() && gInitialized && size > 0);
+    assert(gInitialized && size > 0);
 
     unsigned long newSize = 0;
     assert(!sodium_pad(
@@ -249,7 +248,7 @@ int cryptoPaddingAdd(byte* const padded, const int size) {
 }
 
 int cryptoPaddingRemovedSize(const byte* const padded, const int size) {
-    assert(lifecycleInitialized() && gInitialized && size > 0 && size % CRYPTO_PADDING_BLOCK_SIZE == 0);
+    assert(gInitialized && size > 0 && size % CRYPTO_PADDING_BLOCK_SIZE == 0);
 
     unsigned long originalSize = 0;
     return
@@ -264,7 +263,7 @@ void cryptoHash(
     byte* nullable const output,
     const int hashSize
 ) {
-    assert(lifecycleInitialized() && gInitialized && (inRange((int) crypto_generichash_BYTES_MIN, hashSize, (int) crypto_generichash_BYTES_MAX) || !hashSize));
+    assert(gInitialized && (inRange((int) crypto_generichash_BYTES_MIN, hashSize, (int) crypto_generichash_BYTES_MAX) || !hashSize));
 
     if (!state && data && output)
         assert(!crypto_generichash(output, hashSize, data, dataSize, nullptr, 0));

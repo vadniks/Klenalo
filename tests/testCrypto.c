@@ -1,25 +1,29 @@
 
 #include "../src/crypto/crypto.h"
 
-[[gnu::section(".data")]] static const CryptoGenericKey gPublicKey, gSecretKey;
-static const int gDataSize = 13;
-static const char gData[] = "Hello World!";
+[[gnu::section(".data")]] /*so it can be written initially*/ static const CryptoGenericKey PUBLIC_KEY, SECRET_KEY;
+static const int DATA_SIZE = 13;
+static const char DATA[DATA_SIZE] = "Hello World!";
 
 static void sign(void) {
-    CryptoSignedBundle* const bundle = xalloca(sizeof *bundle + gDataSize);
-    xmemcpy(bundle->data, gData, gDataSize);
+    CryptoSignedBundle* const bundle = xalloca(sizeof *bundle + DATA_SIZE);
+    xmemcpy(bundle->data, DATA, DATA_SIZE);
 
     CryptoGenericKey publicKey;
-    xmemcpy(&publicKey, &gPublicKey, sizeof publicKey);
+    xmemcpy(&publicKey, &PUBLIC_KEY, sizeof publicKey);
     CryptoSignSecretKey secretKey;
     cryptoMakeSignKeypair(&publicKey, &secretKey);
 
-    cryptoSign(bundle, gDataSize, &secretKey);
-    assert(cryptoSignVerify(bundle, gDataSize, &publicKey));
+    cryptoSign(bundle, DATA_SIZE, &secretKey);
+    assert(cryptoSignVerify(bundle, DATA_SIZE, &publicKey));
 }
 
-static void crypt(void) {
+static void seal(void) {
+    CryptoPublicEncryptedBundle* const bundle = xalloca(sizeof *bundle + DATA_SIZE);
+    xmemcpy(bundle->data, DATA, DATA_SIZE);
 
+    cryptoPublicEncrypt(bundle, DATA_SIZE, &PUBLIC_KEY);
+    assert(cryptoPublicDecrypt(bundle, DATA_SIZE, &PUBLIC_KEY, &SECRET_KEY));
 }
 
 static void singleCrypt(void) {
@@ -52,10 +56,10 @@ static bool lifecycleInitializedInterceptor(void) {
 
 void testCrypto(void) {
     cryptoInit();
-
-    cryptoMakeKeypair((CryptoGenericKey*) &gPublicKey, (CryptoGenericKey*) &gSecretKey);
+    cryptoMakeKeypair((CryptoGenericKey*) &PUBLIC_KEY, (CryptoGenericKey*) &SECRET_KEY);
 
     sign();
+    seal();
 
     cryptoQuit();
 }
