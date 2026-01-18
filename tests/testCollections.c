@@ -1,5 +1,11 @@
 
+#include <stdlib.h>
+#include <time.h>
 #include "../src/collections/list.h"
+
+static Compared listNoDynamicMemoryComparator(const void* const a, const void* const b) {
+    return (long) *(void**) a < (long) *(void**) b ? COMPARED_LESS : (long) *(void**) a > (long) *(void**) b ? COMPARED_GREATER : COMPARED_EQUAL;
+}
 
 static void listNoDynamicMemory(void) {
     const int amount = 10;
@@ -68,7 +74,51 @@ static void listNoDynamicMemory(void) {
     }
     assert(!ii);
 
-    // TODO:
+    /////////////////
+    assert(!listSize(list));
+
+    listAddBack(list, (void*) 2ul);
+    listAddFront(list, (void*) 1ul);
+    listAddBack(list, (void*) 3ul);
+
+    assert(listPeekFirst(list) == (void*) 1ul);
+    assert(listPeekLast(list) == (void*) 3ul);
+
+    listClear(list);
+    /////////////////
+
+    for (int i = 1; i <= amount; i++)
+        listAddBack(list, (void*) (long) i);
+
+    listSwap(list, 0, amount - 1);
+    assert(listGet(list, 0) == (void*) (long) amount);
+    assert(listGet(list, amount - 1) == (void*) (long) 1);
+
+    /////////////////
+
+    srand(time(nullptr));
+
+    for (int i = 1; i <= amount; i++)
+        listSwap(list, rand() % amount, rand() % amount);
+
+    listQSort(list, listNoDynamicMemoryComparator);
+
+    for (int i = 1, j = 0, k; i <= amount; i++) {
+        k = (int) (long) listGet(list, i - 1);
+        printf("%d\n", k);
+        assert(k >= j);
+        j = k;
+    }
+
+    /////////////////
+
+//    const int valuesCount = 3;
+//    int values[valuesCount] = {(int) (long) listGet(list, 0), (int) (long) listGet(list, 5), (int) (long) listGet(list, amount - 1)};
+//
+//    assert(listBinarySearch(list, (void*) (long) values[0], listNoDynamicMemoryComparator) == (void*) (long) values[0]);
+//    assert(listBinarySearch(list, (void*) (long) 4, listNoDynamicMemoryComparator) == (void*) (long) 4);
+//    assert(listBinarySearch(list, (void*) (long) 5, listNoDynamicMemoryComparator) == (void*) (long) 5);
+//    assert(listBinarySearch(list, (void*) (long) 10, listNoDynamicMemoryComparator) == (void*) (long) 10);
 
     listDestroy(list);
 }

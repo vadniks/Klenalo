@@ -16,6 +16,7 @@ List* nullable listCopy(List* const old, const bool synchronized, const Duplicat
 void listAddBack(List* const list, void* const value); // listAdd, stackPush
 void listAddFront(List* const list, void* const value); // queuePush
 void* nullable listGet(List* const list, const int index);
+void listSwap(List* const list, const int index1, const int index2); // swap places items with corresponding indexes - first goes to second's position and v.v.
 void* nullable listPopFirst(List* const list); // queuePop // TODO: rename to remove(First|Last)
 void* nullable listPopLast(List* const list); // stackPop
 void listRemove(List* const list, const int index); // don't use in a loop - ConcurrentModificationException - or each iteration adjust loop counter
