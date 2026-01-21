@@ -85,15 +85,11 @@ void listSwap(List* const list, const int index1, const int index2) {
     xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(list->size && list->values && index1 < list->size && index2 < list->size && index1 >= 0 && index2 >= 0);
 
-    list->values[index1] = (void*) ((unsigned long) list->values[index1] ^ (unsigned long) list->values[index2]);
-    list->values[index2] = (void*) ((unsigned long) list->values[index1] ^ (unsigned long) list->values[index2]);
-    list->values[index1] = (void*) ((unsigned long) list->values[index1] ^ (unsigned long) list->values[index2]);
+    void* const value1 = list->values[index1];
+    void* const value2 = list->values[index2];
 
-//    void* const value1 = list->values[index1];
-//    void* const value2 = list->values[index2];
-//
-//    list->values[index1] = value2;
-//    list->values[index2] = value1;
+    list->values[index1] = value2;
+    list->values[index2] = value1;
 
     xRwMutexCommand(list, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }

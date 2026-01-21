@@ -4,7 +4,11 @@
 #include "../src/collections/list.h"
 
 static Compared listNoDynamicMemoryComparator(const void* const a, const void* const b) {
-    return (long) *(void**) a < (long) *(void**) b ? COMPARED_LESS : (long) *(void**) a > (long) *(void**) b ? COMPARED_GREATER : COMPARED_EQUAL;
+    return (long) *(void**) a < (long) *(void**) b
+        ? COMPARED_LESS
+        : (long) *(void**) a > (long) *(void**) b
+            ? COMPARED_GREATER
+            : COMPARED_EQUAL;
 }
 
 static void* listNoDynamicMemoryDuplicator(const void* const value) {
