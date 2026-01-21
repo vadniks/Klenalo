@@ -7,6 +7,10 @@ static Compared listNoDynamicMemoryComparator(const void* const a, const void* c
     return (long) *(void**) a < (long) *(void**) b ? COMPARED_LESS : (long) *(void**) a > (long) *(void**) b ? COMPARED_GREATER : COMPARED_EQUAL;
 }
 
+static void* listNoDynamicMemoryDuplicator(const void* const value) {
+    return (void*) value;
+}
+
 static void listNoDynamicMemory(void) {
     const int amount = 10;
     List* const list = listCreate(DEFAULT_ALLOCATOR, false, nullptr);
@@ -24,6 +28,15 @@ static void listNoDynamicMemory(void) {
         listAddFront(list, (void*) (long) i);
     for (int i = 1; i <= amount; i++)
         assert(listGet(list, i - 1) == (void*) (long) (amount - i + 1));
+
+    /////////////////
+    List* const list2 = listCopy(list, false, listNoDynamicMemoryDuplicator);
+    assert(listSize(list) == listSize(list2));
+
+    for (int i = 0; i < amount; i++)
+        assert(listGet(list, i) == listGet(list2, i));
+
+    listDestroy(list2);
 
     listClear(list);
     /////////////////
@@ -105,20 +118,19 @@ static void listNoDynamicMemory(void) {
 
     for (int i = 1, j = 0, k; i <= amount; i++) {
         k = (int) (long) listGet(list, i - 1);
-        printf("%d\n", k);
         assert(k >= j);
         j = k;
     }
 
     /////////////////
 
-//    const int valuesCount = 3;
-//    int values[valuesCount] = {(int) (long) listGet(list, 0), (int) (long) listGet(list, 5), (int) (long) listGet(list, amount - 1)};
-//
-//    assert(listBinarySearch(list, (void*) (long) values[0], listNoDynamicMemoryComparator) == (void*) (long) values[0]);
-//    assert(listBinarySearch(list, (void*) (long) 4, listNoDynamicMemoryComparator) == (void*) (long) 4);
-//    assert(listBinarySearch(list, (void*) (long) 5, listNoDynamicMemoryComparator) == (void*) (long) 5);
-//    assert(listBinarySearch(list, (void*) (long) 10, listNoDynamicMemoryComparator) == (void*) (long) 10);
+    for (int value = 1; value <= amount; value++) {
+        for (int index = 0; index < amount; index++) {
+            void* const xvalue = (void*) (long) value;
+            if (listGet(list, index) == xvalue)
+                assert(listBinarySearch(list, &xvalue, listNoDynamicMemoryComparator) == xvalue);
+        }
+    }
 
     listDestroy(list);
 }

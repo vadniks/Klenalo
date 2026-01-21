@@ -68,20 +68,6 @@ typedef unsigned char byte;
 void _deferHandler(void (^ const* const block)(void));
 #define defer cleanup(_deferHandler) void (^ const concat(_defer_, __LINE__))(void) = ^
 
-used typedef struct Block_literal_1 { // https://clang.llvm.org/docs/Block-ABI-Apple.html
-    used void* isa;
-    used int flags;
-    used int reserved;
-    void/*return type*/ (* used invoke)(struct Block_literal_1*/*, void - parameter types...*/);
-    used struct Block_descriptor_1 {
-        used unsigned long int reserved;
-        used unsigned long int size;
-        void (* used copy_helper)(void* dst, void* src);
-        void (* used dispose_helper)(void* src);
-        used const char* signature;
-    }* descriptor;
-} BlockLiteral;
-
 #else
 #define defer(x) cleanup(x) const byte concat(_defer_, __LINE__);
 #define deferHandler(x) static void x([[maybe_unused]] void* const deferred)
@@ -134,7 +120,7 @@ typedef enum : int /* not char for compatibility with stdlib's bsearch and qsort
     COMPARED_GREATER = 1
 } Compared;
 
-typedef Compared (* Comparator)(const void* const, const void* const); // a=first < b=second : negative, a = b : zero, a > b : positive; the parameters are actually void** - they're pointers to the values (which are pointers to smth too), left as single pointers for compatibility standard library
+typedef Compared (* Comparator)(const void* const, const void* const); // a=first < b=second : negative, a = b : zero, a > b : positive; the parameters are actually meant to be void** - they're pointers to the values (which are pointers to smth too), left as single pointers for compatibility standard library; the first argument is always a pointer to the next value in the container (iterated) and the second one is the value supplied as the key (use &(<arg>) to put a pointer to it)
 
 xinline void* xmemset(void* const destination, const int value, const unsigned long length) {
     void* memset(void* const, const int, const unsigned long);
