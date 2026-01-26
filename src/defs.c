@@ -190,6 +190,17 @@ void xfree(void* nullable const memory) {
 #endif
 }
 
+int xrand(const int min, const int max) {
+    static bool initialized; // initialized to zero/false automatically
+
+    if (!initialized) {
+        initialized = true;
+        srand((unsigned) time(nullptr)); // NOLINT(*-msc51-cpp)
+    }
+
+    return (rand() % (max - min + 1)) + min; // NOLINT(*-msc50-cpp)
+}
+
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode) {
     const char* format, * divider;
     bool tryStr = false;

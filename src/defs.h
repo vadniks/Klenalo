@@ -122,6 +122,8 @@ typedef enum : int /* not char for compatibility with stdlib's bsearch and qsort
 
 typedef Compared (* Comparator)(const void* const, const void* const); // a=first < b=second : negative, a = b : zero, a > b : positive; the parameters are actually meant to be void** - they're pointers to the values (which are pointers to smth too), left as single pointers for compatibility standard library; the first argument is always a pointer to the next value in the container (iterated) and the second one is the value supplied as the key (use &(<arg>) to put a pointer to it)
 
+int xrand(const int min, const int max); // noncryptographic pseudorandom (utility), seeded automatically, bounds are inclusive result∈[min, max]
+
 xinline void* xmemset(void* const destination, const int value, const unsigned long length) {
     void* memset(void* const, const int, const unsigned long);
     return memset(destination, value, length);
