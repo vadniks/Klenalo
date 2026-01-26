@@ -10,16 +10,16 @@ static void init(void) {
     gList = listCreate(DEFAULT_ALLOCATOR, false, gNdm ? nullptr : xfree);
 }
 
-inline static void newValue(void** const varRef, const int value) {
-    if (gNdm) (*varRef = (void*) (long) value);
-    else (*varRef = xmalloc(sizeof(int))) && (**(int**) varRef = value);
+inline static void* newValue(const int value) {
+    void* buffer;
+    if (gNdm) (buffer = (void*) (long) value);
+    else (buffer = xmalloc(sizeof(int))) && (*(int*) buffer = value);
+    return buffer;
 }
 
 static void addBack(void) {
     for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++) {
-        void* value;
-        newValue(&value, i);
-
+        void* const value = newValue(i);
         listAddBack(gList, value);
         assert(listGet(gList, i - 1) == value);
     }
@@ -33,25 +33,18 @@ inline static int valueToInt(const void* const value) {
 }
 
 static void addFront(void) {
-    for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++) {
-        void* value;
-        newValue(&value, i);
-        listAddFront(gList, value);
-    }
-    for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++) {
-        const void* const value = listGet(gList, i - 1);
-        assert(valueToInt(value) == LIST_ITEMS_AMOUNT - i + 1);
-    }
+    for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++)
+        listAddFront(gList, newValue(i));
+    for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++)
+        assert(valueToInt(listGet(gList, i - 1)) == LIST_ITEMS_AMOUNT - i + 1);
 }
 
-static void* valueDuplicator(void* value) {
-    if (gNdm) return (void*) value;
-    newValue(&value, *(int*) value); // TODO: <-- fails
-    return value;
+static void* valueDuplicator(void* const value) {
+    return gNdm ? value : newValue(*(int*) value);
 }
 
 static void copy(void) {
-    List* const list2 = listCopy(gList, false, (Duplicator) valueDuplicator);
+    List* const list2 = listCopy(gList, false, valueDuplicator);
     assert(listSize(gList) == listSize(list2));
 
     for (int i = 0; i < LIST_ITEMS_AMOUNT; i++)
@@ -62,15 +55,12 @@ static void copy(void) {
 }
 
 inline static void removeIfDM(void* const value) {
-    if (gNdm) xfree(value);
+    if (!gNdm) xfree(value);
 }
 
 static void popFirst(void) {
-    for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++) {
-        void* value;
-        newValue(&value, i);
-        listAddBack(gList, value);
-    }
+    for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++)
+        listAddBack(gList, newValue(i));
 
     void* item;
     int i = 1, j = LIST_ITEMS_AMOUNT;
@@ -84,11 +74,8 @@ static void popFirst(void) {
 }
 
 static void popLast(void) {
-    for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++) {
-        void* value;
-        newValue(&value, i);
-        listAddBack(gList, value);
-    }
+    for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++)
+        listAddBack(gList, newValue(i));
 
     void* item;
     int i = LIST_ITEMS_AMOUNT;
@@ -102,11 +89,8 @@ static void popLast(void) {
 }
 
 static void remove(void) {
-    for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++) {
-        void* value;
-        newValue(&value, i);
-        listAddBack(gList, value);
-    }
+    for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++)
+        listAddBack(gList, newValue(i));
 
     listRemove(gList, 0);
     assert(listSize(gList) == LIST_ITEMS_AMOUNT - 1);
@@ -131,14 +115,9 @@ static void remove(void) {
 }
 
 static void peek(void) {
-    void* value;
-
-    newValue(&value, 2);
-    listAddBack(gList, value);
-    newValue(&value, 1);
-    listAddFront(gList, value);
-    newValue(&value, 3);
-    listAddBack(gList, value);
+    listAddBack(gList, newValue(2));
+    listAddFront(gList, newValue(1));
+    listAddBack(gList, newValue(3));
 
     assert(valueToInt(listPeekFirst(gList)) == 1);
     assert(valueToInt(listPeekLast(gList)) == 3);
@@ -147,11 +126,8 @@ static void peek(void) {
 }
 
 static void swap(void) {
-    for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++) {
-        void* value;
-        newValue(&value, i);
-        listAddBack(gList, value);
-    }
+    for (int i = 1; i <= LIST_ITEMS_AMOUNT; i++)
+        listAddBack(gList, newValue(i));
 
     listSwap(gList, 0, LIST_ITEMS_AMOUNT - 1);
     assert(valueToInt(listGet(gList, 0)) == LIST_ITEMS_AMOUNT);
@@ -159,16 +135,12 @@ static void swap(void) {
 }
 
 static Compared comparator(const void* const a, const void* const b) {
-    if (gNdm) return (long) *(void**) a < (long) *(void**) b
-        ? COMPARED_LESS
-        : (long) *(void**) a > (long) *(void**) b
-            ? COMPARED_GREATER
-            : COMPARED_EQUAL;
-    else return **(int**) a < **(int**) b
-        ? COMPARED_LESS
-        : **(int**) a > **(int**) b
-            ? COMPARED_GREATER
-            : COMPARED_EQUAL;
+    const int aa = gNdm ? (int) (long) *(void**) a : **(int**) a;
+    const int bb = gNdm ? (int) (long) *(void**) b : **(int**) b;
+
+    if (aa < bb) return COMPARED_LESS;
+    if (aa > bb) return COMPARED_GREATER;
+    return COMPARED_EQUAL;
 }
 
 static void sort(void) {
@@ -188,11 +160,9 @@ static void sort(void) {
 }
 
 static void binarySearch(void) {
-    for (int value = 1; value <= LIST_ITEMS_AMOUNT; value++) {
-        for (int index = 0; index < LIST_ITEMS_AMOUNT; index++) {
-            if (valueToInt(listGet(gList, index)) == value)
-                assert(valueToInt(listBinarySearch(gList, &(int*) {&value}, comparator)) == value);
-        }
+    for (int i = 0; i < LIST_ITEMS_AMOUNT; i++) {
+        void* const value = listGet(gList, i);
+        assert(listBinarySearch(gList, &value, comparator) == value);
     }
 }
 
@@ -208,13 +178,13 @@ void testCollectionsList(void) {
     addBack();
     addFront();
     copy();
-//    popFirst();
-//    popLast();
-//    remove();
-//    peek();
-//    swap();
-//    sort();
-//    binarySearch();
+    popFirst();
+    popLast();
+    remove();
+    peek();
+    swap();
+    sort();
+    binarySearch();
     quit();
 
     if (gNdm--) goto round;

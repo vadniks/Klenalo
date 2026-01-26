@@ -112,7 +112,7 @@ extern const Allocator DEFAULT_ALLOCATOR;
 
 typedef void (* Deallocator)(void* const);
 
-typedef void* (* Duplicator)(const void* const);
+typedef void* (* Duplicator)(void* const);
 
 typedef enum : int /* not char for compatibility with stdlib's bsearch and qsort */ { // means: the first argument is [less, equal or greater] than the second one
     COMPARED_LESS = -1,
@@ -190,3 +190,7 @@ int hashValue(const void* const value, const int size); // fast non-cryptographi
 // TODO: add/use opengl for drawing
 
 // TODO: use ipv6
+
+// TODO: add .ini, .json, .protobuf parser/editor library
+
+// TODO: grpc, webhooks, websockets instead of raw udp/tcp sockets?
