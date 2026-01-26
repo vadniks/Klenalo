@@ -96,6 +96,7 @@ link_libraries(
 #    asan
     c
     m
+    pthread
     atomic
     SDL3
     ${PROJECT_SOURCE_DIR}/lib/lvgl/bin/liblvgl.so
