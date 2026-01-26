@@ -1,5 +1,4 @@
 
-#include <stdlib.h>
 #include "../src/collections/list.h"
 
 static const int ITEMS_AMOUNT = 10;
