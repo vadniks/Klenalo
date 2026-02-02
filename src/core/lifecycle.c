@@ -122,7 +122,7 @@ bool lifecycleRunning(void) {
 }
 
 unsigned long lifecycleCurrentTimeMillis(void) {
-    SDL_Time ticks;
+    SDL_Time ticks; // TODO: replace with glibc's clock_gettime(CLOCK_REALTIME) and move to defs module
     assert(SDL_GetCurrentTime(&ticks));
     return ticks / 1'000'000ul;
 }

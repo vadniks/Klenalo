@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 4.1)
 set(CMAKE_C_COMPILER "/usr/bin/clang")
 project(Klenalo LANGUAGES C VERSION 0.1)
 
@@ -137,7 +137,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(ENABLE_TESTS true)
 if(ENABLE_TESTS)
     file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS src/* tests/*)
-    list(FILTER TEST_SOURCES EXCLUDE REGEX main.c)
+    list(FILTER TEST_SOURCES EXCLUDE REGEX src/core/main.c)
 
     set(TESTS_EXE "tests")
     add_executable(${TESTS_EXE} ${TEST_SOURCES})

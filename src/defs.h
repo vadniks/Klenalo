@@ -196,3 +196,5 @@ int hashValue(const void* const value, const int size); // fast non-cryptographi
 // TODO: add .ini, .json, .protobuf parser/editor library
 
 // TODO: grpc, webhooks, websockets instead of raw udp/tcp sockets?
+
+// TODO: add 'restrict' where possible/useful
