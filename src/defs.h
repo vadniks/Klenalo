@@ -84,9 +84,9 @@ void assert(const bool condition);
 // TODO: add a 'generic' copy/duplicate function
 
 #ifdef __clang__
-overloadable inline unsigned short swapBytes(const short value) { return __builtin_bswap16(value); }
-overloadable inline unsigned int swapBytes(const int value) { return __builtin_bswap32(value); }
-overloadable inline unsigned long swapBytes(const long value) { return __builtin_bswap64(value); }
+overloadable xinline unsigned short swapBytes(const short value) { return __builtin_bswap16(value); }
+overloadable xinline unsigned int swapBytes(const int value) { return __builtin_bswap32(value); }
+overloadable xinline unsigned long swapBytes(const long value) { return __builtin_bswap64(value); }
 #else
 #define swapBytes(x) _Generic((x), short: swapShort, int: swapInt, long: swapLong)(x)
 inline unsigned short swapShort(const short value) { return __builtin_bswap16(value); }
@@ -198,3 +198,5 @@ int hashValue(const void* const value, const int size); // fast non-cryptographi
 // TODO: grpc, webhooks, websockets instead of raw udp/tcp sockets?
 
 // TODO: add 'restrict' where possible/useful
+
+// TODO: add transactions (like in package managers) to file management system and data access control mechanics similar to selinux

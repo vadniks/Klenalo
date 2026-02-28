@@ -3,6 +3,7 @@
 #include "hashtable.h"
 
 // inspired by the Java standard library's Hashtable
+// TODO: rewrite entirely
 
 typedef struct Node {
     const int hash;
