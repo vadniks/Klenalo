@@ -269,6 +269,13 @@ void patchFunction(void* const original, void* const replacement) {
 }
 
 int hashValue(const void* const value, const int size) {
-    [[gnu::pure]] unsigned XXH32(const void* const input, const unsigned long length, const unsigned seed);
+#if !USE_CRYPTOGRAPHIC_HASH_FOR_GENERIC_HASH_VALUE // NOLINT(*-avoid-unconditional-preprocessor-if)
+    unsigned XXH32(const void* const input, const unsigned long length, const unsigned seed);
     return (int) XXH32(value, size, 0);
+#else
+    int halfsiphash(const void* const in, const unsigned long inlen, const void* const k, const byte* out, const unsigned long outlen);
+    int out = 0;
+    halfsiphash(value, size, &(long){}, (void*) &out, 4);
+    return out;
+#endif
 }

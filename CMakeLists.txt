@@ -11,9 +11,13 @@ if(NOT CMAKE_C_COMPILER_ID STREQUAL "Clang")
     message(SEND_ERROR "Extensions are used")
 endif()
 
+#file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h src/*/*.c src/*/*.h)
+file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h)
+add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+
 add_compile_options(-std=gnu2y)
 
-add_compile_options(-Wall -Wextra -Wpedantic)
+add_compile_options(-Wall -Wextra -Wpedantic -Wabi -Wpsabi)
 add_compile_options(-Wformat -Wformat=2 -Wconversion -Wimplicit-fallthrough -Werror=format-security -Wstrict-prototypes -Wdeprecated-non-prototype -Wold-style-definition -Wthread-safety)
 add_compile_options(-O3)
 add_compile_options(-ffast-math -fsemantic-interposition)
@@ -39,7 +43,8 @@ add_compile_options(-fsanitize=undefined) # sometimes requires disabling -fsanit
 #add_compile_options(-fsanitize-address-use-after-scope)
 add_compile_options(-fsanitize-trap=all)
 add_compile_options(-fcf-protection=full)
-add_compile_options(-fsanitize=alignment -fsanitize=bounds -fsanitize=vla-bound -fsanitize=null -fsanitize=object-size -fsanitize=nonnull-attribute -fsanitize=returns-nonnull-attribute -fsanitize=signed-integer-overflow -fsanitize=unsigned-integer-overflow -fsanitize=float-cast-overflow -fsanitize=pointer-overflow -fsanitize=enum -fsanitize=bool)
+add_compile_options(-fsanitize=alignment -fsanitize=bounds -fsanitize=vla-bound -fsanitize=null -fsanitize=object-size -fsanitize=nonnull-attribute -fsanitize=returns-nonnull-attribute -fsanitize=signed-integer-overflow -fsanitize=float-cast-overflow -fsanitize=pointer-overflow -fsanitize=enum -fsanitize=bool)
+target_compile_options(${PROJECT_NAME} PUBLIC -fsanitize=unsigned-integer-overflow) # not for third party code # TODO: also add this target TESTS
 #add_compile_options(-fhardened)
 add_compile_options(-fPIE -fpie)
 add_compile_options(-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-aliasing -ftrivial-auto-var-init=zero -Werror=implicit -Werror=incompatible-pointer-types -Werror=int-conversion -fstrict-flex-arrays=3 -fwrapv -fno-delete-null-pointer-checks)
@@ -89,7 +94,7 @@ add_compile_definitions(-DLV_CONF_PATH="../lv_conf.h")
 
 include_directories(lib/lvgl/include)
 include_directories(lib/sdl3net/include)
-include_directories(lib/xxHash/include)
+include_directories(libx)
 include_directories(/usr/include/freetype2)
 
 link_libraries(
@@ -104,7 +109,6 @@ link_libraries(
     sodium
     ${PROJECT_SOURCE_DIR}/lib/sdl3net/bin/libSDL3_net.so # SDL3_net TODO
     BlocksRuntime
-    ${PROJECT_SOURCE_DIR}/lib/xxHash/bin/libxxhash.so
     # sqlite3 # TODO
     # sqlcipher
     # dbus
@@ -119,9 +123,9 @@ link_libraries(
     # ffmpeg
 )
 
-#file(GLOB PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h src/*/*.c src/*/*.h)
-file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h)
-add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+file(GLOB_RECURSE THIRD_PARTY_SOURCES CONFIGURE_DEPENDS thirdParty/*.c thirdParty/*.h)
+add_library(LIB_THIRD_PARTY ${THIRD_PARTY_SOURCES})
+target_link_libraries(${PROJECT_NAME} ${LIB_THIRD_PARTY})
 
 #file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
 
@@ -136,7 +140,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(ENABLE_TESTS true)
 if(ENABLE_TESTS)
-    file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS src/* tests/*)
+    file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS src/* thirdParty/* tests/*)
     list(FILTER TEST_SOURCES EXCLUDE REGEX src/core/main.c)
 
     set(TESTS_EXE "tests")
@@ -152,3 +156,22 @@ if(ENABLE_TESTS)
         add_test(NAME test${INDEX} COMMAND $<TARGET_FILE:${TESTS_EXE}> ${INDEX})
     endforeach()
 endif()
+
+#DEBUGFLAGS+=-Wall -Wextra -Wconversion -Wcast-qual -Wcast-align -Wshadow \
+#-Wstrict-aliasing=1 -Wswitch-enum -Wdeclaration-after-statement \
+#-Wstrict-prototypes -Wundef -Wpointer-arith -Wformat-security \
+#-Wvla -Wformat=2 -Winit-self -Wfloat-equal -Wwrite-strings \
+#-Wredundant-decls -Wstrict-overflow=2
+
+# lib:
+#   <libname>
+#     bin
+#       *.(so|a)
+#     include
+#       <libname>
+#         *.h
+# ...
+# libx: # for header-only libraries or those which can embedded directly into the project easily
+#   <libname>
+#     *.(c|h) # c files get included into project's c file proxies to provide an implementation for the linker without exposing libraries' code
+# ...

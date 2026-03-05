@@ -1,6 +1,7 @@
 /.idea
 /build
 /lib
+/libx
 !lib/lvgl/include/lvgl/lv_conf.h
 !.gitignore
 /.cache

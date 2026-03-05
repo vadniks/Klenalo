@@ -3,6 +3,7 @@
 
 #define DEBUG
 //#define TESTING
+#define USE_CRYPTOGRAPHIC_HASH_FOR_GENERIC_HASH_VALUE false
 
 #if __STDC_VERSION__ < 202400L /*C2Y*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) /*glibc*/ || \
     !defined(__linux__) /*api*/ || !defined(_GNU_SOURCE) /*api*/ || !defined(__x86_64__) || !__LITTLE_ENDIAN__ || \
@@ -157,6 +158,8 @@ xinline unsigned long xstrnlen(const char* const string, const unsigned long max
 int printf(const char* const, ...); // NOLINT(*-redundant-declaration)
 int puts(const char* const); // NOLINT(*-redundant-declaration)
 #define putsf(x, ...) printf(x "\n", __VA_ARGS__)
+void syslog(const int priority, const char* const format, ...); // NOLINT(*-redundant-declaration, *-inconsistent-declaration-parameter-name)
+#define log(x, y) syslog(7, x, y) // LOG_DEBUG
 
 typedef enum {PRINT_MEMORY_MODE_DEC, PRINT_MEMORY_MODE_HEX, PRINT_MEMORY_MODE_HEX_STR, PRINT_MEMORY_MODE_STR, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK} PrintMemoryMode;
 void printMemory(const void* const memory, const int size, const PrintMemoryMode mode);
