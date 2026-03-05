@@ -44,7 +44,8 @@ add_compile_options(-fsanitize=undefined) # sometimes requires disabling -fsanit
 add_compile_options(-fsanitize-trap=all)
 add_compile_options(-fcf-protection=full)
 add_compile_options(-fsanitize=alignment -fsanitize=bounds -fsanitize=vla-bound -fsanitize=null -fsanitize=object-size -fsanitize=nonnull-attribute -fsanitize=returns-nonnull-attribute -fsanitize=signed-integer-overflow -fsanitize=float-cast-overflow -fsanitize=pointer-overflow -fsanitize=enum -fsanitize=bool)
-target_compile_options(${PROJECT_NAME} PUBLIC -fsanitize=unsigned-integer-overflow) # not for third party code # TODO: also add this target TESTS
+set(PROJECT_ONLY_COMPILE_OPTIONS -fsanitize=unsigned-integer-overflow)
+target_compile_options(${PROJECT_NAME} PUBLIC ${PROJECT_ONLY_COMPILE_OPTIONS}) # not for third party code
 #add_compile_options(-fhardened)
 add_compile_options(-fPIE -fpie)
 add_compile_options(-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-aliasing -ftrivial-auto-var-init=zero -Werror=implicit -Werror=incompatible-pointer-types -Werror=int-conversion -fstrict-flex-arrays=3 -fwrapv -fno-delete-null-pointer-checks)
@@ -123,8 +124,9 @@ link_libraries(
     # ffmpeg
 )
 
+set(LIB_THIRD_PARTY thirdParty)
 file(GLOB_RECURSE THIRD_PARTY_SOURCES CONFIGURE_DEPENDS thirdParty/*.c thirdParty/*.h)
-add_library(LIB_THIRD_PARTY ${THIRD_PARTY_SOURCES})
+add_library(${LIB_THIRD_PARTY} ${THIRD_PARTY_SOURCES})
 target_link_libraries(${PROJECT_NAME} ${LIB_THIRD_PARTY})
 
 #file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
@@ -140,13 +142,18 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(ENABLE_TESTS true)
 if(ENABLE_TESTS)
-    file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS src/* thirdParty/* tests/*)
+    file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS src/* tests/*)
     list(FILTER TEST_SOURCES EXCLUDE REGEX src/core/main.c)
 
-    set(TESTS_EXE "tests")
+    set(TESTS_EXE tests)
     add_executable(${TESTS_EXE} ${TEST_SOURCES})
 
-    get_target_property(PROJECT_LIBS_LIST ${PROJECT_NAME} LINK_LIBRARIES)
+    target_compile_options(${TESTS_EXE} PUBLIC ${PROJECT_ONLY_COMPILE_OPTIONS}) # not for third party code
+
+#    target_link_libraries(${TESTS_EXE} ${LIB_THIRD_PARTY})
+    target_link_libraries(${TESTS_EXE} ${LIB_THIRD_PARTY})
+
+#    get_target_property(PROJECT_LIBS_LIST ${PROJECT_NAME} LINK_LIBRARIES)
 #    target_link_libraries(${TESTS_EXE} ${PROJECT_LIBS_LIST})
 
     enable_testing()
