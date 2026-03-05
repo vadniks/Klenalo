@@ -10,10 +10,10 @@ typedef struct _HashtableIterator HashtableIterator;
 
 extern const int HASHTABLE_ITERATOR_SIZE;
 
-Hashtable* hashtableCreate(const Allocator* const internalAllocator, const bool synchronized, const Deallocator nullable valueDeallocator);
-void hashtablePut(Hashtable* const hashtable, const int hash, void* const value); // hashes are the keys and they must be unique
-void* nullable hashtableGet(Hashtable* const hashtable, const int hash);
-void* nullable hashtableRemove(Hashtable* const hashtable, const int hash, const bool deallocate);
+Hashtable* hashtableCreate(const Allocator* const internalAllocator, const Deallocator nullable valueDeallocator);
+void hashtablePut(Hashtable* const hashtable, const unsigned long key, void* const value); // hashes are the keys and they must be unique
+void* nullable hashtableGet(Hashtable* const hashtable, const unsigned long hash);
+void* nullable hashtableRemove(Hashtable* const hashtable, const unsigned long hash, const bool deallocate);
 int hashtableCapacity(Hashtable* const hashtable); // amount of currently allocated cells for storing collision buckets
 int hashtableCount(Hashtable* const hashtable); // amount of elements being stored
 void hashtableIterateBegin(Hashtable* const hashtable, HashtableIterator* const iterator); // don't use put or remove while iterator is active, fails if there's another active iterator, fails if there's no items

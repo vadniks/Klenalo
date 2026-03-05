@@ -1,23 +1,21 @@
 
-#include "../utils/rwMutex.h"
+// TODO: remove internal mutex from all collections
 #include "hashtable.h"
 
-// inspired by the Java standard library's Hashtable
-// TODO: rewrite entirely
-
 typedef struct Node {
-    const int hash;
+    const unsigned long key;
     void* value;
-    struct Node* nullable next;
+    int height;
+    struct Node
+        * nullable left,
+        * nullable right;
 } Node;
 
 struct _Hashtable {
     const Allocator* const internalAllocator;
-    Node* nullable* nodes;
-    int capacity, count;
     const Deallocator nullable deallocator;
-    RWMutex* nullable const rwMutex;
-    int iterators;
+    Node* nullable* buckets;
+    int capacity, count; // capacity - power of two actual allocated items, count - inserted items from outside
 };
 
 struct _HashtableIterator {
@@ -27,201 +25,75 @@ struct _HashtableIterator {
 };
 
 const int HASHTABLE_ITERATOR_SIZE = sizeof(HashtableIterator);
-static const int SINT32_MAX = ~0u / 2u; // 0x7fffffff
-static const int INITIAL_CAPACITY = 11;
-static const float LOAD_FACTOR = 0.75f;
+static const int INITIAL_CAPACITY = 8;
 
-Hashtable* hashtableCreate(const Allocator* const internalAllocator, const bool synchronized, const Deallocator nullable deallocator) {
-    Hashtable* const hashtable = internalAllocator->malloc(sizeof *hashtable);
+Hashtable* hashtableCreate(const Allocator* const internalAllocator, const Deallocator nullable valueDeallocator) {
+    Hashtable* const hashtable = xmalloc(sizeof *hashtable);
     unconst(hashtable->internalAllocator) = internalAllocator;
-    hashtable->nodes = hashtable->internalAllocator->calloc((hashtable->capacity = INITIAL_CAPACITY), sizeof(void*));
+    unconst(hashtable->deallocator) = valueDeallocator;
+    hashtable->buckets = xmalloc((hashtable->capacity = INITIAL_CAPACITY) * sizeof(void*));
     hashtable->count = 0;
-    unconst(hashtable->deallocator) = deallocator;
-    unconst(hashtable->rwMutex) = synchronized ? rwMutexCreate() : nullptr;
-    hashtable->iterators = 0;
     return hashtable;
 }
 
-static inline void deallocateValue(const Hashtable* const hashtable, void* const value) {
-    if (hashtable->deallocator) hashtable->deallocator(value);
-}
+static unsigned long calcHash(const unsigned long value) {
+    // Fowler–Noll–Vo (FNV‑1a) Hash Function
 
-static inline void xRwMutexCommand(Hashtable* const hashtable, const RWMutexCommand command) {
-    if (hashtable->rwMutex) rwMutexCommand(hashtable->rwMutex, command);
-}
+    const unsigned long
+        FNV_OFFSET_BASIS = 0xcbf29ce484222325ULL,
+        FNV_PRIME = 0x100000001b3ULL,
+        SEED = 932579;
 
-static int makeIndex(const int capacity, const int hash) {
-    assert(capacity);
-    return (hash & SINT32_MAX) % capacity; // cannot be negative or exceed the capacity
-}
+    unsigned long hash = SEED ^ FNV_OFFSET_BASIS;
 
-static void rehash(Hashtable* const hashtable) {
-    if (hashtable->capacity == SINT32_MAX) return;
-
-    const int newCapacity = hashtable->capacity * 2 + 1;
-    if (newCapacity < hashtable->capacity) return; // overflow
-
-    Node** const newNodes = hashtable->internalAllocator->calloc(newCapacity, sizeof(void*));
-
-    for (int index = 0; index < hashtable->capacity; index++) {
-        for (Node* node = hashtable->nodes[index]; node;) {
-            Node* const nextNode = node->next;
-
-            const int newIndex = makeIndex(newCapacity, node->hash);
-            node->next = newNodes[newIndex];
-            newNodes[newIndex] = node;
-
-            node = nextNode;
-        }
+    for (byte i = 0; i < (byte) sizeof(long); i++) {
+        hash ^= ((const byte*) &value)[i];
+        hash *= FNV_PRIME;
     }
 
-    hashtable->capacity = newCapacity;
-    hashtable->internalAllocator->free(hashtable->nodes);
-    hashtable->nodes = newNodes;
+    return hash;
 }
 
-void hashtablePut(Hashtable* const hashtable, const int hash, void* const value) {
-    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_LOCK);
-    assert(
-        hashtable->capacity >= INITIAL_CAPACITY &&
-        hashtable->capacity < SINT32_MAX &&
-        hashtable->count < SINT32_MAX &&
-        hashtable->nodes &&
-        !hashtable->iterators
-    );
-
-    Node** const anchor = (void*) hashtable->nodes + makeIndex(hashtable->capacity, hash);
-
-    for (Node* node = *anchor; node; node = node->next) {
-        if (node->hash != hash) continue;
-
-        deallocateValue(hashtable, node->value);
-        node->value = value;
-
-        xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
-        return;
-    }
-
-    Node* const node = hashtable->internalAllocator->malloc(sizeof *node);
-    assignToStructWithConsts(node, hash, value, *anchor)
-    *anchor = node;
-    hashtable->count++;
-
-    if (hashtable->count >= (int) ((float) hashtable->capacity * LOAD_FACTOR)) rehash(hashtable);
-
-    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+static inline int calcIndex(const unsigned long hash, const int capacity) {
+    return (int) (hash & (capacity - 1));
 }
 
-void* nullable hashtableGet(Hashtable* const hashtable, const int hash) {
-    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
-    assert(hashtable->capacity && hashtable->count && hashtable->nodes);
+void hashtablePut(Hashtable* const hashtable, const unsigned long key, void* const value) {
+    const unsigned long hash = calcHash(key);
+    const int index = calcIndex(hash, hashtable->capacity);
 
-    for (const Node* node = hashtable->nodes[makeIndex(hashtable->capacity, hash)]; node; node = node->next) {
-        if (node->hash != hash) continue;
-        xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
-        return node->value;
-    }
+//    Node* const root = insert(hashtable->buckets[index], key, );
+}
 
-    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
+void* nullable hashtableGet(Hashtable* const hashtable, const unsigned long hash) {
     return nullptr;
 }
 
-void* nullable hashtableRemove(Hashtable* const hashtable, const int hash, const bool deallocate) {
-    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_LOCK);
-    assert(hashtable->capacity && hashtable->count && hashtable->nodes && !hashtable->iterators);
-
-    Node** const anchor = (void*) hashtable->nodes + makeIndex(hashtable->capacity, hash);
-    void* value = nullptr;
-
-    for (Node* node = *anchor, * previous = nullptr; node; previous = node, node = node->next) {
-        if (node->hash != hash) continue;
-
-        if (previous) previous->next = node->next;
-        else *anchor = node->next;
-
-        if (deallocate) deallocateValue(hashtable, node->value);
-        else value = node->value;
-
-        hashtable->internalAllocator->free(node);
-        hashtable->count--;
-        break;
-    }
-
-    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_WRITE_UNLOCK);
-
-    return value;
+void* nullable hashtableRemove(Hashtable* const hashtable, const unsigned long hash, const bool deallocate) {
+    return nullptr;
 }
 
 int hashtableCapacity(Hashtable* const hashtable) {
-    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
-    const int capacity = hashtable->capacity;
-    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
-    return capacity;
+    return 0;
 }
 
 int hashtableCount(Hashtable* const hashtable) {
-    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
-    const int count = hashtable->count;
-    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
-    return count;
+    return 0;
 }
 
 #undef hashtableIterateBegin
 void hashtableIterateBegin(Hashtable* const hashtable, HashtableIterator* const iterator) {
-    xRwMutexCommand(hashtable, RW_MUTEX_COMMAND_READ_LOCK);
-    assert(hashtable->count);
 
-    hashtable->iterators++;
-
-    unconst(iterator->hashtable) = hashtable;
-    iterator->index = 0;
-    iterator->node = nullptr;
 }
 
 void* nullable hashtableIterate(HashtableIterator* const iterator) {
-    assert(iterator->hashtable->iterators);
-    if (iterator->index >= iterator->hashtable->capacity) return nullptr;
-
-    const Node* node;
-
-    if (iterator->node) {
-        node = iterator->node;
-        iterator->node = node->next;
-        return node->value;
-    }
-
-    while (iterator->index < iterator->hashtable->capacity) {
-        if ((iterator->node = iterator->hashtable->nodes[iterator->index++])) {
-            node = iterator->node;
-            iterator->node = node->next;
-            return node->value;
-        }
-    }
-
     return nullptr;
 }
 
 void hashtableIterateEnd(HashtableIterator* const iterator) {
-    assert(iterator->hashtable->iterators);
-    iterator->hashtable->iterators--;
 
-    xRwMutexCommand(iterator->hashtable, RW_MUTEX_COMMAND_READ_UNLOCK);
 }
 
 void hashtableDestroy(Hashtable* const hashtable) {
-    if (hashtable->rwMutex) rwMutexDestroy(hashtable->rwMutex);
-    assert(!hashtable->iterators);
 
-    for (int index = 0; index < hashtable->capacity; index++) {
-        for (Node* node = hashtable->nodes[index]; node; node = node->next) {
-            deallocateValue(hashtable, node->value);
-            hashtable->internalAllocator->free(node);
-        }
-    }
-
-    hashtable->internalAllocator->free(hashtable->nodes);
-    hashtable->internalAllocator->free(hashtable);
 }
-
-// TODO: add shrinkToFit() - allocate only minimal nodes to fit all the values so that each node contains only one value and call it after remove()
-// TODO: add find() or contains()
