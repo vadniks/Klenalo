@@ -10,7 +10,7 @@ void testCollectionsHashtable(void);
 
 int main(const int argc, const char* const* const argv) {
     assert(argc == 2);
-    setbuf(stdout, nullptr); // NOLINT(*-unsafe-functions)
+    setbuf(stdout, nullptr); // NOLINT(*-unsafe-functions) // so printf output can be yielded on test fails, otherwise ctest truncates ignores stdout
 
     switch (strtol(argv[1], nullptr, 10)) {
         case 0: testCrypto(); break;
