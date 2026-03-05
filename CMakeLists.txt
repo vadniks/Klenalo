@@ -180,5 +180,5 @@ endif()
 # ...
 # libx: # for header-only libraries or those which can embedded directly into the project easily
 #   <libname>
-#     *.(c|h) # c files get included into project's c file proxies to provide an implementation for the linker without exposing libraries' code
+#     *.(c|h) # c files get included into project's c file proxies to provide an implementation for the linker without exposing/revealing libraries' code
 # ...
