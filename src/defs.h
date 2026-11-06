@@ -5,7 +5,7 @@
 //#define TESTING
 #define USE_CRYPTOGRAPHIC_HASH_FOR_GENERIC_HASH_VALUE false
 
-#if __STDC_VERSION__ < 202400L /*C2Y*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) /*glibc*/ || \
+#if __STDC_VERSION__ < 202311L /*C23*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) /*glibc*/ || \
     !defined(__linux__) /*api*/ || !defined(_GNU_SOURCE) /*api*/ || !defined(__x86_64__) || !__LITTLE_ENDIAN__ || \
     (defined(__WORDSIZE) && __WORDSIZE != 64 || false)
 #   error
@@ -63,18 +63,8 @@ typedef unsigned char byte;
     *((struct _S*) x) = *(struct _S*) &(typeof(*x)) {__VA_ARGS__}; \
 } // struct __ANY_STRUCT_TYPE_* const var = xmalloc(sizeof *var); if that struct contains const qualified fields; x is var (pointer to that struct)
 
-#ifdef __clang__
-#include <Block.h> // https://fdiv.net/2015/10/08/emulating-defer-c-clang-or-gccblocks
-
-void _deferHandler(void (^ const* const block)(void));
-#define defer cleanup(_deferHandler) void (^ const concat(_defer_, __LINE__))(void) = ^
-
-#else
 #define defer(x) cleanup(x) const byte concat(_defer_, __LINE__);
 #define deferHandler(x) static void x([[maybe_unused]] void* const deferred)
-#endif
-
-typedef struct packed {byte _[];} VariableSizedStruct;
 
 // TODO: add locks for each module's quit func
 
@@ -203,3 +193,5 @@ int hashValue(const void* const value, const int size); // fast non-cryptographi
 // TODO: add 'restrict' where possible/useful
 
 // TODO: add transactions (like in package managers) to file management system and data access control mechanics similar to selinux
+
+// TODO: SDL_CreateTray

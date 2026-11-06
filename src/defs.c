@@ -25,12 +25,6 @@ static const Allocator NON_TRACKED_ALLOCATOR = {malloc, calloc, realloc, free};
 static atomic unsigned long gAllocations = 0;
 const Allocator DEFAULT_ALLOCATOR = {xmalloc, xcalloc, xrealloc, xfree};
 
-#ifdef __clang__
-[[maybe_unused]] void _deferHandler(void (^ const* const block)(void)) {
-    (*block)();
-}
-#endif
-
 static void printStackTrace(void) {
     int addressesSize = 0xf;
     const void* addresses[addressesSize];

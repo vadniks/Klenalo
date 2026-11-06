@@ -12,8 +12,6 @@
 #define FONT_BOLD_ITALIC "../res/Roboto-BoldItalic.ttf"
 #define FONT_MONOSPACE "../res/SourceCodePro-Regular.ttf"
 
-#if !defined(__CLION_IDE__) && !defined(__JETBRAINS_IDE__)
-// CLion doesnt know about #embed yet, ignore the 'Invalid preprocessing directive' errors
 [[gnu::section(".resources")]]
 static const byte
     gRegularFont[] = {
@@ -31,15 +29,6 @@ static const byte
     gMonospaceFont[] = {
         #embed FONT_MONOSPACE
     };
-#else
-// stub
-static const byte
-    gRegularFont[] = {},
-    gItalicFont[] = {},
-    gBoldFont[] = {},
-    gBoldItalicFont[] = {},
-    gMonospaceFont[] = {};
-#endif
 
 static const struct {
     const char* const fileName;
