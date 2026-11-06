@@ -39,16 +39,14 @@ add_compile_options(
     -Wthread-safety
     -Werror=return-type
     #
-    -Wcast-qual
+#    -Wcast-qual
     -Wcast-align
     -Wshadow
     -Wstrict-aliasing=1
     -Wswitch-enum
-    -Wdeclaration-after-statement
     -Wundef
     -Wpointer-arith
     -Wformat-security
-    -Wvla
     -Winit-self
     -Wfloat-equal
     -Wwrite-strings
