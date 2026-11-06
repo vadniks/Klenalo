@@ -120,7 +120,6 @@ add_compile_options(
     -fcommon
 )
 
-# Preprocessor Definitions
 add_compile_definitions(
     "-D_GNU_SOURCE=
     -D_THREAD_SAFE=
@@ -148,63 +147,12 @@ set(LINKER_FLAGS
 )
 add_link_options(-flto=full ${LINKER_FLAGS} -fuse-ld=ld.lld)
 
-add_executable(${PROJECT_NAME}
-    src/collections/deque.c
-    src/collections/deque.h
-    src/collections/hashtable.c
-    src/collections/hashtable.h
-    src/collections/list.c
-    src/collections/list.h
-    src/collections/treeMap.c
-    src/collections/treeMap.h
-
-    src/core/lifecycle.c
-    src/core/lifecycle.h
-    src/core/main.c
-
-    src/crypto/crypto.c
-    src/crypto/crypto.h
-    src/crypto/keyStore.c
-    src/crypto/keyStore.h
-
-    src/integration/input.c
-    src/integration/input.h
-    src/integration/resources.c
-    src/integration/resources.h
-    src/integration/video.c
-    src/integration/video.h
-    src/integration/xlvgl.c
-    src/integration/xlvgl.h
-
-    src/networking/net.c
-    src/networking/net.h
-
-    src/scenes/loginScene.c
-    src/scenes/loginScene.h
-    src/scenes/scenes.c
-    src/scenes/scenes.h
-    src/scenes/splashScene.c
-    src/scenes/splashScene.h
-
-    src/utils/barrier.c
-    src/utils/barrier.h
-    src/utils/conditionObserver.c
-    src/utils/conditionObserver.h
-    src/utils/rwMutex.c
-    src/utils/rwMutex.h
-
-    src/consts.c
-    src/consts.h
-    src/defs.c
-    src/defs.h
-)
+file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h)
+add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
 set(LIB_THIRD_PARTY thirdParty)
-add_library(${LIB_THIRD_PARTY}
-    thirdParty/halfSipHash.c
-    thirdParty/sipHash.c
-    thirdParty/xxHash.c
-)
+file(GLOB_RECURSE THIRD_PARTY_SOURCES CONFIGURE_DEPENDS thirdParty/*.c)
+add_library(${LIB_THIRD_PARTY} ${THIRD_PARTY_SOURCES})
 
 target_link_libraries(${PROJECT_NAME} ${LIB_THIRD_PARTY})
 
