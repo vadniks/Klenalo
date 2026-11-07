@@ -1,5 +1,5 @@
 
-#include "lifecycle.h"
+#include "core/lifecycle.h"
 
 // const int argc, const char* const* const argv, const char* const* const envp
 int main() {

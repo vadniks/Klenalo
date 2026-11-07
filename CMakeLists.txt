@@ -14,11 +14,7 @@ if(NOT CMAKE_C_COMPILER_ID STREQUAL "Clang")
 endif()
 
 link_libraries(
-    c m pthread atomic SDL3
-    ${PROJECT_SOURCE_DIR}/lib/lvgl/bin/liblvgl.so.9
-    freetype sodium
-    ${PROJECT_SOURCE_DIR}/lib/sdl3net/bin/libSDL3_net.so.0
-    lz4 # gtest or cmocka
+    c m pthread atomic SDL3 sodium # gtest or cmocka
 )
 
 add_compile_options(
@@ -189,7 +185,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(ENABLE_TESTS true)
 if(ENABLE_TESTS)
     file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS src/* tests/*)
-    list(FILTER TEST_SOURCES EXCLUDE REGEX src/core/main.c)
+    list(FILTER TEST_SOURCES EXCLUDE REGEX src/main.c)
 
     set(TESTS_EXE tests)
     add_executable(${TESTS_EXE} ${TEST_SOURCES})
@@ -200,7 +196,5 @@ if(ENABLE_TESTS)
     target_compile_definitions(${TESTS_EXE} PRIVATE TESTING)
     target_compile_options(${TESTS_EXE} PRIVATE -fsanitize=unsigned-integer-overflow)
 
-    foreach(INDEX RANGE 3)
-        add_test(NAME test${INDEX} COMMAND $<TARGET_FILE:${TESTS_EXE}> ${INDEX})
-    endforeach()
+    add_test(NAME tests COMMAND $<TARGET_FILE:${TESTS_EXE}>)
 endif()
