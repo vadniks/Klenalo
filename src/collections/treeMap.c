@@ -1,5 +1,4 @@
 
-#include "../utils/rwMutex.h"
 #include "treeMap.h"
 
 // inspired by the Java standard library's TreeMap
@@ -20,9 +19,7 @@ typedef struct _Node {
 } Node;
 
 struct _TreeMap {
-    const Allocator* const internalAllocator;
     const Deallocator nullable deallocator;
-    RWMutex* nullable const rwMutex;
     Node* nullable root;
     int count;
     bool iterating;
@@ -34,43 +31,31 @@ struct _TreeMapIterator {
     Node* nullable stack[];
 };
 
-static const int MAX_SIZE = ~0u / 2u; // 0x7fffffff
+static constexpr int MAX_SIZE = ~0u / 2u; // 0x7fffffff
 
-TreeMap* treeMapCreate(const Allocator* const internalAllocator, const bool synchronized, const Deallocator nullable deallocator) {
-    TreeMap* const map = internalAllocator->malloc(sizeof *map);
-    unconst(map->internalAllocator) = internalAllocator;
+TreeMap* treeMapCreate(const Deallocator nullable deallocator) {
+    TreeMap* const map = malloc(sizeof *map);
     unconst(map->deallocator) = deallocator;
-    unconst(map->rwMutex) = synchronized ? rwMutexCreate() : nullptr;
     map->root = nullptr;
     map->count = 0;
     map->iterating = false;
     return map;
 }
 
-static inline void xRwMutexCommand(TreeMap* const map, const RWMutexCommand command) {
-    if (map->rwMutex) rwMutexCommand(map->rwMutex, command);
+int treeMapCount(const TreeMap* const map) {
+    return map->count;
 }
 
-int treeMapCount(TreeMap* const map) {
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_LOCK);
-    const int count = map->count;
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_UNLOCK);
-    return count;
-}
-
-static int iteratorSize(TreeMap* const map) {
+static int iteratorSize(const TreeMap* const map) {
     return (int) sizeof(TreeMapIterator) + (int) sizeof(Node*) * map->count;
 }
 
-int treeMapIteratorSize(TreeMap* const map) {
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_LOCK);
-    const int size = iteratorSize(map);
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_UNLOCK);
-    return size;
+int treeMapIteratorSize(const TreeMap* const map) {
+    return iteratorSize(map);
 }
 
 static Node* nodeCreate(TreeMap* const map, const int key, void* const value) {
-    Node* const node = map->internalAllocator->malloc(sizeof *node);
+    Node* const node = malloc(sizeof *node);
 
     unconst(node->key) = key;
     unconst(node->value) = value;
@@ -89,38 +74,38 @@ static void nodeDestroy(TreeMap* const map, Node* nullable const node) {
     map->count--;
 
     if (map->deallocator) map->deallocator(node->value);
-    map->internalAllocator->free(node);
+    free(node);
 }
 
-static inline Node* nullable parentOf(const Node* nullable const node) {
+static Node* nullable parentOf(const Node* nullable const node) {
     return node ? node->parent : nullptr;
 }
 
-static inline Node* nullable leftOf(const Node* nullable const node) {
+static Node* nullable leftOf(const Node* nullable const node) {
     return node ? node->left : nullptr;
 }
 
-static inline Node* nullable rightOf(const Node* nullable const node) {
+static Node* nullable rightOf(const Node* nullable const node) {
     return node ? node->right : nullptr;
 }
 
-static inline void setParentOf(Node* nullable const node, Node* nullable const other) {
+static void setParentOf(Node* nullable const node, Node* nullable const other) {
     if (node) node->parent = other;
 }
 
-static inline void setLeftOf(Node* nullable const node, Node* nullable const other) {
+static void setLeftOf(Node* nullable const node, Node* nullable const other) {
     if (node) node->left = other;
 }
 
-static inline void setRightOf(Node* nullable const node, Node* nullable const other) {
+static void setRightOf(Node* nullable const node, Node* nullable const other) {
     if (node) node->right = other;
 }
 
-static inline Color colorOf(const Node* nullable const node) {
+static Color colorOf(const Node* nullable const node) {
     return node ? node->color : COLOR_BLACK;
 }
 
-static inline void setColorOf(Node* nullable const node, const Color color) {
+static void setColorOf(Node* nullable const node, const Color color) {
     if (node) node->color = color;
 }
 
@@ -197,7 +182,6 @@ static void insertFixup(TreeMap* const map, Node* nullable z) {
 }
 
 void treeMapInsert(TreeMap* const map, const int key, void* const value) {
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(map->count < MAX_SIZE && !map->iterating);
 
     Node* x = map->root, * y = nullptr, * new = nodeCreate(map, key, value);
@@ -206,10 +190,7 @@ void treeMapInsert(TreeMap* const map, const int key, void* const value) {
         y = x;
         if (key < x->key) x = x->left;
         else if (key > x->key) x = x->right;
-        else assert(false); /*{
-            xRwMutexCommand(map, RW_MUTEX_COMMAND_WRITE_UNLOCK);
-            return;
-        }*/
+        else assert(false);
     }
 
     if (!y) map->root = new;
@@ -221,7 +202,6 @@ void treeMapInsert(TreeMap* const map, const int key, void* const value) {
     }
 
     insertFixup(map, new);
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
 static Node* nullable searchKey(const TreeMap* const map, const int key) {
@@ -235,9 +215,7 @@ static Node* nullable searchKey(const TreeMap* const map, const int key) {
 }
 
 void* nullable treeMapSearchKey(TreeMap* const map, const int key) {
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_LOCK);
-    Node* const node = searchKey(map, key);
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_UNLOCK);
+    const Node* const node = searchKey(map, key);
     return node ? node->value : nullptr;
 }
 
@@ -248,10 +226,8 @@ static Node* nullable searchMinOrMax(Node* nullable node, const bool minOrMax) {
     return node;
 }
 
-void* nullable treeMapSearchMinOrMax(TreeMap* const map, const bool minOrMax, int* nullable const key) {
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_LOCK);
-    Node* const node = searchMinOrMax(map->root, minOrMax);
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_UNLOCK);
+void* nullable treeMapSearchMinOrMax(const TreeMap* const map, const bool minOrMax, int* nullable const key) {
+    const Node* const node = searchMinOrMax(map->root, minOrMax);
 
     if (node) {
         if (key) *key = node->key;
@@ -326,14 +302,11 @@ static void deleteFixup(TreeMap* const map, Node* nullable x) {
 }
 
 void treeMapDelete(TreeMap* const map, const int key) {
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(!map->iterating);
 
     Node* const found = searchKey(map, key);
-    if (!found) {
-        xRwMutexCommand(map, RW_MUTEX_COMMAND_WRITE_UNLOCK);
+    if (!found)
         return;
-    }
 
     Node* y = found, * x;
     Color color = y->color;
@@ -367,7 +340,6 @@ void treeMapDelete(TreeMap* const map, const int key) {
         deleteFixup(map, x);
 
     nodeDestroy(map, found);
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 }
 
 static void iteratePutLeftChildrenIntoStack(TreeMapIterator* const iterator, Node* nullable node) {
@@ -379,17 +351,13 @@ static void iteratePutLeftChildrenIntoStack(TreeMapIterator* const iterator, Nod
 }
 
 static inline void clearIteratorStack(TreeMapIterator* const iterator) {
-    xmemset(iterator->stack, 0, sizeof(Node*) * iterator->map->count);
+    memset(iterator->stack, 0, sizeof(Node*) * iterator->map->count);
 }
 
 #undef treeMapIterateBegin
 void treeMapIterateBegin(TreeMap* const map, TreeMapIterator* const iterator) {
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(!map->iterating);
     map->iterating = true;
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_WRITE_UNLOCK);
-
-    xRwMutexCommand(map, RW_MUTEX_COMMAND_READ_LOCK);
 
     unconst(iterator->map) = map;
     iterator->currentStackTop = -1;
@@ -402,7 +370,7 @@ void* nullable treeMapIterate(TreeMapIterator* const iterator) {
     assert(iterator->map->iterating);
     if (iterator->currentStackTop < 0) return nullptr;
 
-    Node* const node = iterator->stack[iterator->currentStackTop--];
+    const Node* const node = iterator->stack[iterator->currentStackTop--];
 
     if (rightOf(node))
         iteratePutLeftChildrenIntoStack(iterator, node->right);
@@ -411,23 +379,14 @@ void* nullable treeMapIterate(TreeMapIterator* const iterator) {
 }
 
 void treeMapIterateEnd(TreeMapIterator* const iterator) {
-    xRwMutexCommand(iterator->map, RW_MUTEX_COMMAND_READ_UNLOCK);
-
-    xRwMutexCommand(iterator->map, RW_MUTEX_COMMAND_WRITE_LOCK);
     assert(iterator->map->iterating);
     iterator->map->iterating = false;
-    xRwMutexCommand(iterator->map, RW_MUTEX_COMMAND_WRITE_UNLOCK);
 
     iterator->currentStackTop = -1;
     clearIteratorStack(iterator);
 }
 
 void treeMapDestroy(TreeMap* const map) {
-    if (map->rwMutex) {
-        rwMutexDestroy(map->rwMutex);
-        unconst(map->rwMutex) = nullptr; // so the following dealing with iterator won't mess up the mutex
-    }
-
     assert(!map->iterating);
 
     TreeMapIterator* const iterator = xalloca2(iteratorSize(map));
@@ -439,5 +398,5 @@ void treeMapDestroy(TreeMap* const map) {
 
     treeMapIterateEnd(iterator); // unnecessary
 
-    map->internalAllocator->free(map);
+    free(map);
 }

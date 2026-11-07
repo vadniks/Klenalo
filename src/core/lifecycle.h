@@ -2,16 +2,11 @@
 #pragma once
 
 #include "../defs.h"
-#include "../utils/rwMutex.h"
 
-typedef void (* LifecycleAsyncActionFunction)(void* nullable const);
+typedef void (* LifecycleAsyncActionFunction)(void* nullable);
 
-void lifecycleInit(void);
-bool lifecycleInitialized(void);
-bool lifecycleRunning(void);
-unsigned long lifecycleCurrentTimeMillis(void);
-void lifecycleRunInBackground(const LifecycleAsyncActionFunction function, void* nullable const parameter, const int delayMillis);
-void lifecycleRunInMainThread(const LifecycleAsyncActionFunction function, void* nullable const parameter);
-void lifecycleUIMutexCommand(const RWMutexCommand command);
-void lifecycleLoop(void);
-void lifecycleQuit(void);
+void lifecycleInit();
+void lifecycleRunInBackground(LifecycleAsyncActionFunction function, void* nullable parameter, int delayMillis);
+void lifecycleRunInMainThread(LifecycleAsyncActionFunction function, void* nullable parameter);
+void lifecycleLoop();
+void lifecycleQuit();

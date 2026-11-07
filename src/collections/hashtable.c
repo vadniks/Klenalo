@@ -12,7 +12,6 @@ typedef struct Node {
 } Node;
 
 struct _Hashtable {
-    const Allocator* const internalAllocator;
     const Deallocator nullable deallocator;
     Node* nullable* buckets;
     int capacity, count; // capacity - power of two actual allocated items, count - inserted items from outside
@@ -25,13 +24,12 @@ struct _HashtableIterator {
 };
 
 const int HASHTABLE_ITERATOR_SIZE = sizeof(HashtableIterator);
-static const int INITIAL_CAPACITY = 8;
+static constexpr int INITIAL_CAPACITY = 8;
 
-Hashtable* hashtableCreate(const Allocator* const internalAllocator, const Deallocator nullable valueDeallocator) {
-    Hashtable* const hashtable = xmalloc(sizeof *hashtable);
-    unconst(hashtable->internalAllocator) = internalAllocator;
-    unconst(hashtable->deallocator) = valueDeallocator;
-    hashtable->buckets = xmalloc((hashtable->capacity = INITIAL_CAPACITY) * sizeof(void*));
+Hashtable* hashtableCreate(const Deallocator nullable deallocator) {
+    Hashtable* const hashtable = malloc(sizeof *hashtable);
+    unconst(hashtable->deallocator) = deallocator;
+    hashtable->buckets = malloc((hashtable->capacity = INITIAL_CAPACITY) * sizeof(void*));
     hashtable->count = 0;
     return hashtable;
 }
@@ -54,7 +52,7 @@ static unsigned long calcHash(const unsigned long value) {
     return hash;
 }
 
-static inline int calcIndex(const unsigned long hash, const int capacity) {
+static int calcIndex(const unsigned long hash, const int capacity) {
     return (int) (hash & (capacity - 1));
 }
 

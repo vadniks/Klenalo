@@ -4,20 +4,19 @@
 #include "../defs.h"
 
 // Red-Black Tree (self-balancing binary search tree), optionally thread-safe, only works with non-null and unique values
-// TODO: embed in the Hashtable, replacing the linked list
 
 typedef struct _TreeMap TreeMap;
 typedef struct _TreeMapIterator TreeMapIterator;
 
-TreeMap* treeMapCreate(const Allocator* const internalAllocator, const bool synchronized, const Deallocator nullable deallocator);
-int treeMapCount(TreeMap* const map);
-int treeMapIteratorSize(TreeMap* const map);
-void treeMapInsert(TreeMap* const map, const int key, void* const value);
-void* nullable treeMapSearchKey(TreeMap* const map, const int key);
-void* nullable treeMapSearchMinOrMax(TreeMap* const map, const bool minOrMax, int* nullable const key);
-void treeMapDelete(TreeMap* const map, const int key);
-void treeMapIterateBegin(TreeMap* const map, TreeMapIterator* const iterator);
+TreeMap* treeMapCreate(Deallocator nullable deallocator);
+int treeMapCount(const TreeMap* map);
+int treeMapIteratorSize(const TreeMap* map);
+void treeMapInsert(TreeMap* map, int key, void* value);
+void* nullable treeMapSearchKey(TreeMap* map, int key);
+void* nullable treeMapSearchMinOrMax(const TreeMap* map, bool minOrMax, int* nullable key);
+void treeMapDelete(TreeMap* map, int key);
+void treeMapIterateBegin(TreeMap* map, TreeMapIterator* iterator);
 #define treeMapIterateBegin(x, y) treeMapIterateBegin(x, (y = xalloca2(treeMapIteratorSize(x))))
-void* nullable treeMapIterate(TreeMapIterator* const iterator); // assumed readonly - don't do any write operations while iterating, iteration involves mutex read-locking
-void treeMapIterateEnd(TreeMapIterator* const iterator);
-void treeMapDestroy(TreeMap* const map);
+void* nullable treeMapIterate(TreeMapIterator* iterator); // assumed readonly - don't do any write operations while iterating, iteration involves mutex read-locking
+void treeMapIterateEnd(TreeMapIterator* iterator);
+void treeMapDestroy(TreeMap* map);
