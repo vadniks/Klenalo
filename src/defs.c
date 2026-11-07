@@ -153,21 +153,21 @@ void* nullable xrealloc(void* nullable const pointer, const unsigned long size) 
         gAllocations++;
 
 #ifdef DEBUG
-        addAllocation(memory, size);
+    addAllocation(memory, size);
 #endif
     } else if (size) { // pointer && size
         assert(memory);
 
 #ifdef DEBUG
-        removeAllocation(pointer);
-        addAllocation(memory, size);
+    removeAllocation(pointer);
+    addAllocation(memory, size);
 #endif
     } else { // pointer && !size
         assert(!memory);
         gAllocations--;
 
 #ifdef DEBUG
-        removeAllocation(pointer);
+    removeAllocation(pointer);
 #endif
     }
 

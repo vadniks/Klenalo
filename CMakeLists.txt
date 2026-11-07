@@ -66,6 +66,7 @@ add_compile_options(
     -fstack-protector-all
     -fstack-check
     -fstack-clash-protection
+    -fcf-protection=full
     -flto=full
     -fno-fat-lto-objects
     # Sanitizers
@@ -83,6 +84,31 @@ add_compile_options(
     -fsanitize=pointer-overflow
     -fsanitize=enum
     -fsanitize=bool
+    -fsanitize=shift
+    -fsanitize=shift-exponent
+    -fsanitize=shift-base
+    -fsanitize=integer-divide-by-zero
+    -fsanitize=float-divide-by-zero
+    -fsanitize=float-cast-overflow
+    -fsanitize=builtin
+    #
+    -fstrict-aliasing
+    #
+    -fno-optimize-sibling-calls
+    -fsanitize=address
+    -fsanitize-address-use-after-scope
+    -fsanitize=pointer-compare
+    -fsanitize=pointer-subtract
+    #
+    -fsanitize=leak
+# -fsanitize=type
+#    -fsanitize=memory
+#    -finstrument-functions
+#    -fsanitize=thread
+#    -fsanitize=concurrency
+    #
+#    -fsanitize-minimal-runtime
+    -fno-sanitize-merge
     # Custom visibility and PIE/Hardening flags
     -fvisibility=hidden
     -fPIE
@@ -145,7 +171,7 @@ set(LINKER_FLAGS
     -Wl,--no-copy-dt-needed-entries
 #    -Wl,-rpath,'$ORIGIN/libs'
 )
-add_link_options(-flto=full ${LINKER_FLAGS} -fuse-ld=ld.lld)
+add_link_options(-flto=full ${LINKER_FLAGS} -fuse-ld=ld.lld -fsanitize=undefined -fsanitize=address)
 
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h)
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
