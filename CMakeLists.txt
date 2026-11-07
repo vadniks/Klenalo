@@ -18,7 +18,7 @@ link_libraries(
     ${PROJECT_SOURCE_DIR}/lib/lvgl/bin/liblvgl.so.9
     freetype sodium
     ${PROJECT_SOURCE_DIR}/lib/sdl3net/bin/libSDL3_net.so.0
-    lz4
+    lz4 # gtest or cmocka
 )
 
 add_compile_options(
