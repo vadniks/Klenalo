@@ -1,5 +1,5 @@
 
-#include "../src/defs.h"
+#include "../common/defs.h"
 
 int main() {
     setbuf(stdout, nullptr); // so printf output can be yielded on test fails, otherwise ctest truncates ignores stdout

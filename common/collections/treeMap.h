@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "../defs.h"
+#include "../../common/defs.h"
 
 // Red-Black Tree (self-balancing binary search tree), optionally thread-safe, only works with non-null and unique values
 

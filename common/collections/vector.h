@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "../defs.h"
+#include "../../common/defs.h"
 
 // Linear vector (dynamically resizable array - aka vector), queue and stack operations support [deprecated], optionally thread-safe, only works with non-null values
 

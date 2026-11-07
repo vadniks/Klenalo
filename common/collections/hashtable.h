@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "../defs.h"
+#include "../../common/defs.h"
 
 // Key-to-value mapping of items through hashing, optionally thread-safe, only works with non-null values
 

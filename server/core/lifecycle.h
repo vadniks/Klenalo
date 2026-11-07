@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "../defs.h"
+#include "../../common/defs.h"
 
 typedef void (* LifecycleAsyncActionFunction)(void* nullable);
 

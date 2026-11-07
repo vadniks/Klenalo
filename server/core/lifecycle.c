@@ -1,6 +1,6 @@
 
 #include <SDL3/SDL.h>
-#include "../collections/vector.h"
+#include "../../common/collections/vector.h"
 #include "lifecycle.h"
 
 typedef struct {

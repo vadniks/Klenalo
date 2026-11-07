@@ -169,32 +169,37 @@ set(LINKER_FLAGS
 )
 add_link_options(-flto=full ${LINKER_FLAGS} -fuse-ld=ld.lld -fsanitize=undefined -fsanitize=address)
 
-file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS src/*.c src/*.h)
-add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+file(GLOB_RECURSE SERVER_SOURCES CONFIGURE_DEPENDS server/* common/*)
+set(SERVER_EXE KlenaloServer)
+add_executable(${SERVER_EXE} ${SERVER_SOURCES})
+target_link_libraries(${SERVER_EXE} ${LIB_THIRD_PARTY})
+target_compile_options(${SERVER_EXE} PRIVATE -fsanitize=unsigned-integer-overflow)
+
+file(GLOB_RECURSE CLIENT_SOURCES CONFIGURE_DEPENDS client/* common/*)
+set(CLIENT_EXE KlenaloClient)
+add_executable(${CLIENT_EXE} ${CLIENT_SOURCES})
+target_link_libraries(${CLIENT_EXE} ${LIB_THIRD_PARTY})
+target_compile_options(${CLIENT_EXE} PRIVATE -fsanitize=unsigned-integer-overflow)
 
 set(LIB_THIRD_PARTY thirdParty)
-file(GLOB_RECURSE THIRD_PARTY_SOURCES CONFIGURE_DEPENDS thirdParty/*.c)
+file(GLOB_RECURSE THIRD_PARTY_SOURCES CONFIGURE_DEPENDS thirdParty/*)
 add_library(${LIB_THIRD_PARTY} ${THIRD_PARTY_SOURCES})
-
-target_link_libraries(${PROJECT_NAME} ${LIB_THIRD_PARTY})
-
-target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=unsigned-integer-overflow)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(ENABLE_TESTS true)
 if(ENABLE_TESTS)
-    file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS src/* tests/*)
-    list(FILTER TEST_SOURCES EXCLUDE REGEX src/main.c)
+    file(GLOB_RECURSE SERVER_TEST_SOURCES CONFIGURE_DEPENDS server/* tests/* common/*)
+    list(FILTER SERVER_TEST_SOURCES EXCLUDE REGEX server/main.c)
 
-    set(TESTS_EXE tests)
-    add_executable(${TESTS_EXE} ${TEST_SOURCES})
+    set(SERVER_TESTS_EXE serverTests)
+    add_executable(${SERVER_TESTS_EXE} ${SERVER_TEST_SOURCES})
 
-    target_link_libraries(${TESTS_EXE} ${LIB_THIRD_PARTY})
+    target_link_libraries(${SERVER_TESTS_EXE} ${LIB_THIRD_PARTY})
 
     enable_testing()
-    target_compile_definitions(${TESTS_EXE} PRIVATE TESTING)
-    target_compile_options(${TESTS_EXE} PRIVATE -fsanitize=unsigned-integer-overflow)
+    target_compile_definitions(${SERVER_TESTS_EXE} PRIVATE TESTING)
+    target_compile_options(${SERVER_TESTS_EXE} PRIVATE -fsanitize=unsigned-integer-overflow)
 
-    add_test(NAME tests COMMAND $<TARGET_FILE:${TESTS_EXE}>)
+    add_test(NAME serverTests COMMAND $<TARGET_FILE:${SERVER_TESTS_EXE}>)
 endif()
