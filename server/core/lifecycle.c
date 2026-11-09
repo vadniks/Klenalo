@@ -1,6 +1,6 @@
 
 #include <SDL3/SDL.h>
-#include "../../common/collections/vector.h"
+#include "../../common/collections/deque.h"
 #include "lifecycle.h"
 
 typedef struct {
@@ -20,7 +20,7 @@ static atomic bool gInitialized = false;
 static atomic bool gRunning = false;
 
 static struct {
-    Vector* nullable queue; // <AsyncAction*>
+    Deque* nullable queue; // <AsyncAction*>
     SDL_Thread* nullable thread;
 }
     gMainActionsLooper = {nullptr, nullptr},
@@ -34,8 +34,8 @@ void lifecycleInit() {
 
     assert(SDL_Init(SDL_INIT_EVENTS));
 
-    gMainActionsLooper.queue = vectorCreate(free);
-    gBackgroundActionsLooper.queue = vectorCreate(free);
+    gMainActionsLooper.queue = dequeCreate(free);
+    gBackgroundActionsLooper.queue = dequeCreate(free);
 
     assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, PROGRAM_NAME "background", nullptr));
 }
@@ -47,7 +47,7 @@ static void delayThread(const unsigned startMillis) {
 }
 
 static AsyncAction* nullable nextAsyncAction(const Looper looper) {
-    return vectorPopFirst(looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.queue : gMainActionsLooper.queue);
+    return dequeQueuePop(looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.queue : gMainActionsLooper.queue, false);
 }
 
 static void threadLoop(void (* const body)()) {
@@ -82,7 +82,7 @@ static void scheduleAction(const LifecycleAsyncActionFunction function, void* nu
     AsyncAction* const action = malloc(sizeof *action);
     assignToStructWithConsts(action, function, parameter, delayMillis)
 
-    vectorAddFront(looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.queue : gMainActionsLooper.queue, action);
+    dequeQueuePush(looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.queue : gMainActionsLooper.queue, action);
 }
 
 void lifecycleRunInBackground(const LifecycleAsyncActionFunction function, void* nullable const parameter, const int delayMillis) {
@@ -129,8 +129,8 @@ void lifecycleQuit() {
 
     gInitialized = false;
 
-    vectorDestroy(gBackgroundActionsLooper.queue);
-    vectorDestroy(gMainActionsLooper.queue);
+    dequeDestroy(gBackgroundActionsLooper.queue);
+    dequeDestroy(gMainActionsLooper.queue);
 
     SDL_Quit();
 }
