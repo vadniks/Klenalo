@@ -3,10 +3,6 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 //#define TESTING
 
 #if __STDC_VERSION__ < 202311L /*C23*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) /*glibc*/ || \
@@ -41,10 +37,6 @@ typedef unsigned char byte;
 #define inRange(x, c, y) c >= x && c <= y
 #define unconst(x) *((typeof_unqual(x)*) &(x))
 #define offsetof(x, y) __builtin_offsetof(x, y)
-#define concatActual(x, y) x ## y
-#define concat(x, y) concatActual(x, y) // yeah, that's weird, but it doesn't work directly
-#define stringifyActual(x) #x
-#define stringify(x) stringifyActual(x)
 #define export [[gnu::visibility("default")]]
 #define noinline [[clang::noinline]]
 #define xinline [[clang::always_inline]] inline
@@ -61,6 +53,7 @@ typedef unsigned char byte;
 staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(void*) == 8);
 
 void assert(bool condition);
+int xrand(int min, int max); // general pseudorandom
 
 typedef void (* Deallocator)(void*);
 
@@ -77,10 +70,30 @@ typedef Compared (* Comparator)(const void*, const void*); // a=first < b=second
 void syslog(int priority, const char* format, ...); // NOLINT(*-redundant-declaration, *-inconsistent-declaration-parameter-name)
 #define log(x, y) syslog(7, x, y) // LOG_DEBUG
 
-typedef enum {PRINT_MEMORY_MODE_DEC, PRINT_MEMORY_MODE_HEX, PRINT_MEMORY_MODE_HEX_STR, PRINT_MEMORY_MODE_STR, PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK} PrintMemoryMode;
+typedef enum {
+    PRINT_MEMORY_MODE_DEC,
+    PRINT_MEMORY_MODE_HEX,
+    PRINT_MEMORY_MODE_HEX_STR,
+    PRINT_MEMORY_MODE_STR,
+    PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK
+} PrintMemoryMode;
 void printMemory(const void* memory, int size, PrintMemoryMode mode);
 
-int hashValue(const void* value, int size); // fast non-cryptographic collision-resistant general purpose hash function (xxhash)
-#define hashPrimitive(x) hashValue(&(typeof(x)) {x}, sizeof x) // _Generic((x), byte: 1, char: 1, unsigned short: 2, short: 2, unsigned int: 4, int: 4, unsigned long: 8, long: 8)
+int hashValue(const void* value, int size); // fast collision-resistant general purpose hash function (xxhash32)
+inline int hashPrimitive(const long value) { return hashValue(&value, sizeof(value)); } // byte/char, (u)short, (u)int cast to long automatically (compiler just takes lower bytes registers of the main 8 bytes register)
 
 unsigned long currentTimeMillis();
+
+// TODO: put restrict everywhere where applicable
+
+int printf(const char* restrict format, ...);
+int puts(const char* s);
+
+void* malloc(unsigned long size); // assume returns nonnull as there's plenty of virtual memory in modern systems
+void* calloc(unsigned long num, unsigned long size); // TODO: assert *allocs
+void* realloc(void* ptr, unsigned long size); // TODO: --wrap *allocs or ld_preload and custom hooks library, alter them and pass control back to real impls through dlsym
+void free(void* ptr);
+
+void* memset(void* s, int c, unsigned long n);
+void* memmove(void* dest, const void* src, unsigned long n);
+void* memcpy(void* restrict dest, const void* restrict src, unsigned long n);
