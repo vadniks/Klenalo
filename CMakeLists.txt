@@ -90,8 +90,9 @@ add_compile_options(
     #
     -fstrict-aliasing
     #
-    -fno-optimize-sibling-calls
-    -fsanitize=address
+#    -fno-optimize-sibling-calls
+    -fsanitize=address # ASAN_OPTIONS="abort_on_error=1:detect_leaks=1";LSAN_OPTIONS="print_suppressions=0:report_objects=1:use_globals=0:use_tls=0"
+    -fsanitize-address-use-after-return=always # #include <sanitizer/lsan_interface.h>
     -fsanitize-address-use-after-scope
     -fsanitize=pointer-compare
     -fsanitize=pointer-subtract
@@ -104,7 +105,7 @@ add_compile_options(
 #    -fsanitize=concurrency
     #
 #    -fsanitize-minimal-runtime
-    -fno-sanitize-merge
+#    -fno-sanitize-merge #
     # Custom visibility and PIE/Hardening flags
     -fvisibility=hidden
     -fPIE
@@ -147,7 +148,6 @@ add_compile_definitions(
     -D_THREAD_SAFE=
     -U_FORTIFY_SOURCE=
     -D_FORTIFY_SOURCE=3"
-    LV_CONF_PATH="../lv_conf.h"
 )
 
 include_directories(
