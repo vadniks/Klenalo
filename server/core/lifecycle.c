@@ -1,6 +1,7 @@
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
+#include "../network/network.h"
 #include "../../common/collections/deque.h"
 #include "lifecycle.h"
 
@@ -11,8 +12,9 @@ typedef struct {
 } AsyncAction;
 
 typedef enum {
+    LOOPER_MAIN,
     LOOPER_BACKGROUND,
-    LOOPER_MAIN
+    LOOPER_NETWORK
 } Looper;
 
 static constexpr int UPDATE_PERIOD = 16; // floorf(1000.0f / 60.0f)
@@ -26,9 +28,11 @@ static struct {
     SDL_Thread* nullable thread;
 }
     gMainActionsLooper = {nullptr, nullptr},
-    gBackgroundActionsLooper = {nullptr, nullptr};
+    gBackgroundActionsLooper = {nullptr, nullptr},
+    gNetworkActionsLooper = {nullptr, nullptr};
 
 static int backgroundActionsLoop(void* nullable);
+static int networkActionsLoop(void* nullable);
 
 void lifecycleInit() {
     assert(!gInitialized);
@@ -37,9 +41,18 @@ void lifecycleInit() {
     assert(SDL_Init(SDL_INIT_EVENTS));
 
     gMainActionsLooper.queue = dequeCreate(free);
-    gBackgroundActionsLooper.queue = dequeCreate(free);
 
+    gBackgroundActionsLooper.queue = dequeCreate(free);
     assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, PROGRAM_NAME "background", nullptr));
+
+    gNetworkActionsLooper.queue = dequeCreate(free);
+    assert(gNetworkActionsLooper.thread = SDL_CreateThread(networkActionsLoop, PROGRAM_NAME "network", nullptr));
+
+    networkInit();
+}
+
+bool lifecycleInitialized() {
+    return gInitialized;
 }
 
 static void delayThread(const unsigned startMillis) {
@@ -52,29 +65,32 @@ static AsyncAction* nullable nextAsyncAction(const Looper looper) {
     return dequeQueuePop(looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.queue : gMainActionsLooper.queue, false);
 }
 
-static void threadLoop(void (* const body)()) {
+static void threadLoop(void (* nullable const body)(), const Looper looper) {
     while (!gRunning) {} // wait for main thread to start looping
-
     unsigned startMillis;
 
     while (gRunning) {
         assert(startMillis = (unsigned) SDL_GetTicks());
-        body();
+
+        AsyncAction* action;
+        if ((action = nextAsyncAction(looper))) {
+            if (action->delayMillis) SDL_Delay(action->delayMillis);
+            if (gRunning) action->function(action->parameter);
+            free(action);
+        }
+
+        if (body) body();
         delayThread(startMillis);
     }
 }
 
-static void backgroundActionsLoopBody() {
-    AsyncAction* action;
-    if ((action = nextAsyncAction(LOOPER_BACKGROUND))) {
-        if (action->delayMillis) SDL_Delay(action->delayMillis);
-        if (gRunning) action->function(action->parameter);
-        free(action);
-    }
+static int backgroundActionsLoop(void* nullable const) {
+    threadLoop(nullptr, LOOPER_BACKGROUND);
+    return 0;
 }
 
-static int backgroundActionsLoop(void* nullable const) {
-    threadLoop(backgroundActionsLoopBody);
+static int networkActionsLoop(void* nullable const) {
+    threadLoop(networkLoopBody, LOOPER_NETWORK);
     return 0;
 }
 
@@ -141,10 +157,14 @@ void lifecycleLoop() {
 void lifecycleQuit() {
     assert(gInitialized);
 
+    networkQuit();
+
+    SDL_WaitThread(gNetworkActionsLooper.thread, nullptr);
     SDL_WaitThread(gBackgroundActionsLooper.thread, nullptr);
 
     gInitialized = false;
 
+    dequeDestroy(gNetworkActionsLooper.queue);
     dequeDestroy(gBackgroundActionsLooper.queue);
     dequeDestroy(gMainActionsLooper.queue);
 

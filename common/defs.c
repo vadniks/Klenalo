@@ -4,7 +4,7 @@
 #include <time.h>
 #include "defs.h"
 
-/*export*/ void assert(const bool condition) {
+void assert(const bool condition) {
     if (condition) return;
     abort(); // or __builtin_trap()
 }

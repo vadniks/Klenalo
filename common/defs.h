@@ -91,7 +91,7 @@ int puts(const char* s);
 
 void* malloc(unsigned long size); // assume returns nonnull as there's plenty of virtual memory in modern systems
 void* calloc(unsigned long num, unsigned long size); // TODO: assert *allocs
-void* realloc(void* ptr, unsigned long size); // TODO: --wrap *allocs or ld_preload and custom hooks library, alter them and pass control back to real impls through dlsym
+void* realloc(void* ptr, unsigned long size);
 void free(void* ptr);
 
 void* memset(void* s, int c, unsigned long n);
