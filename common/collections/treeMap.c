@@ -1,8 +1,6 @@
 
 #include "treeMap.h"
 
-// inspired by the Java standard library's TreeMap
-
 typedef enum : byte {
     COLOR_RED,
     COLOR_BLACK

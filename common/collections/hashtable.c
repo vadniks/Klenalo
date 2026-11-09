@@ -1,5 +1,4 @@
 
-// TODO: remove internal mutex from all collections
 #include "hashtable.h"
 
 typedef struct Node {
@@ -37,7 +36,7 @@ Hashtable* hashtableCreate(const Deallocator nullable deallocator) {
 static unsigned long calcHash(const unsigned long value) {
     // Fowler–Noll–Vo (FNV‑1a) Hash Function
 
-    const unsigned long
+    constexpr unsigned long
         FNV_OFFSET_BASIS = 0xcbf29ce484222325ULL,
         FNV_PRIME = 0x100000001b3ULL,
         SEED = 932579;

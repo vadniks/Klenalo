@@ -184,6 +184,7 @@ target_compile_options(${CLIENT_EXE} PRIVATE -fsanitize=unsigned-integer-overflo
 set(LIB_THIRD_PARTY thirdParty)
 file(GLOB_RECURSE THIRD_PARTY_SOURCES CONFIGURE_DEPENDS thirdParty/*)
 add_library(${LIB_THIRD_PARTY} ${THIRD_PARTY_SOURCES})
+# ignore unsigned integer overflow for 3rd party code
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
