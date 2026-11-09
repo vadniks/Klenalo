@@ -8,10 +8,10 @@ typedef enum : byte {
     COLOR_BLACK
 } Color;
 
-typedef struct _Node {
+typedef struct Node {
     const int key;
     void* const value;
-    struct _Node
+    struct Node
         * nullable left, // or could have used NIL instead - nonullable stub node to avoid numerous null checks
         * nullable parent,
         * nullable right;
@@ -214,7 +214,7 @@ static Node* nullable searchKey(const TreeMap* const map, const int key) {
     return nullptr;
 }
 
-void* nullable treeMapSearchKey(TreeMap* const map, const int key) {
+void* nullable treeMapSearchKey(const TreeMap* const map, const int key) {
     const Node* const node = searchKey(map, key);
     return node ? node->value : nullptr;
 }
@@ -238,7 +238,7 @@ void* nullable treeMapSearchMinOrMax(const TreeMap* const map, const bool minOrM
     }
 }
 
-static void transplant(TreeMap* const map, Node* nullable const u, Node* nullable const v) {
+static void transplant(TreeMap* const map, const Node* nullable const u, Node* nullable const v) {
     if (!parentOf(u)) map->root = v;
     else if (u == leftOf(parentOf(u))) setLeftOf(parentOf(u), v);
     else setRightOf(parentOf(u), v);

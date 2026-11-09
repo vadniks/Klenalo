@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "../../common/defs.h"
+#include "../defs.h"
 
-// Linear vector (dynamically resizable array - aka vector), queue and stack operations support [deprecated], optionally thread-safe, only works with non-null values
+// Linear vector (dynamically resizable array - aka vector), queue and stack operations support [deprecated], only works with non-null values
 
 typedef struct _Vector Vector;
 

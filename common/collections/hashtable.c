@@ -4,7 +4,7 @@
 
 typedef struct Node {
     const unsigned long key;
-    void* value;
+    void* const value;
     int height;
     struct Node
         * nullable left,

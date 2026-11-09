@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "../../common/defs.h"
+#include "../defs.h"
 
-// Key-to-value mapping of items through hashing, optionally thread-safe, only works with non-null values
+// Key-to-value mapping of items through hashing, only works with non-null values
 
 typedef struct _Hashtable Hashtable;
 typedef struct _HashtableIterator HashtableIterator;
