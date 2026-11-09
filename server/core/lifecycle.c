@@ -26,7 +26,6 @@ static struct {
     gMainActionsLooper = {nullptr, nullptr},
     gBackgroundActionsLooper = {nullptr, nullptr};
 
-static unsigned getTicks();
 static int backgroundActionsLoop(void* nullable);
 
 void lifecycleInit() {
@@ -39,10 +38,6 @@ void lifecycleInit() {
     gBackgroundActionsLooper.queue = vectorCreate(free);
 
     assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, PROGRAM_NAME "background", nullptr));
-}
-
-static unsigned getTicks() {
-    return (unsigned) SDL_GetTicks();
 }
 
 static void delayThread(const unsigned startMillis) {
