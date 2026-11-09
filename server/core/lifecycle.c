@@ -1,5 +1,6 @@
 
 #include <SDL3/SDL.h>
+#include <stdio.h>
 #include "../../common/collections/deque.h"
 #include "lifecycle.h"
 
@@ -18,6 +19,7 @@ static constexpr int UPDATE_PERIOD = 16; // floorf(1000.0f / 60.0f)
 
 static atomic bool gInitialized = false;
 static atomic bool gRunning = false;
+static int gTicker = 0;
 
 static struct {
     Deque* nullable queue; // <AsyncAction*>
@@ -93,6 +95,19 @@ void lifecycleRunInMainThread(const LifecycleAsyncActionFunction function, void*
     scheduleAction(function, parameter, 0, LOOPER_MAIN);
 }
 
+static void pulse() {
+    char symbol = ' '; // - \ | / -...
+    switch (gTicker) {
+        case 0: symbol = '-'; gTicker = 1; break;
+        case 1: symbol = '\\'; gTicker = 2; break;
+        case 2: symbol = '|'; gTicker = 3; break;
+        case 3: symbol = '/'; gTicker = 0; break;
+        default: assert(false);
+    }
+    printf("\rRunning %c", symbol);
+    fflush(stdout);
+}
+
 void lifecycleLoop() {
     assert(gInitialized);
     gRunning = true;
@@ -116,6 +131,7 @@ void lifecycleLoop() {
         }
 
         delayThread(startMillis);
+        pulse();
     }
     end:
 
