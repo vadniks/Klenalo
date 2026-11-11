@@ -67,7 +67,7 @@ static void queryInterfaces() {
             for (int j = 0; j < 16; j++)
                 mask += popcount(netmask.__in6_u.__u6_addr8[j]);
 
-            if (addr.__in6_u.__u6_addr16[0] != __builtin_bswap16(0xfe80) && inRange(ourAddress->mask, mask, 0x7f)) {
+            if (addr.__in6_u.__u6_addr16[0] != bswap(0xfe800000) && inRange(ourAddress->mask, mask, 0x7f)) {
                 ourAddress->address = addr;
                 ourAddress->mask = mask;
             }
@@ -112,7 +112,7 @@ static void runPeriodically(
 
 void networkLoopBody() {
     static unsigned long lastSubnetsQuery = 0;
-    runPeriodically(currentTimeMillis(), &lastSubnetsQuery, 10000, queryInterfaces);
+    runPeriodically(currentTimeMillis(), &lastSubnetsQuery, 3000, queryInterfaces);
 }
 
 void networkQuit() {

@@ -41,6 +41,10 @@ typedef unsigned char byte;
 #define noinline [[clang::noinline]]
 #define xinline [[clang::always_inline]] inline
 #define popcount(x) __builtin_popcount(x)
+#define bswap(x) _Generic((x), \
+    short: __builtin_bswap16, unsigned short: __builtin_bswap16, \
+    int: __builtin_bswap32, unsigned int: __builtin_bswap32, \
+    long: __builtin_bswap64, unsigned long: __builtin_bswap64)(x)
 
 #define used [[gnu::used]]
 
