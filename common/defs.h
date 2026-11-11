@@ -73,11 +73,14 @@ void syslog(int priority, const char* format, ...); // NOLINT(*-redundant-declar
 typedef enum {
     PRINT_MEMORY_MODE_DEC,
     PRINT_MEMORY_MODE_HEX,
+    PRINT_MEMORY_MODE_HEXDUMP,
+    PRINT_MEMORY_MODE_BINARY,
     PRINT_MEMORY_MODE_HEX_STR,
     PRINT_MEMORY_MODE_STR,
+    PRINT_MEMORY_MODE_IPV6,
     PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK
 } PrintMemoryMode;
-void printMemory(const void* memory, int size, PrintMemoryMode mode);
+void printMemory(const void* memory, int size, PrintMemoryMode mode, bool newline);
 
 int hashValue(const void* value, int size); // fast collision-resistant general purpose hash function (xxhash32)
 inline int hashPrimitive(const long value) { return hashValue(&value, sizeof(value)); } // byte/char, (u)short, (u)int cast to long automatically (compiler just takes lower bytes registers of the main 8 bytes register)
@@ -97,3 +100,10 @@ void free(void* ptr);
 void* memset(void* s, int c, unsigned long n);
 void* memmove(void* dest, const void* src, unsigned long n);
 void* memcpy(void* restrict dest, const void* restrict src, unsigned long n);
+
+// no alignment to allow general versatile use
+typedef byte vec16ub [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-16] of 16 bytes represented just as bytes
+typedef int vec16ul [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-4] of 16 bytes represented as 4 packed longwords (ints)
+typedef long vec16uq [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-2] of 16 bytes represented as 2 packed quadwords (longs)
+
+bool compareXmmVectors(vec16uq vec1, vec16uq vec2);

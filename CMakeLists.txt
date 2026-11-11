@@ -14,7 +14,7 @@ if(NOT CMAKE_C_COMPILER_ID STREQUAL "Clang")
 endif()
 
 link_libraries(
-    c m pthread atomic SDL3 sodium # gtest or cmocka, ini-files-reader-writer, compression
+    c m pthread atomic SDL3 SDL3_net sodium # gtest or cmocka, ini-files-reader-writer, compression
 )
 
 add_compile_options(
@@ -151,10 +151,7 @@ add_compile_definitions(
 )
 
 include_directories(
-    lib/lvgl/include
-    lib/sdl3net/include
     libx
-    /usr/include/freetype2
 )
 
 set(LINKER_FLAGS

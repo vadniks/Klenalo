@@ -147,7 +147,7 @@ void lifecycleLoop() {
         }
 
         delayThread(startMillis);
-        pulse();
+        // pulse();
     }
     end:
 
