@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <net/if.h>
 #include "../../common/collections/treemap.h"
+#include "../../common/collections/vector.h"
 #include "../core/lifecycle.h"
 #include "network.h"
 
@@ -32,19 +33,12 @@ bool networkInitialized() {
     return gInitialized;
 }
 
-static bool compareAddresses(const struct in6_addr* const addr1, const struct in6_addr* const addr2) {
-    const auto xaddr1 = *(vec16uq*) addr1;
-    const auto xaddr2 = *(vec16uq*) addr2;
-    return compareXmmVectors(xaddr1, xaddr2);
-}
-
-static void queryInterfaces() {
+static Vector* /* Address* */ queryInterfaces() {
     struct ifaddrs* addrs;
     assert(!getifaddrs(&addrs));
 
-    Treemap* const addressesMap = treemapCreate(free); // <Address*>
+    Treemap* const addressesMap = treemapCreate(nullptr); // <Address*>
 
-    puts("");
     for (const struct ifaddrs* interface = addrs; interface; interface = interface->ifa_next) {
         if (!(interface->ifa_flags & IFF_UP) ||
             !(interface->ifa_flags & IFF_RUNNING) ||
@@ -65,23 +59,19 @@ static void queryInterfaces() {
             const struct in6_addr netmask = ((struct sockaddr_in6*) (void*) interface->ifa_netmask)->sin6_addr;
 
             byte mask = 0;
-            for (int j = 0; j < 16; j++)
+            for (int j = 0; j < (int) sizeof netmask.__in6_u.__u6_addr8; j++)
                 mask += popcount(netmask.__in6_u.__u6_addr8[j]);
 
-            if (addr.__in6_u.__u6_addr16[0] != bswap(0xfe800000) && inRange(ourAddress->mask, mask, 0x7f)) {
+            // not a link-local address and has mask of first 64 (default) bits set to ones
+            if ((addr.__in6_u.__u6_addr32[0] & bswap(0xffc00000)) != bswap(0xfe800000) && mask == 64) {
                 ourAddress->address = addr;
                 ourAddress->mask = mask;
             }
-
-            printf("%s ", interface->ifa_name);
-            printMemory(&interface->ifa_flags, 4, PRINT_MEMORY_MODE_BINARY, false);
-            printf(" ");
-            printMemory(addr.__in6_u.__u6_addr8, 16, PRINT_MEMORY_MODE_HEXDUMP, false);
-            printf(" ");
-            printMemory(netmask.__in6_u.__u6_addr8, 16, PRINT_MEMORY_MODE_HEXDUMP, false);
-            printf("\n");
         }
     }
+    freeifaddrs(addrs);
+
+    Vector* const addressesVector = vectorCreate(free); // <Address*>
 
     TreemapIterator* iterator;
     treemapIterateBegin(addressesMap, iterator);
@@ -91,13 +81,22 @@ static void queryInterfaces() {
         printMemory(&address->address, 16, PRINT_MEMORY_MODE_IPV6, false);
         printf(" ");
         printf("%d\n", address->mask);
+
+        vectorAddBack(addressesVector, address);
     }
     treemapIterateEnd(iterator);
 
-    puts("");
-
-    freeifaddrs(addrs);
     treemapDestroy(addressesMap);
+    return addressesVector;
+}
+
+static void queryInterfaces0() {
+    Vector* const addresses = queryInterfaces();
+    for (int i = 0; i < vectorSize(addresses); i++) {
+        const Address* const address = vectorGet(addresses, i);
+        printMemory(&address->address, 16, PRINT_MEMORY_MODE_IPV6, true);
+    }
+    vectorDestroy(addresses);
 }
 
 static void runPeriodically(
@@ -113,7 +112,7 @@ static void runPeriodically(
 
 void networkLoopBody() {
     static unsigned long lastSubnetsQuery = 0;
-    runPeriodically(currentTimeMillis(), &lastSubnetsQuery, 3000, queryInterfaces);
+    runPeriodically(currentTimeMillis(), &lastSubnetsQuery, 3000, queryInterfaces0);
 }
 
 void networkQuit() {
