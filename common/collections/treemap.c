@@ -1,5 +1,5 @@
 
-#include "treeMap.h"
+#include "treemap.h"
 
 typedef enum : byte {
     COLOR_RED,
@@ -16,23 +16,23 @@ typedef struct Node {
     Color color;
 } Node;
 
-struct _TreeMap {
+struct _Treemap {
     const Deallocator nullable deallocator;
     Node* nullable root;
     int count;
     bool iterating;
 };
 
-struct _TreeMapIterator {
-    TreeMap* const map;
+struct _TreemapIterator {
+    Treemap* const map;
     int currentStackTop;
     Node* nullable stack[];
 };
 
 static constexpr int MAX_SIZE = ~0u / 2u; // 0x7fffffff
 
-TreeMap* treeMapCreate(const Deallocator nullable deallocator) {
-    TreeMap* const map = malloc(sizeof *map);
+Treemap* treemapCreate(const Deallocator nullable deallocator) {
+    Treemap* const map = malloc(sizeof *map);
     unconst(map->deallocator) = deallocator;
     map->root = nullptr;
     map->count = 0;
@@ -40,19 +40,19 @@ TreeMap* treeMapCreate(const Deallocator nullable deallocator) {
     return map;
 }
 
-int treeMapCount(const TreeMap* const map) {
+int treemapCount(const Treemap* const map) {
     return map->count;
 }
 
-static int iteratorSize(const TreeMap* const map) {
-    return (int) sizeof(TreeMapIterator) + (int) sizeof(Node*) * map->count;
+static int iteratorSize(const Treemap* const map) {
+    return (int) sizeof(TreemapIterator) + (int) sizeof(Node*) * map->count;
 }
 
-int treeMapIteratorSize(const TreeMap* const map) {
+int treemapIteratorSize(const Treemap* const map) {
     return iteratorSize(map);
 }
 
-static Node* nodeCreate(TreeMap* const map, const int key, void* const value) {
+static Node* nodeCreate(Treemap* const map, const int key, void* const value) {
     Node* const node = malloc(sizeof *node);
 
     unconst(node->key) = key;
@@ -65,7 +65,7 @@ static Node* nodeCreate(TreeMap* const map, const int key, void* const value) {
     return node;
 }
 
-static void nodeDestroy(TreeMap* const map, Node* nullable const node) {
+static void nodeDestroy(Treemap* const map, Node* nullable const node) {
     if (!node) return;
 
     assert(map->count >= 0);
@@ -107,7 +107,7 @@ static void setColorOf(Node* nullable const node, const Color color) {
     if (node) node->color = color;
 }
 
-static void rotateLeft(TreeMap* const map, Node* nullable const x) {
+static void rotateLeft(Treemap* const map, Node* nullable const x) {
     if (!x) return;
 
     Node* const y = x->right;
@@ -123,7 +123,7 @@ static void rotateLeft(TreeMap* const map, Node* nullable const x) {
     x->parent = y;
 }
 
-static void rotateRight(TreeMap* const map, Node* nullable const y) {
+static void rotateRight(Treemap* const map, Node* nullable const y) {
     if (!y) return;
 
     Node* const x = y->left;
@@ -139,7 +139,7 @@ static void rotateRight(TreeMap* const map, Node* nullable const y) {
     y->parent = x;
 }
 
-static void insertFixup(TreeMap* const map, Node* nullable z) {
+static void insertFixup(Treemap* const map, Node* nullable z) {
     if (!z) return;
     while (colorOf(parentOf(z)) == COLOR_RED) {
         if (parentOf(z) == leftOf(parentOf(parentOf(z)))) {
@@ -179,7 +179,7 @@ static void insertFixup(TreeMap* const map, Node* nullable z) {
     map->root->color = COLOR_BLACK;
 }
 
-void treeMapInsert(TreeMap* const map, const int key, void* const value) {
+void treemapInsert(Treemap* const map, const int key, void* const value) {
     assert(map->count < MAX_SIZE && !map->iterating);
 
     Node* x = map->root, * y = nullptr, * new = nodeCreate(map, key, value);
@@ -202,7 +202,7 @@ void treeMapInsert(TreeMap* const map, const int key, void* const value) {
     insertFixup(map, new);
 }
 
-static Node* nullable searchKey(const TreeMap* const map, const int key) {
+static Node* nullable searchKey(const Treemap* const map, const int key) {
     Node* node = map->root;
     while (node) {
         if (key < node->key) node = node->left;
@@ -212,7 +212,7 @@ static Node* nullable searchKey(const TreeMap* const map, const int key) {
     return nullptr;
 }
 
-void* nullable treeMapSearchKey(const TreeMap* const map, const int key) {
+void* nullable treemapSearchKey(const Treemap* const map, const int key) {
     const Node* const node = searchKey(map, key);
     return node ? node->value : nullptr;
 }
@@ -224,7 +224,7 @@ static Node* nullable searchMinOrMax(Node* nullable node, const bool minOrMax) {
     return node;
 }
 
-void* nullable treeMapSearchMinOrMax(const TreeMap* const map, const bool minOrMax, int* nullable const key) {
+void* nullable treemapSearchMinOrMax(const Treemap* const map, const bool minOrMax, int* nullable const key) {
     const Node* const node = searchMinOrMax(map->root, minOrMax);
 
     if (node) {
@@ -236,14 +236,14 @@ void* nullable treeMapSearchMinOrMax(const TreeMap* const map, const bool minOrM
     }
 }
 
-static void transplant(TreeMap* const map, const Node* nullable const u, Node* nullable const v) {
+static void transplant(Treemap* const map, const Node* nullable const u, Node* nullable const v) {
     if (!parentOf(u)) map->root = v;
     else if (u == leftOf(parentOf(u))) setLeftOf(parentOf(u), v);
     else setRightOf(parentOf(u), v);
     setParentOf(v, parentOf(u));
 }
 
-static void deleteFixup(TreeMap* const map, Node* nullable x) {
+static void deleteFixup(Treemap* const map, Node* nullable x) {
     if (!x) return;
     while (x != map->root && colorOf(x) == COLOR_BLACK) {
         if (x == leftOf(parentOf(x))) {
@@ -299,7 +299,7 @@ static void deleteFixup(TreeMap* const map, Node* nullable x) {
     setColorOf(x, COLOR_BLACK);
 }
 
-void treeMapDelete(TreeMap* const map, const int key) {
+void treemapDelete(Treemap* const map, const int key) {
     assert(!map->iterating);
 
     Node* const found = searchKey(map, key);
@@ -340,7 +340,7 @@ void treeMapDelete(TreeMap* const map, const int key) {
     nodeDestroy(map, found);
 }
 
-static void iteratePutLeftChildrenIntoStack(TreeMapIterator* const iterator, Node* nullable node) {
+static void iteratePutLeftChildrenIntoStack(TreemapIterator* const iterator, Node* nullable node) {
     while (node) {
         assert(iterator->currentStackTop + 1 <= iterator->map->count);
         iterator->stack[++iterator->currentStackTop] = node;
@@ -348,12 +348,12 @@ static void iteratePutLeftChildrenIntoStack(TreeMapIterator* const iterator, Nod
     }
 }
 
-static inline void clearIteratorStack(TreeMapIterator* const iterator) {
+static void clearIteratorStack(TreemapIterator* const iterator) {
     memset(iterator->stack, 0, sizeof(Node*) * iterator->map->count);
 }
 
-#undef treeMapIterateBegin
-void treeMapIterateBegin(TreeMap* const map, TreeMapIterator* const iterator) {
+#undef treemapIterateBegin
+void treemapIterateBegin(Treemap* const map, TreemapIterator* const iterator) {
     assert(!map->iterating);
     map->iterating = true;
 
@@ -364,7 +364,7 @@ void treeMapIterateBegin(TreeMap* const map, TreeMapIterator* const iterator) {
     iteratePutLeftChildrenIntoStack(iterator, map->root);
 }
 
-void* nullable treeMapIterate(TreeMapIterator* const iterator) {
+void* nullable treemapIterate(TreemapIterator* const iterator) {
     assert(iterator->map->iterating);
     if (iterator->currentStackTop < 0) return nullptr;
 
@@ -376,7 +376,7 @@ void* nullable treeMapIterate(TreeMapIterator* const iterator) {
     return node ? node->value : nullptr;
 }
 
-void treeMapIterateEnd(TreeMapIterator* const iterator) {
+void treemapIterateEnd(TreemapIterator* const iterator) {
     assert(iterator->map->iterating);
     iterator->map->iterating = false;
 
@@ -384,17 +384,17 @@ void treeMapIterateEnd(TreeMapIterator* const iterator) {
     clearIteratorStack(iterator);
 }
 
-void treeMapDestroy(TreeMap* const map) {
+void treemapDestroy(Treemap* const map) {
     assert(!map->iterating);
 
-    TreeMapIterator* const iterator = xalloca2(iteratorSize(map));
-    treeMapIterateBegin(map, iterator);
+    TreemapIterator* const iterator = xalloca2(iteratorSize(map));
+    treemapIterateBegin(map, iterator);
 
     Node* node;
-    while ((node = treeMapIterate(iterator)))
+    while ((node = treemapIterate(iterator)))
         nodeDestroy(map, node);
 
-    treeMapIterateEnd(iterator); // unnecessary
+    treemapIterateEnd(iterator); // unnecessary
 
     free(map);
 }

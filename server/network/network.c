@@ -5,7 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <net/if.h>
-#include "../../common/collections/vector.h"
+#include "../../common/collections/treemap.h"
 #include "../core/lifecycle.h"
 #include "network.h"
 
@@ -42,7 +42,7 @@ static void queryInterfaces() {
     struct ifaddrs* addrs;
     assert(!getifaddrs(&addrs));
 
-    Vector* const addresses = vectorCreate(free); // <Address*>
+    Treemap* const addressesMap = treemapCreate(free); // <Address*>
 
     puts("");
     for (const struct ifaddrs* interface = addrs; interface; interface = interface->ifa_next) {
@@ -50,59 +50,53 @@ static void queryInterfaces() {
             (interface->ifa_flags & IFF_RUNNING) != IFF_RUNNING ||
             (interface->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) continue;
 
-        // if (address->ainfo->ai_socktype != SOCK_DGRAM) continue; // remove tcp and unix
-        // if (address->ainfo->ai_family != AF_INET6) continue; // remove ipv4 and unix
-        // if (compareAddresses(&((struct sockaddr_in6*) (void*) address->ainfo->ai_addr)->sin6_addr, &in6addr_loopback)) continue; // remove loopback
-        // remove public
+        const struct sockaddr* const interfaceAddress = interface->ifa_addr;
 
-        // const struct sockaddr_in6
-        const struct sockaddr* const address = interface->ifa_addr;
+        if (interfaceAddress->sa_family == AF_PACKET) {
+            Address* const address = malloc(sizeof *address);
+            strncpy(address->name, interface->ifa_name, sizeof address->name);
+            address->mask = 0;
+            treemapInsert(addressesMap, hashValue(address->name, sizeof address->name), address);
+        } else if (interfaceAddress->sa_family == AF_INET6) {
+            Address* const ourAddress = treemapSearchKey(addressesMap, hashValue(interface->ifa_name, sizeof ourAddress->name));
 
-        if (address->sa_family == AF_PACKET) {
-            Address* const ourAddress = malloc(sizeof *ourAddress);
-            strncpy(ourAddress->name, interface->ifa_name, sizeof ourAddress->name);
-            ourAddress->mask = 0;
-            vectorAddBack(addresses, ourAddress);
-        } else if (address->sa_family == AF_INET6) {
-            for (int i = 0; i < vectorSize(addresses); i++) {
-                Address* const ourAddress = vectorGet(addresses, i);
+            const struct in6_addr addr = ((struct sockaddr_in6*) (void*) interface->ifa_addr)->sin6_addr;
+            const struct in6_addr netmask = ((struct sockaddr_in6*) (void*) interface->ifa_netmask)->sin6_addr;
 
-                const struct in6_addr addr = ((struct sockaddr_in6*) (void*) interface->ifa_addr)->sin6_addr;
-                const struct in6_addr netmask = ((struct sockaddr_in6*) (void*) interface->ifa_netmask)->sin6_addr;
+            byte mask = 0;
+            for (int j = 0; j < 16; j++)
+                mask += __builtin_popcount(netmask.__in6_u.__u6_addr8[j]);
 
-                int mask = 0;
-                for (int j = 0; j < 16; j++)
-                    mask += __builtin_popcount(netmask.__in6_u.__u6_addr8[j]);
-
-                if (addr.__in6_u.__u6_addr16[0] != __builtin_bswap16(0xfe80) && inRange(ourAddress->mask, mask, 0x7f) && !strncmp(interface->ifa_name, ourAddress->name, sizeof ourAddress->name)) {
-                    ourAddress->address = addr;
-                    ourAddress->mask = mask;
-                }
-
-                printf("%s ", interface->ifa_name);
-                printMemory(&interface->ifa_flags, 4, PRINT_MEMORY_MODE_BINARY, false);
-                printf(" ");
-                printMemory(addr.__in6_u.__u6_addr8, 16, PRINT_MEMORY_MODE_HEXDUMP, false);
-                printf(" ");
-                printMemory(addr.__in6_u.__u6_addr8, 16, PRINT_MEMORY_MODE_HEXDUMP, false);
-                printf("\n");
+            if (addr.__in6_u.__u6_addr16[0] != __builtin_bswap16(0xfe80) && inRange(ourAddress->mask, mask, 0x7f)) {
+                ourAddress->address = addr;
+                ourAddress->mask = mask;
             }
+
+            printf("%s ", interface->ifa_name);
+            printMemory(&interface->ifa_flags, 4, PRINT_MEMORY_MODE_BINARY, false);
+            printf(" ");
+            printMemory(addr.__in6_u.__u6_addr8, 16, PRINT_MEMORY_MODE_HEXDUMP, false);
+            printf(" ");
+            printMemory(addr.__in6_u.__u6_addr8, 16, PRINT_MEMORY_MODE_HEXDUMP, false);
+            printf("\n");
         }
     }
 
-    for (int i = 0; i < vectorSize(addresses); i++) {
-        Address* const address = vectorGet(addresses, i);
+    TreemapIterator* iterator;
+    treemapIterateBegin(addressesMap, iterator);
+    Address* address;
+    while ((address = treemapIterate(iterator))) {
         printf("%s ", address->name);
-
         printMemory(&address->address, 16, PRINT_MEMORY_MODE_IPV6, false);
         printf(" ");
-
         printf("%d\n", address->mask);
     }
+    treemapIterateEnd(iterator);
+
     puts("");
 
     freeifaddrs(addrs);
-    vectorDestroy(addresses);
+    treemapDestroy(addressesMap);
 }
 
 static void runPeriodically(

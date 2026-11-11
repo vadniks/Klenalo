@@ -108,8 +108,6 @@ add_compile_options(
 #    -fno-sanitize-merge #
     # Custom visibility and PIE/Hardening flags
     -fvisibility=hidden
-    -fPIE
-    -fpie
     # Strict C Language Extensions & Type Safety
     -fno-delete-null-pointer-checks
     -fno-strict-overflow
@@ -143,6 +141,12 @@ add_compile_options(
     -fcommon
 )
 
+set(EXE_COMPILER_FLAGS
+    -fPIE
+    -fpie
+    -fsanitize=unsigned-integer-overflow
+)
+
 add_compile_definitions(
     "-D_GNU_SOURCE=
     -D_THREAD_SAFE=
@@ -154,7 +158,7 @@ include_directories(
     libx
 )
 
-set(LINKER_FLAGS
+set(EXE_LINKER_FLAGS
     -Wl,--wrap=FT_New_Face
     -pie -Wl,-z,relro
     -Wl,-z,now
@@ -164,24 +168,27 @@ set(LINKER_FLAGS
     -Wl,--no-copy-dt-needed-entries
 #    -Wl,-rpath,'$ORIGIN/libs'
 )
-add_link_options(-flto=full ${LINKER_FLAGS} -fuse-ld=ld.lld -fsanitize=undefined -fsanitize=address)
+add_link_options(-flto=full -fuse-ld=ld.lld -fsanitize=undefined -fsanitize=address)
+
+set(LIB_THIRD_PARTY thirdParty)
+file(GLOB_RECURSE THIRD_PARTY_SOURCES CONFIGURE_DEPENDS thirdParty/*)
+add_library(${LIB_THIRD_PARTY} ${THIRD_PARTY_SOURCES})
+target_compile_options(${LIB_THIRD_PARTY} PRIVATE -fPIC -fpic)
+target_link_options(${LIB_THIRD_PARTY} PRIVATE -pic)
 
 file(GLOB_RECURSE SERVER_SOURCES CONFIGURE_DEPENDS server/* common/*)
 set(SERVER_EXE KlenaloServer)
 add_executable(${SERVER_EXE} ${SERVER_SOURCES})
 target_link_libraries(${SERVER_EXE} ${LIB_THIRD_PARTY})
-target_compile_options(${SERVER_EXE} PRIVATE -fsanitize=unsigned-integer-overflow)
+target_compile_options(${SERVER_EXE} PRIVATE ${EXE_COMPILER_FLAGS})
+target_link_options(${SERVER_EXE} PRIVATE ${EXE_LINKER_FLAGS})
 
 file(GLOB_RECURSE CLIENT_SOURCES CONFIGURE_DEPENDS client/* common/*)
 set(CLIENT_EXE KlenaloClient)
 add_executable(${CLIENT_EXE} ${CLIENT_SOURCES})
 target_link_libraries(${CLIENT_EXE} ${LIB_THIRD_PARTY})
-target_compile_options(${CLIENT_EXE} PRIVATE -fsanitize=unsigned-integer-overflow)
-
-set(LIB_THIRD_PARTY thirdParty)
-file(GLOB_RECURSE THIRD_PARTY_SOURCES CONFIGURE_DEPENDS thirdParty/*)
-add_library(${LIB_THIRD_PARTY} ${THIRD_PARTY_SOURCES})
-# ignore unsigned integer overflow for 3rd party code
+target_compile_options(${CLIENT_EXE} PRIVATE ${EXE_COMPILER_FLAGS})
+target_link_options(${CLIENT_EXE} PRIVATE ${EXE_LINKER_FLAGS})
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -197,7 +204,8 @@ if(ENABLE_TESTS)
 
     enable_testing()
     target_compile_definitions(${SERVER_TESTS_EXE} PRIVATE TESTING)
-    target_compile_options(${SERVER_TESTS_EXE} PRIVATE -fsanitize=unsigned-integer-overflow)
+    target_compile_options(${SERVER_TESTS_EXE} PRIVATE ${EXE_COMPILER_FLAGS})
+    target_link_options(${SERVER_EXE} PRIVATE ${EXE_LINKER_FLAGS})
 
     add_test(NAME serverTests COMMAND $<TARGET_FILE:${SERVER_TESTS_EXE}>)
 endif()
