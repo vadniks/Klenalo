@@ -46,9 +46,9 @@ static void queryInterfaces() {
 
     puts("");
     for (const struct ifaddrs* interface = addrs; interface; interface = interface->ifa_next) {
-        if ((interface->ifa_flags & IFF_UP) != IFF_UP ||
-            (interface->ifa_flags & IFF_RUNNING) != IFF_RUNNING ||
-            (interface->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) continue;
+        if (!(interface->ifa_flags & IFF_UP) ||
+            !(interface->ifa_flags & IFF_RUNNING) ||
+            interface->ifa_flags & IFF_LOOPBACK) continue;
 
         const struct sockaddr* const interfaceAddress = interface->ifa_addr;
 
@@ -56,6 +56,7 @@ static void queryInterfaces() {
             Address* const address = malloc(sizeof *address);
             strncpy(address->name, interface->ifa_name, sizeof address->name);
             address->mask = 0;
+
             treemapInsert(addressesMap, hashValue(address->name, sizeof address->name), address);
         } else if (interfaceAddress->sa_family == AF_INET6) {
             Address* const ourAddress = treemapSearchKey(addressesMap, hashValue(interface->ifa_name, sizeof ourAddress->name));
