@@ -65,7 +65,7 @@ static void queryInterfaces() {
 
             byte mask = 0;
             for (int j = 0; j < 16; j++)
-                mask += __builtin_popcount(netmask.__in6_u.__u6_addr8[j]);
+                mask += popcount(netmask.__in6_u.__u6_addr8[j]);
 
             if (addr.__in6_u.__u6_addr16[0] != __builtin_bswap16(0xfe80) && inRange(ourAddress->mask, mask, 0x7f)) {
                 ourAddress->address = addr;
@@ -77,7 +77,7 @@ static void queryInterfaces() {
             printf(" ");
             printMemory(addr.__in6_u.__u6_addr8, 16, PRINT_MEMORY_MODE_HEXDUMP, false);
             printf(" ");
-            printMemory(addr.__in6_u.__u6_addr8, 16, PRINT_MEMORY_MODE_HEXDUMP, false);
+            printMemory(netmask.__in6_u.__u6_addr8, 16, PRINT_MEMORY_MODE_HEXDUMP, false);
             printf("\n");
         }
     }

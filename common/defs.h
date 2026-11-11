@@ -40,6 +40,7 @@ typedef unsigned char byte;
 #define export [[gnu::visibility("default")]]
 #define noinline [[clang::noinline]]
 #define xinline [[clang::always_inline]] inline
+#define popcount(x) __builtin_popcount(x)
 
 #define used [[gnu::used]]
 
