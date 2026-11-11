@@ -38,6 +38,8 @@ void lifecycleInit() {
     assert(!gInitialized);
     gInitialized = true;
 
+    setvbuf(stdout, nullptr, _IONBF, 0); // disable heap buffers for stdout
+
     assert(SDL_Init(SDL_INIT_EVENTS));
 
     gMainActionsLooper.queue = dequeCreate(free);
