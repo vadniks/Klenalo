@@ -364,15 +364,20 @@ void treemapIterateBegin(Treemap* const map, TreemapIterator* const iterator) {
     iteratePutLeftChildrenIntoStack(iterator, map->root);
 }
 
-void* nullable treemapIterate(TreemapIterator* const iterator) {
+static Node* nullable iterate(TreemapIterator* const iterator) {
     assert(iterator->map->iterating);
     if (iterator->currentStackTop < 0) return nullptr;
 
-    const Node* const node = iterator->stack[iterator->currentStackTop--];
+    Node* const node = iterator->stack[iterator->currentStackTop--];
 
     if (rightOf(node))
         iteratePutLeftChildrenIntoStack(iterator, node->right);
 
+    return node;
+}
+
+void* nullable treemapIterate(TreemapIterator* const iterator) {
+    const Node* const node = iterate(iterator);
     return node ? node->value : nullptr;
 }
 
@@ -391,7 +396,7 @@ void treemapDestroy(Treemap* const map) {
     treemapIterateBegin(map, iterator);
 
     Node* node;
-    while ((node = treemapIterate(iterator)))
+    while ((node = iterate(iterator)))
         nodeDestroy(map, node);
 
     treemapIterateEnd(iterator); // unnecessary
