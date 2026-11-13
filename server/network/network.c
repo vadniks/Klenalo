@@ -6,6 +6,7 @@
 #include "network.h"
 
 static atomic bool gInitialized = false;
+static Address* nullable gChosenAddress = nullptr;
 
 void networkInit() {
     assert(!gInitialized && lifecycleInitialized());
@@ -45,18 +46,17 @@ static typed(Vector*, Address*) queryInterfaces() {
             const struct in6_addr netmask = ((struct sockaddr_in6*) (void*) interface->ifa_netmask)->sin6_addr;
 
             byte mask = 0;
-            for (int j = 0; j < (int) sizeof netmask.__in6_u.__u6_addr8; j++)
-                mask += popcount(netmask.__in6_u.__u6_addr8[j]);
+            for (int j = 0; j < (int) sizeof netmask.s6_addr; mask += popcount(netmask.s6_addr[j]), j++) {}
 
             // not a link-local address
-            if ((addr.__in6_u.__u6_addr32[0] & bswap(0xffc00000)) != bswap(0xfe800000)) {
+            if ((addr.s6_addr32[0] & bswap(0xffc00000)) != bswap(0xfe800000)) {
                 // not a global routable address (DHCPv6 issued, hence - no mask/subnetPrefix - defaults to mask_max and no derivation from MAC address)
                 if (mask < 128) {
-                    address->slaacAddress.scalar = addr;
+                    address->slaacAddress.native = addr;
                     address->mask = mask;
                 }
             } else {
-                address->linkLocalAddress.scalar = addr;
+                address->linkLocalAddress.native = addr;
                 assert(address->mask == mask);
             }
         }

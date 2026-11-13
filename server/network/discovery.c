@@ -4,8 +4,8 @@
 #include "discovery.h"
 
 static atomic bool gInitialized = false;
-static NET_DatagramSocket* gDiscoveryServerSocket = nullptr;
-static NET_DatagramSocket* gDiscoveryClientSocket = nullptr;
+static NET_DatagramSocket* gServerSocket = nullptr; // listens for others
+static NET_DatagramSocket* gClientSocket = nullptr; // pings others
 
 void discoveryInit() {
     assert(!gInitialized && networkInitialized());

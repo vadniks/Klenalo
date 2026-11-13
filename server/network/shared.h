@@ -10,8 +10,8 @@
 #include "../../common/defs.h"
 
 typedef union {
-    struct in6_addr scalar;
-    vec16aw vector;
+    struct in6_addr native;
+    vec16aw vectorized;
 } In6Addr;
 
 typedef struct {
