@@ -15,10 +15,15 @@ typedef union {
 } In6Addr;
 
 typedef struct {
-    char interface[IF_NAMESIZE];
-    unsigned interfaceIndex;
+    char name[IF_NAMESIZE]; // for user to see
+    unsigned index; // for us to use
     In6Addr
         slaacAddress, // for user to see
         linkLocalAddress; // for us to use
-    unsigned mask;
+    unsigned mask; // for user to see
+} Interface;
+
+typedef struct {
+    vec16aw linkLocal;
+    unsigned interfaceIndex;
 } Address;

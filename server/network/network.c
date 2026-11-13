@@ -6,8 +6,7 @@
 #include "network.h"
 
 static atomic bool gInitialized = false;
-static unsigned gChosenInterfaceIndex = 0;
-static vec16aw gChosenAddress = {0};
+static Address gChosenAddress = {0}; // this host's address and interface index
 
 void networkInit() {
     assert(!gInitialized && lifecycleInitialized());
@@ -20,31 +19,31 @@ bool networkInitialized() {
     return gInitialized;
 }
 
-static typed(Vector*, Address*) queryInterfaces() {
+static typed(Vector*, Interface*) queryInterfaces() {
     struct ifaddrs* addrs;
     assert(!getifaddrs(&addrs));
 
-    typed(Treemap*, Address*) const addressesMap = treemapCreate(nullptr);
+    typed(Treemap*, Interface*) const interfacesMap = treemapCreate(nullptr);
 
-    for (const struct ifaddrs* interface = addrs; interface; interface = interface->ifa_next) {
-        if (!(interface->ifa_flags & IFF_UP) ||
-            !(interface->ifa_flags & IFF_RUNNING) ||
-            interface->ifa_flags & IFF_LOOPBACK) continue;
+    for (const struct ifaddrs* ifa = addrs; ifa; ifa = ifa->ifa_next) {
+        if (!(ifa->ifa_flags & IFF_UP) ||
+            !(ifa->ifa_flags & IFF_RUNNING) ||
+            ifa->ifa_flags & IFF_LOOPBACK) continue;
 
-        const struct sockaddr* const interfaceAddress = interface->ifa_addr;
+        const struct sockaddr* const interfaceAddress = ifa->ifa_addr;
 
         if (interfaceAddress->sa_family == AF_PACKET) {
-            Address* const address = malloc(sizeof *address);
-            strncpy(address->interface, interface->ifa_name, sizeof address->interface);
-            address->interfaceIndex = if_nametoindex(address->interface);
-            address->mask = 0;
+            Interface* const interface = malloc(sizeof *interface);
+            strncpy(interface->name, ifa->ifa_name, sizeof interface->name);
+            interface->index = if_nametoindex(interface->name);
+            interface->mask = 0;
 
-            treemapInsert(addressesMap, hashValue(address->interface, sizeof address->interface), address);
+            treemapInsert(interfacesMap, hashValue(interface->name, sizeof interface->name), interface);
         } else if (interfaceAddress->sa_family == AF_INET6) {
-            Address* const address = treemapSearchKey(addressesMap, hashValue(interface->ifa_name, sizeof address->interface));
+            Interface* const interface = treemapSearchKey(interfacesMap, hashValue(ifa->ifa_name, sizeof interface->name));
 
-            const struct in6_addr addr = ((struct sockaddr_in6*) (void*) interface->ifa_addr)->sin6_addr;
-            const struct in6_addr netmask = ((struct sockaddr_in6*) (void*) interface->ifa_netmask)->sin6_addr;
+            const struct in6_addr addr = ((struct sockaddr_in6*) (void*) ifa->ifa_addr)->sin6_addr;
+            const struct in6_addr netmask = ((struct sockaddr_in6*) (void*) ifa->ifa_netmask)->sin6_addr;
 
             byte mask = 0;
             for (int j = 0; j < (int) sizeof netmask.s6_addr; mask += popcount(netmask.s6_addr[j]), j++) {}
@@ -53,50 +52,52 @@ static typed(Vector*, Address*) queryInterfaces() {
             if ((addr.s6_addr32[0] & bswap(0xffc00000)) != bswap(0xfe800000)) {
                 // not a global routable address (DHCPv6 issued, hence - no mask/subnetPrefix - defaults to mask_max and no derivation from MAC address)
                 if (mask < 128) {
-                    address->slaacAddress.native = addr;
-                    address->mask = mask;
+                    interface->slaacAddress.native = addr;
+                    interface->mask = mask;
                 }
             } else {
-                address->linkLocalAddress.native = addr;
-                assert(address->mask == mask);
+                interface->linkLocalAddress.native = addr;
+                assert(interface->mask == mask);
             }
         }
     }
     freeifaddrs(addrs);
 
-    typed(Vector*, Address*) const addressesVector = vectorCreate(free);
+    typed(Vector*, Interface*) const interfacesVector = vectorCreate(free);
 
     TreemapIterator* iterator;
-    treemapIterateBegin(addressesMap, iterator);
-    Address* address;
-    while ((address = treemapIterate(iterator)))
-        vectorAddBack(addressesVector, address);
+    treemapIterateBegin(interfacesMap, iterator);
+    Interface* interface;
+    while ((interface = treemapIterate(iterator)))
+        vectorAddBack(interfacesVector, interface);
     treemapIterateEnd(iterator);
 
-    treemapDestroy(addressesMap);
-    return addressesVector;
+    treemapDestroy(interfacesMap);
+    return interfacesVector;
 }
 
-static void chooseInterface(const Address* const address) {
-    gChosenInterfaceIndex = address->interfaceIndex;
-    gChosenAddress = address->linkLocalAddress.vectorized;
+static void chooseInterface(const Interface* const address) {
+    gChosenAddress.linkLocal = address->linkLocalAddress.vectorized;
+    gChosenAddress.interfaceIndex = address->index;
+    printMemory(&gChosenAddress.linkLocal, sizeof(vec16aw), PRINT_MEMORY_MODE_IPV6, false);
+    printf("%%%u\n", gChosenAddress.interfaceIndex);
 }
 
 static void queryInterfaces0() {
-    Vector* const addresses = queryInterfaces();
-    for (int i = 0; i < vectorSize(addresses); i++) {
-        const Address* const address = vectorGet(addresses, i);
-        printf("%s: ", address->interface);
-        printMemory(&address->slaacAddress, 16, PRINT_MEMORY_MODE_IPV6, false);
-        printf("/%d", address->mask);
+    Vector* const interfaces = queryInterfaces();
+    for (int i = 0; i < vectorSize(interfaces); i++) {
+        const Interface* const interface = vectorGet(interfaces, i);
+        printf("%s: ", interface->name);
+        printMemory(&interface->slaacAddress, 16, PRINT_MEMORY_MODE_IPV6, false);
+        printf("/%d", interface->mask);
         printf(" = ");
-        printMemory(&address->linkLocalAddress, 16, PRINT_MEMORY_MODE_IPV6, false);
-        printf("%%%u\n", address->interfaceIndex);
+        printMemory(&interface->linkLocalAddress, 16, PRINT_MEMORY_MODE_IPV6, false);
+        printf("%%%u\n", interface->index);
     }
 
-    chooseInterface(vectorGet(addresses, 0));
+    chooseInterface(vectorGet(interfaces, 0));
 
-    vectorDestroy(addresses);
+    vectorDestroy(interfaces);
 }
 
 static void runPeriodically(
