@@ -60,8 +60,11 @@ add_compile_options(
     -mavx2
     -mbmi2
     -mrdrnd
-    -msha
-    -maes
+#    -fopenmp # libomp
+#    -fopenmp-simd
+#    -cl-ext=cl_khr_fp16
+#    -msha
+#    -maes
     -ffast-math
     -fsemantic-interposition
 #    -fno-omit-frame-pointer
