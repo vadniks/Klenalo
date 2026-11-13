@@ -51,9 +51,17 @@ add_compile_options(
     # Optimization and Architecture Flags
 #    -s
     -O3
+    -mabi=sysv
+    -m64
+    -march=x86-64
+    -mno-red-zone
+    -mpopcnt
+    -mfma
     -mavx2
     -mbmi2
     -mrdrnd
+    -msha
+    -maes
     -ffast-math
     -fsemantic-interposition
 #    -fno-omit-frame-pointer
@@ -98,7 +106,8 @@ add_compile_options(
     -fsanitize=pointer-subtract
     #
     -fsanitize=leak
-# -fsanitize=type
+#    -fsanitize=safe-stack
+#    -fsanitize=type
 #    -fsanitize=memory
 #    -finstrument-functions
 #    -fsanitize=thread
