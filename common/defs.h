@@ -55,7 +55,6 @@ typedef unsigned long ufast64;
     short: __builtin_bswap16, unsigned short: __builtin_bswap16, \
     int: __builtin_bswap32, unsigned int: __builtin_bswap32, \
     long: __builtin_bswap64, unsigned long: __builtin_bswap64)(x)
-
 #define used [[gnu::used]]
 
 // or just xmemcpy(x, &(typeof(*x)) {__VA_ARGS__}, sizeof *x); in case this is a mess

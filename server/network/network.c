@@ -6,7 +6,8 @@
 #include "network.h"
 
 static atomic bool gInitialized = false;
-static Address* nullable gChosenAddress = nullptr;
+static unsigned gChosenInterfaceIndex = 0;
+static vec16aw gChosenAddress = {0};
 
 void networkInit() {
     assert(!gInitialized && lifecycleInitialized());
@@ -76,6 +77,11 @@ static typed(Vector*, Address*) queryInterfaces() {
     return addressesVector;
 }
 
+static void chooseInterface(const Address* const address) {
+    gChosenInterfaceIndex = address->interfaceIndex;
+    gChosenAddress = address->linkLocalAddress.vectorized;
+}
+
 static void queryInterfaces0() {
     Vector* const addresses = queryInterfaces();
     for (int i = 0; i < vectorSize(addresses); i++) {
@@ -87,6 +93,9 @@ static void queryInterfaces0() {
         printMemory(&address->linkLocalAddress, 16, PRINT_MEMORY_MODE_IPV6, false);
         printf("%%%u\n", address->interfaceIndex);
     }
+
+    chooseInterface(vectorGet(addresses, 0));
+
     vectorDestroy(addresses);
 }
 

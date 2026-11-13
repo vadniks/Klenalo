@@ -14,7 +14,7 @@ void discoveryInit() {
     // NET_CreateDatagramSocket()
 }
 
-void discoveryBroadcast() {
+void discoveryScan() {
 
 }
 

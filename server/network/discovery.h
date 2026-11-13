@@ -2,5 +2,5 @@
 #pragma once
 
 void discoveryInit();
-void discoveryBroadcast();
+void discoveryScan();
 void discoveryQuit();
