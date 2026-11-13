@@ -10,14 +10,11 @@
 #include "../core/lifecycle.h"
 #include "network.h"
 
-enum {
-    ADDRESS_NAME_SIZE = 16
-};
-
 typedef struct {
-    char name[ADDRESS_NAME_SIZE];
-    struct in6_addr address;
-    byte mask;
+    char interface[IF_NAMESIZE];
+    unsigned interfaceIndex;
+    struct in6_addr slaacAddress, linkLocalAddress;
+    unsigned mask;
 } Address;
 
 static atomic bool gInitialized = false;
@@ -48,12 +45,13 @@ static typed(Vector*, Address*) queryInterfaces() {
 
         if (interfaceAddress->sa_family == AF_PACKET) {
             Address* const address = malloc(sizeof *address);
-            strncpy(address->name, interface->ifa_name, sizeof address->name);
+            strncpy(address->interface, interface->ifa_name, sizeof address->interface);
+            address->interfaceIndex = if_nametoindex(address->interface);
             address->mask = 0;
 
-            treemapInsert(addressesMap, hashValue(address->name, sizeof address->name), address);
+            treemapInsert(addressesMap, hashValue(address->interface, sizeof address->interface), address);
         } else if (interfaceAddress->sa_family == AF_INET6) {
-            Address* const ourAddress = treemapSearchKey(addressesMap, hashValue(interface->ifa_name, sizeof ourAddress->name));
+            Address* const address = treemapSearchKey(addressesMap, hashValue(interface->ifa_name, sizeof address->interface));
 
             const struct in6_addr addr = ((struct sockaddr_in6*) (void*) interface->ifa_addr)->sin6_addr;
             const struct in6_addr netmask = ((struct sockaddr_in6*) (void*) interface->ifa_netmask)->sin6_addr;
@@ -62,10 +60,16 @@ static typed(Vector*, Address*) queryInterfaces() {
             for (int j = 0; j < (int) sizeof netmask.__in6_u.__u6_addr8; j++)
                 mask += popcount(netmask.__in6_u.__u6_addr8[j]);
 
-            // not a link-local address and not a global routable address
-            if ((addr.__in6_u.__u6_addr32[0] & bswap(0xffc00000)) != bswap(0xfe800000) && mask < 128) {
-                ourAddress->address = addr;
-                ourAddress->mask = mask;
+            // not a link-local address
+            if ((addr.__in6_u.__u6_addr32[0] & bswap(0xffc00000)) != bswap(0xfe800000)) {
+                // not a global routable address
+                if (mask < 128) {
+                    address->slaacAddress = addr;
+                    address->mask = mask;
+                }
+            } else {
+                address->linkLocalAddress = addr;
+                assert(address->mask == mask);
             }
         }
     }
@@ -88,8 +92,10 @@ static void queryInterfaces0() {
     Vector* const addresses = queryInterfaces();
     for (int i = 0; i < vectorSize(addresses); i++) {
         const Address* const address = vectorGet(addresses, i);
-        printf("%s ", address->name);
-        printMemory(&address->address, 16, PRINT_MEMORY_MODE_IPV6, false);
+        printf("%s %u ", address->interface, address->interfaceIndex);
+        printMemory(&address->slaacAddress, 16, PRINT_MEMORY_MODE_IPV6, false);
+        printf(" ");
+        printMemory(&address->linkLocalAddress, 16, PRINT_MEMORY_MODE_IPV6, false);
         printf(" ");
         printf("%d\n", address->mask);
     }
