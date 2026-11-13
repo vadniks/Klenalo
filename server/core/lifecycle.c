@@ -1,4 +1,5 @@
 
+#include <sanitizer/lsan_interface.h>
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include "../network/network.h"
@@ -17,14 +18,14 @@ typedef enum {
     LOOPER_NETWORK
 } Looper;
 
-static constexpr int UPDATE_PERIOD = 16; // floorf(1000.0f / 60.0f)
+static constexpr int UPDATE_PERIOD = 1000 / 60; // floorf(1000.0f / 60.0f)
 
 static atomic bool gInitialized = false;
 static atomic bool gRunning = false;
 static int gTicker = 0;
 
 static struct {
-    Deque* nullable queue; // <AsyncAction*>
+    typed(Deque*, AsyncAction*) nullable queue;
     SDL_Thread* nullable thread;
 }
     gMainActionsLooper = {nullptr, nullptr},
@@ -40,15 +41,17 @@ void lifecycleInit() {
 
     setvbuf(stdout, nullptr, _IONBF, 0); // disable heap buffers for stdout
 
+    __lsan_disable(); // ignore memory leaks produced by SDL3 internally
     assert(SDL_Init(SDL_INIT_EVENTS));
+    __lsan_enable();
 
     gMainActionsLooper.queue = dequeCreate(free);
 
     gBackgroundActionsLooper.queue = dequeCreate(free);
-    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, PROGRAM_NAME "background", nullptr));
+    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, nullptr, nullptr));
 
     gNetworkActionsLooper.queue = dequeCreate(free);
-    assert(gNetworkActionsLooper.thread = SDL_CreateThread(networkActionsLoop, PROGRAM_NAME "network", nullptr));
+    assert(gNetworkActionsLooper.thread = SDL_CreateThread(networkActionsLoop, nullptr, nullptr));
 
     networkInit();
 }
