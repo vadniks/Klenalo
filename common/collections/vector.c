@@ -137,7 +137,7 @@ int vectorSize(const Vector* const vector) {
 void* nullable vectorBinarySearch(const Vector* const vector, const void* const key, const Comparator comparator) {
     assert(vector->size && vector->values);
 
-    const unsigned long index =
+    const ulong index =
         (void**) bsearch(key, vector->values, vector->size, sizeof(void*), (__compar_fn_t) comparator) - vector->values;
     void* const value = (int) index >= vector->size ? nullptr : vector->values[index];
 

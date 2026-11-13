@@ -50,14 +50,14 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
 }
 
 int hashValue(const void* const value, const int size) {
-    unsigned XXH32(const void* input, unsigned long length, unsigned seed);
+    unsigned XXH32(const void* input, ulong length, unsigned seed);
     return (int) XXH32(value, size, 0);
 }
 
-unsigned long currentTimeMillis() {
+ulong currentTimeMillis() {
     struct timespec timespec;
     assert(!clock_gettime(CLOCK_REALTIME, &timespec));
-    return (unsigned long) timespec.tv_sec * 1'000ul + (unsigned long) timespec.tv_nsec / 1'000'000ul;
+    return (ulong) timespec.tv_sec * 1'000ul + (ulong) timespec.tv_nsec / 1'000'000ul;
 }
 
 bool compareXmmVectors(const vec16uq vec1, const vec16uq vec2) {
