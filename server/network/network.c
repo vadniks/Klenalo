@@ -10,10 +10,17 @@
 #include "../core/lifecycle.h"
 #include "network.h"
 
+typedef union {
+    struct in6_addr scalar;
+    vec16uw vector;
+} In6Addr;
+
 typedef struct {
     char interface[IF_NAMESIZE];
     unsigned interfaceIndex;
-    struct in6_addr slaacAddress, linkLocalAddress;
+    In6Addr
+        slaacAddress, // for user to see
+        linkLocalAddress; // for us to use
     unsigned mask;
 } Address;
 
@@ -62,13 +69,13 @@ static typed(Vector*, Address*) queryInterfaces() {
 
             // not a link-local address
             if ((addr.__in6_u.__u6_addr32[0] & bswap(0xffc00000)) != bswap(0xfe800000)) {
-                // not a global routable address
+                // not a global routable address (DHCPv6 issued, hence - no mask/subnetPrefix - defaults to mask_max and no derivation from MAC address)
                 if (mask < 128) {
-                    address->slaacAddress = addr;
+                    address->slaacAddress.scalar = addr;
                     address->mask = mask;
                 }
             } else {
-                address->linkLocalAddress = addr;
+                address->linkLocalAddress.scalar = addr;
                 assert(address->mask == mask);
             }
         }
@@ -92,12 +99,12 @@ static void queryInterfaces0() {
     Vector* const addresses = queryInterfaces();
     for (int i = 0; i < vectorSize(addresses); i++) {
         const Address* const address = vectorGet(addresses, i);
-        printf("%s %u ", address->interface, address->interfaceIndex);
+        printf("%s: ", address->interface);
         printMemory(&address->slaacAddress, 16, PRINT_MEMORY_MODE_IPV6, false);
-        printf(" ");
+        printf("/%d", address->mask);
+        printf(" = ");
         printMemory(&address->linkLocalAddress, 16, PRINT_MEMORY_MODE_IPV6, false);
-        printf(" ");
-        printf("%d\n", address->mask);
+        printf("%%%u\n", address->interfaceIndex);
     }
     vectorDestroy(addresses);
 }
