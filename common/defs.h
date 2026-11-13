@@ -5,7 +5,8 @@
 
 #if __STDC_VERSION__ < 202311L /*C23*/ || !defined(__clang__) /*extensions*/ || !defined(__GNUC__) /*glibc*/ || \
     !defined(__linux__) /*api*/ || !defined(_GNU_SOURCE) /*api*/ || !defined(__x86_64__) || !__LITTLE_ENDIAN__ || \
-    (defined(__WORDSIZE) && __WORDSIZE != 64 || false) || !defined(__SSE4_2__) || !defined(__AVX2__)
+    (defined(__WORDSIZE) && __WORDSIZE != 64 || false) || \
+    !defined(__SSE4_2__) || !defined(__AVX2__) /* where's avx512, intel?! */ || !defined(__POPCNT__) || !defined(__BMI2__)
 #   error
 #endif
 
