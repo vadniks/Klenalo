@@ -23,6 +23,7 @@ typedef unsigned long ufast32;
 typedef unsigned long ufast64;
 
 #define PROGRAM_NAME "Klenalo"
+#define PROGRAM_VERSION 1
 
 // everything (function return types, function parameter type, struct field type) that isn't marked with nullable is considered to be non-null
 #define nullable _Nullable

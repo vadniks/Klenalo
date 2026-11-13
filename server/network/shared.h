@@ -9,21 +9,34 @@
 #include <SDL3_net/SDL_net.h>
 #include "../../common/defs.h"
 
+enum {
+    MAX_UDP_PAYLOAD_SIZE = 1400,
+    MAX_TCP_PAYLOAD_SIZE = 1400
+};
+
 typedef union {
     struct in6_addr native;
     vec16aw vectorized;
 } In6Addr;
 
 typedef struct {
-    char name[IF_NAMESIZE]; // for user to see
-    unsigned index; // for us to use
-    In6Addr
-        slaacAddress, // for user to see
-        linkLocalAddress; // for us to use
-    unsigned mask; // for user to see
+    char name[IF_NAMESIZE];
+    unsigned index;
+    In6Addr linkLocalAddress;
+    unsigned mask;
 } Interface;
 
 typedef struct {
     vec16aw linkLocal;
     unsigned interfaceIndex;
 } Address;
+
+struct NET_Address {
+    char* hostname;
+    char* human_readable;
+    char* errstr;
+    SDL_AtomicInt refcount;
+    NET_Status status;
+    struct addrinfo* ainfo;
+    NET_Address* resolver_next;
+};

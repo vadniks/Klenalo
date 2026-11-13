@@ -2,5 +2,5 @@
 #pragma once
 
 void discoveryInit();
-void discoveryScan();
+void discoveryScan(const Address* host);
 void discoveryQuit();

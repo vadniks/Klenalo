@@ -3,16 +3,18 @@
 #include "../../common/collections/vector.h"
 #include "../core/lifecycle.h"
 #include "shared.h"
+#include "discovery.h"
 #include "network.h"
 
 static atomic bool gInitialized = false;
-static Address gChosenAddress = {0}; // this host's address and interface index
+static Address gChosenHostAddress = {0};
 
 void networkInit() {
     assert(!gInitialized && lifecycleInitialized());
     gInitialized = true;
 
     assert(NET_Init());
+    discoveryInit();
 }
 
 bool networkInitialized() {
@@ -48,16 +50,9 @@ static typed(Vector*, Interface*) queryInterfaces() {
             byte mask = 0;
             for (int j = 0; j < (int) sizeof netmask.s6_addr; mask += popcount(netmask.s6_addr[j]), j++) {}
 
-            // not a link-local address
-            if ((addr.s6_addr32[0] & bswap(0xffc00000)) != bswap(0xfe800000)) {
-                // not a global routable address (DHCPv6 issued, hence - no mask/subnetPrefix - defaults to mask_max and no derivation from MAC address)
-                if (mask < 128) {
-                    interface->slaacAddress.native = addr;
-                    interface->mask = mask;
-                }
-            } else {
+            if ((addr.s6_addr32[0] & bswap(0xffc00000)) == bswap(0xfe800000)) {
                 interface->linkLocalAddress.native = addr;
-                assert(interface->mask == mask);
+                interface->mask = mask;
             }
         }
     }
@@ -77,26 +72,15 @@ static typed(Vector*, Interface*) queryInterfaces() {
 }
 
 static void chooseInterface(const Interface* const address) {
-    gChosenAddress.linkLocal = address->linkLocalAddress.vectorized;
-    gChosenAddress.interfaceIndex = address->index;
-    printMemory(&gChosenAddress.linkLocal, sizeof(vec16aw), PRINT_MEMORY_MODE_IPV6, false);
-    printf("%%%u\n", gChosenAddress.interfaceIndex);
+    gChosenHostAddress.linkLocal = address->linkLocalAddress.vectorized;
+    gChosenHostAddress.interfaceIndex = address->index;
+    printMemory(&gChosenHostAddress.linkLocal, sizeof(vec16aw), PRINT_MEMORY_MODE_IPV6, false);
+    printf("%%%u\n", gChosenHostAddress.interfaceIndex);
 }
 
 static void queryInterfaces0() {
     Vector* const interfaces = queryInterfaces();
-    for (int i = 0; i < vectorSize(interfaces); i++) {
-        const Interface* const interface = vectorGet(interfaces, i);
-        printf("%s: ", interface->name);
-        printMemory(&interface->slaacAddress, 16, PRINT_MEMORY_MODE_IPV6, false);
-        printf("/%d", interface->mask);
-        printf(" = ");
-        printMemory(&interface->linkLocalAddress, 16, PRINT_MEMORY_MODE_IPV6, false);
-        printf("%%%u\n", interface->index);
-    }
-
     chooseInterface(vectorGet(interfaces, 0));
-
     vectorDestroy(interfaces);
 }
 
@@ -120,5 +104,6 @@ void networkQuit() {
     assert(gInitialized);
     gInitialized = false;
 
+    discoveryQuit();
     NET_Quit();
 }
