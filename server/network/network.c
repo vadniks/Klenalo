@@ -12,7 +12,7 @@
 
 typedef union {
     struct in6_addr scalar;
-    vec16uw vector;
+    vec16aw vector;
 } In6Addr;
 
 typedef struct {

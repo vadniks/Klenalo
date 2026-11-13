@@ -116,10 +116,9 @@ void* memset(void* s, int c, ulong n);
 void* memmove(void* dest, const void* src, ulong n);
 void* memcpy(void* restrict dest, const void* restrict src, ulong n);
 
-// no alignment to allow general versatile use
-typedef byte vec16ub [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-16] of 16 bytes represented just as bytes
-typedef short vec16uw [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-8] of 16 bytes represented as 4 packed words (shorts)
-typedef int vec16ul [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-4] of 16 bytes represented as 4 packed longwords (ints)
-typedef long vec16uq [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-2] of 16 bytes represented as 2 packed quadwords (longs)
+typedef byte vec16ab [[gnu::vector_size(16), gnu::aligned(16)]]; // aligned xmm vector[1-16] of 16 bytes represented just as bytes
+typedef short vec16aw [[gnu::vector_size(16), gnu::aligned(16)]]; // aligned xmm vector[1-8] of 16 bytes represented as 4 packed words (shorts)
+typedef int vec16al [[gnu::vector_size(16), gnu::aligned(16)]]; // aligned xmm vector[1-4] of 16 bytes represented as 4 packed longwords (ints)
+typedef long vec16aq [[gnu::vector_size(16), gnu::aligned(16)]]; // aligned xmm vector[1-2] of 16 bytes represented as 2 packed quadwords (longs)
 
-bool compareXmmVectors(vec16uq vec1, vec16uq vec2);
+bool compareXmmVectors(vec16aq vec1, vec16aq vec2);

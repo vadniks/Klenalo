@@ -60,7 +60,7 @@ ulong currentTimeMillis() {
     return (ulong) timespec.tv_sec * 1'000ul + (ulong) timespec.tv_nsec / 1'000'000ul;
 }
 
-bool compareXmmVectors(const vec16uq vec1, const vec16uq vec2) {
-    const auto result = (vec16uq) (vec1 == vec2);
+bool compareXmmVectors(const vec16aq vec1, const vec16aq vec2) {
+    const auto result = (vec16aq) (vec1 == vec2);
     return result[0] == -1l && result[1] == -1l;
 }
