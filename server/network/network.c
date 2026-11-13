@@ -1,28 +1,9 @@
 
-#include <SDL3_net/SDL_net.h>
-#include <ifaddrs.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <net/if.h>
 #include "../../common/collections/treemap.h"
 #include "../../common/collections/vector.h"
 #include "../core/lifecycle.h"
+#include "shared.h"
 #include "network.h"
-
-typedef union {
-    struct in6_addr scalar;
-    vec16aw vector;
-} In6Addr;
-
-typedef struct {
-    char interface[IF_NAMESIZE];
-    unsigned interfaceIndex;
-    In6Addr
-        slaacAddress, // for user to see
-        linkLocalAddress; // for us to use
-    unsigned mask;
-} Address;
 
 static atomic bool gInitialized = false;
 

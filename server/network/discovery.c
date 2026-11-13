@@ -1,6 +1,5 @@
 
-#include <SDL3_net/SDL_net.h>
-#include "../../common/defs.h"
+#include "shared.h"
 #include "network.h"
 #include "discovery.h"
 

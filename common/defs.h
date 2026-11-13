@@ -40,17 +40,17 @@ typedef unsigned long ufast64;
 #define swapValues(x, y) {x ^= y; y ^= x; x ^= y;}
 #define staticAssert(x) static_assert(x)
 #define atomic _Atomic
-#define fallthrough [[fallthrough]];
-#define packed [[gnu::packed]]
+#define xfallthrough [[fallthrough]];
+#define xpacked [[gnu::packed]]
 #define arraySize(x) (sizeof(x) / sizeof x[0])
 #define inRange(x, c, y) c >= x && c <= y
 #define unconst(x) *((typeof_unqual(x)*) &(x))
 #define offsetof(x, y) __builtin_offsetof(x, y)
 #define export [[gnu::visibility("default")]]
-#define noinline [[clang::noinline]]
+#define xnoinline [[clang::noinline]]
 #define xinline [[clang::always_inline]] inline
 #define popcount(x) __builtin_popcount(x)
-#define typed(x, y) x
+#define typed(x, y) x // typed(Collection*, Type*) = declares a collection/container Collection contains a set of objects with type Type
 #define bswap(x) _Generic((x), \
     short: __builtin_bswap16, unsigned short: __builtin_bswap16, \
     int: __builtin_bswap32, unsigned int: __builtin_bswap32, \
@@ -60,7 +60,7 @@ typedef unsigned long ufast64;
 
 // or just xmemcpy(x, &(typeof(*x)) {__VA_ARGS__}, sizeof *x); in case this is a mess
 #define assignToStructWithConsts(x, ...) { \
-    struct packed _S {byte _[sizeof(typeof(*x))];}; \
+    struct xpacked _S {byte _[sizeof(typeof(*x))];}; \
     staticAssert(sizeof(struct _S) == sizeof(typeof(*x))); \
     *((struct _S*) x) = *(struct _S*) &(typeof(*x)) {__VA_ARGS__}; \
 } // struct __ANY_STRUCT_TYPE_* const var = xmalloc(sizeof *var); if that struct contains const qualified fields; x is var (pointer to that struct)
