@@ -33,11 +33,11 @@ bool networkInitialized() {
     return gInitialized;
 }
 
-static Vector* /* Address* */ queryInterfaces() {
+static typed(Vector*, Address*) queryInterfaces() {
     struct ifaddrs* addrs;
     assert(!getifaddrs(&addrs));
 
-    Treemap* const addressesMap = treemapCreate(nullptr); // <Address*>
+    typed(Treemap*, Address*) const addressesMap = treemapCreate(nullptr);
 
     for (const struct ifaddrs* interface = addrs; interface; interface = interface->ifa_next) {
         if (!(interface->ifa_flags & IFF_UP) ||
@@ -62,8 +62,8 @@ static Vector* /* Address* */ queryInterfaces() {
             for (int j = 0; j < (int) sizeof netmask.__in6_u.__u6_addr8; j++)
                 mask += popcount(netmask.__in6_u.__u6_addr8[j]);
 
-            // not a link-local address and has mask of first 64 (default) bits set to ones
-            if ((addr.__in6_u.__u6_addr32[0] & bswap(0xffc00000)) != bswap(0xfe800000) && mask == 64) {
+            // not a link-local address and not a global routable address
+            if ((addr.__in6_u.__u6_addr32[0] & bswap(0xffc00000)) != bswap(0xfe800000) && mask < 128) {
                 ourAddress->address = addr;
                 ourAddress->mask = mask;
             }
@@ -71,19 +71,13 @@ static Vector* /* Address* */ queryInterfaces() {
     }
     freeifaddrs(addrs);
 
-    Vector* const addressesVector = vectorCreate(free); // <Address*>
+    typed(Vector*, Address*) const addressesVector = vectorCreate(free);
 
     TreemapIterator* iterator;
     treemapIterateBegin(addressesMap, iterator);
     Address* address;
-    while ((address = treemapIterate(iterator))) {
-        printf("%s ", address->name);
-        printMemory(&address->address, 16, PRINT_MEMORY_MODE_IPV6, false);
-        printf(" ");
-        printf("%d\n", address->mask);
-
+    while ((address = treemapIterate(iterator)))
         vectorAddBack(addressesVector, address);
-    }
     treemapIterateEnd(iterator);
 
     treemapDestroy(addressesMap);
@@ -94,14 +88,17 @@ static void queryInterfaces0() {
     Vector* const addresses = queryInterfaces();
     for (int i = 0; i < vectorSize(addresses); i++) {
         const Address* const address = vectorGet(addresses, i);
-        printMemory(&address->address, 16, PRINT_MEMORY_MODE_IPV6, true);
+        printf("%s ", address->name);
+        printMemory(&address->address, 16, PRINT_MEMORY_MODE_IPV6, false);
+        printf(" ");
+        printf("%d\n", address->mask);
     }
     vectorDestroy(addresses);
 }
 
 static void runPeriodically(
-    const unsigned long currentMillis, // TODO: replace unsigned long with ulong/u64 everywhere
-    unsigned long* const lastRunMillis,
+    const ulong currentMillis,
+    ulong* const lastRunMillis,
     const int periodMillis,
     void (* const action)(void)
 ) {
@@ -111,7 +108,7 @@ static void runPeriodically(
 }
 
 void networkLoopBody() {
-    static unsigned long lastSubnetsQuery = 0;
+    static ulong lastSubnetsQuery = 0;
     runPeriodically(currentTimeMillis(), &lastSubnetsQuery, 3000, queryInterfaces0);
 }
 
