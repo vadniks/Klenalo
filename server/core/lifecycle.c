@@ -41,9 +41,7 @@ void lifecycleInit() {
 
     setvbuf(stdout, nullptr, _IONBF, 0); // disable heap buffers for stdout
 
-    __lsan_disable(); // ignore memory leaks produced by SDL3 internally
-    assert(SDL_Init(SDL_INIT_EVENTS));
-    __lsan_enable();
+    leaky(assert(SDL_Init(SDL_INIT_EVENTS));) // ignore memory leaks produced by SDL3 internally
 
     gMainActionsLooper.queue = dequeCreate(free);
 

@@ -64,3 +64,14 @@ bool compareXmmVectors(const vec16uq vec1, const vec16uq vec2) {
     const auto result = (vec16uq) (vec1 == vec2);
     return result[0] == -1l && result[1] == -1l;
 }
+
+void runPeriodically(
+    ulong* const lastRunMillis,
+    const int periodMillis,
+    void (* const action)(void)
+) {
+    const ulong currentMillis = currentTimeMillis();
+    if (currentMillis - *lastRunMillis < (unsigned) periodMillis) return;
+    *lastRunMillis = currentMillis;
+    action();
+}

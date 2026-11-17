@@ -92,17 +92,6 @@ bool networkIsLoopback(const In6Addr* const addr) {
     return compareXmmVectors((vec16uq) addr->vectorized, loopback);
 }
 
-void networkRunPeriodically(
-    ulong* const lastRunMillis,
-    const int periodMillis,
-    void (* const action)(void)
-) {
-    const ulong currentMillis = currentTimeMillis();
-    if (currentMillis - *lastRunMillis < (unsigned) periodMillis) return;
-    *lastRunMillis = currentMillis;
-    action();
-}
-
 void networkLoopBody() {
     discoveryListen();
     discoveryPing();

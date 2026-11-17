@@ -146,6 +146,8 @@ add_compile_options(
     -Wno-gnu-variable-sized-type-not-at-end
     -Wno-unknown-pragmas
     -Wno-sign-conversion
+    -Wno-format-nonliteral
+    -Wno-cast-align
     # MSVC/Specific extensions for compatibility
     -fms-extensions
     -Wno-microsoft-anon-tag

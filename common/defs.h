@@ -57,6 +57,7 @@ typedef unsigned long ufast64;
     int: __builtin_bswap32, unsigned int: __builtin_bswap32, \
     long: __builtin_bswap64, unsigned long: __builtin_bswap64)(x)
 #define used [[gnu::used]]
+#define leaky(x) {__lsan_disable(); x __lsan_enable();}
 
 // or just xmemcpy(x, &(typeof(*x)) {__VA_ARGS__}, sizeof *x); in case this is a mess
 #define assignToStructWithConsts(x, ...) { \
@@ -116,9 +117,19 @@ void* memset(void* s, int c, ulong n);
 void* memmove(void* dest, const void* src, ulong n);
 void* memcpy(void* restrict dest, const void* restrict src, ulong n);
 
+// #include <sanitizer/common_interface_defs.h>
+void __lsan_disable();
+void __lsan_enable();
+
 typedef byte vec16ub [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-16] of 16 bytes represented just as bytes
 typedef short vec16uw [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-8] of 16 bytes represented as 4 packed words (shorts)
 typedef int vec16ul [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-4] of 16 bytes represented as 4 packed longwords (ints)
 typedef long vec16uq [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-2] of 16 bytes represented as 2 packed quadwords (longs)
 
 bool compareXmmVectors(vec16uq vec1, vec16uq vec2);
+
+void runPeriodically(
+    ulong* lastRunMillis,
+    int periodMillis,
+    void (* action)(void)
+);

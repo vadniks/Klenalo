@@ -2,6 +2,12 @@
 #include "network.h"
 #include "discovery.h"
 
+enum {
+    PING_PORT = 8080,
+    LISTEN_PERIOD = 500,
+    PING_PERIOD = 1000
+};
+
 typedef struct xpacked {
     long magic;
     byte version;
@@ -72,10 +78,10 @@ void discoveryInit(const Address* const host) {
     assert(props);
     assert(SDL_SetBooleanProperty(props, NET_PROP_DATAGRAM_SOCKET_ALLOW_BROADCAST_BOOLEAN, true));
 
-    assert(gListenerSocket = NET_CreateDatagramSocket((void*) &hostAddress, 8080, props)); // leaky
+    leaky(assert(gListenerSocket = NET_CreateDatagramSocket((void*) &hostAddress, 8080, props));)
     SDL_DestroyProperties(props);
 
-    assert(gInquirerSocket = NET_CreateDatagramSocket(&gMulticastAddress, 0, props)); // leaky
+    leaky(assert(gInquirerSocket = NET_CreateDatagramSocket(&gMulticastAddress, 0, props));)
 }
 
 static void xlisten() {
@@ -91,7 +97,7 @@ static void xlisten() {
 
 void discoveryListen() {
     static ulong lastListen = 0;
-    networkRunPeriodically(&lastListen, 1000, xlisten);
+    runPeriodically(&lastListen, LISTEN_PERIOD, xlisten);
 }
 
 static void ping() {
@@ -102,7 +108,7 @@ static void ping() {
 
 void discoveryPing() {
     static ulong lastPing = 0;
-    networkRunPeriodically(&lastPing, 1000, ping);
+    runPeriodically(&lastPing, PING_PERIOD, ping);
 }
 
 void discoveryQuit() {
