@@ -27,7 +27,7 @@ typedef struct {
 } Interface;
 
 typedef struct {
-    vec16aw linkLocal;
+    In6Addr linkLocal;
     unsigned interfaceIndex;
 } Address;
 

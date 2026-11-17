@@ -34,7 +34,7 @@ void discoveryInit(const Address* const host) {
                 AF_INET6,
                 0,
                 0,
-                *(struct in6_addr*) &host->linkLocal,
+                host->linkLocal.native,
                 host->interfaceIndex
             },
             nullptr,

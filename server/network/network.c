@@ -76,9 +76,9 @@ static typed(Vector*, Interface*) queryInterfaces() {
 }
 
 static void chooseInterface(const Interface* const address) {
-    gChosenHostAddress.linkLocal = address->linkLocalAddress.vectorized;
+    gChosenHostAddress.linkLocal = address->linkLocalAddress;
     gChosenHostAddress.interfaceIndex = address->index;
-    printMemory(&gChosenHostAddress.linkLocal, sizeof(vec16aw), PRINT_MEMORY_MODE_IPV6, false);
+    printMemory(&gChosenHostAddress.linkLocal, sizeof(In6Addr), PRINT_MEMORY_MODE_IPV6, false);
     printf("%%%u\n", gChosenHostAddress.interfaceIndex);
 }
 
