@@ -73,16 +73,18 @@ static void xlisten() {
     NET_Datagram* datagram = nullptr;
     do {
         assert(NET_ReceiveDatagram(gListenerSocket, &datagram));
+
         if (datagram && !networkIsLoopback((In6Addr*) &asSockaddrIn6(datagram->addr->ainfo->ai_addr)->sin6_addr))
             printf("received: %s %hu %d\n", datagram->addr->human_readable, datagram->port, datagram->buflen);
+
         NET_DestroyDatagram(datagram);
     } while (datagram);
     puts("listen");
 }
 
 void discoveryListen() {
-    static ulong lastListen = 0;
-    runPeriodically(&lastListen, LISTEN_PERIOD, xlisten);
+    static ulong last = 0;
+    runPeriodically(&last, LISTEN_PERIOD, xlisten);
 }
 
 static void ping() {
@@ -92,8 +94,8 @@ static void ping() {
 }
 
 void discoveryPing() {
-    static ulong lastPing = 0;
-    runPeriodically(&lastPing, PING_PERIOD, ping);
+    static ulong last = 0;
+    runPeriodically(&last, PING_PERIOD, ping);
 }
 
 void discoveryQuit() {
