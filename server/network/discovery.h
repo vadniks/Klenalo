@@ -1,6 +1,9 @@
 
 #pragma once
 
+#include "shared.h"
+
 void discoveryInit(const Address* host);
-void discoveryBroadcast();
+void discoveryListen();
+void discoveryPing();
 void discoveryQuit();

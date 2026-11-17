@@ -1,24 +1,24 @@
 
-#include "shared.h"
 #include "network.h"
 #include "discovery.h"
 
-typedef struct {
+typedef struct xpacked {
     long magic;
     byte version;
-    vec16aw address;
+    vec16uw address;
     // cryptographic signature
-} HelloPacket;
+} PingPacket;
 
 static atomic bool gInitialized = false;
-static NET_DatagramSocket* gServerSocket = nullptr; // listens for others
-static NET_DatagramSocket* gClientSocket = nullptr; // pings others
+static NET_Address gMulticastAddress = {};
+static NET_DatagramSocket* gListenerSocket = nullptr; // listens for others
+static NET_DatagramSocket* gInquirerSocket = nullptr; // pings others
 
 void discoveryInit(const Address* const host) {
     assert(!gInitialized && networkInitialized());
     gInitialized = true;
 
-    const auto address = (NET_Address) {
+    const auto hostAddress = (NET_Address) {
         nullptr,
         nullptr,
         nullptr,
@@ -43,31 +43,72 @@ void discoveryInit(const Address* const host) {
         nullptr
     };
 
+    gMulticastAddress = (NET_Address) {
+        nullptr,
+        nullptr,
+        nullptr,
+        {1}, // so sdlNet won't try to free this
+        NET_SUCCESS,
+        &(struct addrinfo) {
+            AI_NUMERICHOST,
+            AF_INET6,
+            SOCK_RAW,
+            IPPROTO_IP,
+            sizeof(struct sockaddr_in6),
+            (struct sockaddr*) &(struct sockaddr_in6) {
+                AF_INET6,
+                0,
+                0,
+                {{.__u6_addr32 = {bswap(0x0000ff02), 0, 0, bswap(1)}}}, // ff02::1
+                host->interfaceIndex
+            },
+            nullptr,
+            nullptr
+        },
+        nullptr
+    };
+
     const SDL_PropertiesID props = SDL_CreateProperties();
     assert(props);
     assert(SDL_SetBooleanProperty(props, NET_PROP_DATAGRAM_SOCKET_ALLOW_BROADCAST_BOOLEAN, true));
 
-    assert(gServerSocket = NET_CreateDatagramSocket((void*) &address, 8080, props)); // leaky
+    assert(gListenerSocket = NET_CreateDatagramSocket((void*) &hostAddress, 8080, props)); // leaky
     SDL_DestroyProperties(props);
 
-    NET_Datagram* datagram = nullptr;
-    int a = 0;
-    do {
-        assert(NET_ReceiveDatagram(gServerSocket, &datagram));
-        if (datagram) printf("b\n");
-    } while (datagram && ++a < 10);
-
-    if (datagram) printMemory(datagram, sizeof *datagram, PRINT_MEMORY_MODE_HEXDUMP, true);
-    printf("a\n");
+    assert(gInquirerSocket = NET_CreateDatagramSocket(&gMulticastAddress, 0, props)); // leaky
 }
 
-void discoveryBroadcast() {
+static void xlisten() {
+    NET_Datagram* datagram = nullptr;
+    do {
+        assert(NET_ReceiveDatagram(gListenerSocket, &datagram));
+        if (datagram && !networkIsLoopback((In6Addr*) &asSockaddrIn6(datagram->addr->ainfo->ai_addr)->sin6_addr))
+            printf("received: %s %hu %d\n", datagram->addr->human_readable, datagram->port, datagram->buflen);
+        NET_DestroyDatagram(datagram);
+    } while (datagram);
+    puts("listen");
+}
 
+void discoveryListen() {
+    static ulong lastListen = 0;
+    networkRunPeriodically(&lastListen, 1000, xlisten);
+}
+
+static void ping() {
+    PingPacket packet = {123, 0, {}};
+    NET_SendDatagram(gInquirerSocket, &gMulticastAddress, 8080, &packet, sizeof packet);
+    puts("ping");
+}
+
+void discoveryPing() {
+    static ulong lastPing = 0;
+    networkRunPeriodically(&lastPing, 1000, ping);
 }
 
 void discoveryQuit() {
     assert(gInitialized);
     gInitialized = false;
 
-    NET_DestroyDatagramSocket(gServerSocket);
+    NET_DestroyDatagramSocket(gListenerSocket);
+    NET_DestroyDatagramSocket(gInquirerSocket);
 }

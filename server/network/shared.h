@@ -9,6 +9,8 @@
 #include <SDL3_net/SDL_net.h>
 #include "../../common/defs.h"
 
+#define asSockaddrIn6(x) ((struct sockaddr_in6*) x)
+
 enum {
     MAX_UDP_PAYLOAD_SIZE = 1400,
     MAX_TCP_PAYLOAD_SIZE = 1400
@@ -16,7 +18,7 @@ enum {
 
 typedef union {
     struct in6_addr native;
-    vec16aw vectorized;
+    vec16uw vectorized;
 } In6Addr;
 
 typedef struct {
