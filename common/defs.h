@@ -63,7 +63,7 @@ typedef unsigned long ufast64;
 
 // or just xmemcpy(x, &(typeof(*x)) {__VA_ARGS__}, sizeof *x); in case this is a mess
 #define assignToStructWithConsts(x, ...) { \
-    struct xpacked _S {byte _[sizeof(typeof(*x))];}; \
+    struct _S {byte _[sizeof(typeof(*x))];}; \
     staticAssert(sizeof(struct _S) == sizeof(typeof(*x))); \
     *((struct _S*) x) = *(struct _S*) &(typeof(*x)) {__VA_ARGS__}; \
 } // struct __ANY_STRUCT_TYPE_* const var = xmalloc(sizeof *var); if that struct contains const qualified fields; x is var (pointer to that struct)
