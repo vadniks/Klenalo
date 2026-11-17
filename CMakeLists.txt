@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Vadim Nikolaev (https://github.com/vadniks)
+# SPDX-License-Identifier: AGPL-3.0-only
 
 cmake_minimum_required(VERSION 4.3)
 set(CMAKE_C_COMPILER "clang")
