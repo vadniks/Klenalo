@@ -25,7 +25,7 @@ void discoveryInit(const Address* const host) {
         {1}, // so sdlNet won't try to free this
         NET_SUCCESS,
         &(struct addrinfo) {
-            AI_ADDRCONFIG,
+            AI_NUMERICHOST,
             AF_INET6,
             SOCK_RAW,
             IPPROTO_IP,
