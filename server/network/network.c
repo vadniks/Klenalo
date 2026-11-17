@@ -9,12 +9,16 @@
 static atomic bool gInitialized = false;
 static Address gChosenHostAddress = {0};
 
+static void queryInterfaces0();
+
 void networkInit() {
     assert(!gInitialized && lifecycleInitialized());
     gInitialized = true;
 
     assert(NET_Init());
-    discoveryInit();
+
+    queryInterfaces0();
+    discoveryInit(&gChosenHostAddress);
 }
 
 bool networkInitialized() {
@@ -44,8 +48,8 @@ static typed(Vector*, Interface*) queryInterfaces() {
         } else if (interfaceAddress->sa_family == AF_INET6) {
             Interface* const interface = treemapSearchKey(interfacesMap, hashValue(ifa->ifa_name, sizeof interface->name));
 
-            const struct in6_addr addr = ((struct sockaddr_in6*) (void*) ifa->ifa_addr)->sin6_addr;
-            const struct in6_addr netmask = ((struct sockaddr_in6*) (void*) ifa->ifa_netmask)->sin6_addr;
+            const struct in6_addr addr = ((struct sockaddr_in6*) ifa->ifa_addr)->sin6_addr;
+            const struct in6_addr netmask = ((struct sockaddr_in6*) ifa->ifa_netmask)->sin6_addr;
 
             byte mask = 0;
             for (int j = 0; j < (int) sizeof netmask.s6_addr; mask += popcount(netmask.s6_addr[j]), j++) {}
@@ -96,8 +100,7 @@ static void runPeriodically(
 }
 
 void networkLoopBody() {
-    static ulong lastSubnetsQuery = 0;
-    runPeriodically(currentTimeMillis(), &lastSubnetsQuery, 3000, queryInterfaces0);
+
 }
 
 void networkQuit() {
