@@ -104,7 +104,7 @@ void discoveryListen() {
 
 static void ping() {
     PingPacket packet = {123, 0, {}};
-    NET_SendDatagram(gInquirerSocket, &gMulticastAddress, 8080, &packet, sizeof packet);
+    assert(NET_SendDatagram(gInquirerSocket, &gMulticastAddress, 8080, &packet, sizeof packet));
     puts("ping");
 }
 
