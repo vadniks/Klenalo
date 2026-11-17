@@ -22,65 +22,48 @@ static NET_Address gMulticastAddress = {};
 static NET_DatagramSocket* gListenerSocket = nullptr; // listens for others
 static NET_DatagramSocket* gInquirerSocket = nullptr; // pings others
 
+#define makeNetAddress(addr, interfaceIndex, port) \
+    (NET_Address) { \
+        nullptr, \
+        nullptr, \
+        nullptr, \
+        {1}, \
+        NET_SUCCESS, \
+        &(struct addrinfo) { \
+            AI_NUMERICHOST, \
+            AF_INET6, \
+            SOCK_RAW, \
+            IPPROTO_IP, \
+            sizeof(struct sockaddr_in6), \
+            (struct sockaddr*) &(struct sockaddr_in6) { \
+                AF_INET6, \
+                port, \
+                0, \
+                addr, \
+                interfaceIndex \
+            }, \
+            nullptr, \
+            nullptr \
+        }, \
+        nullptr \
+    };
+
 void discoveryInit(const Address* const host) {
     assert(!gInitialized && networkInitialized());
     gInitialized = true;
 
-    const auto hostAddress = (NET_Address) {
-        nullptr,
-        nullptr,
-        nullptr,
-        {1}, // so sdlNet won't try to free this
-        NET_SUCCESS,
-        &(struct addrinfo) {
-            AI_NUMERICHOST,
-            AF_INET6,
-            SOCK_RAW,
-            IPPROTO_IP,
-            sizeof(struct sockaddr_in6),
-            (struct sockaddr*) &(struct sockaddr_in6) {
-                AF_INET6,
-                0,
-                0,
-                host->linkLocal.native,
-                host->interfaceIndex
-            },
-            nullptr,
-            nullptr
-        },
-        nullptr
-    };
-
-    gMulticastAddress = (NET_Address) {
-        nullptr,
-        nullptr,
-        nullptr,
-        {1}, // so sdlNet won't try to free this
-        NET_SUCCESS,
-        &(struct addrinfo) {
-            AI_NUMERICHOST,
-            AF_INET6,
-            SOCK_RAW,
-            IPPROTO_IP,
-            sizeof(struct sockaddr_in6),
-            (struct sockaddr*) &(struct sockaddr_in6) {
-                AF_INET6,
-                0,
-                0,
-                {{.__u6_addr32 = {bswap(0x0000ff02), 0, 0, bswap(1)}}}, // ff02::1
-                host->interfaceIndex
-            },
-            nullptr,
-            nullptr
-        },
-        nullptr
-    };
+    const auto hostAddress = makeNetAddress(host->linkLocal.native, host->interfaceIndex, PING_PORT);
+    gMulticastAddress = makeNetAddress(
+        ((struct in6_addr) {{.__u6_addr32 = {bswap(0x0000ff02), 0, 0, bswap(1)}}}),
+        host->interfaceIndex,
+        0
+    )
 
     const SDL_PropertiesID props = SDL_CreateProperties();
     assert(props);
     assert(SDL_SetBooleanProperty(props, NET_PROP_DATAGRAM_SOCKET_ALLOW_BROADCAST_BOOLEAN, true));
 
-    leaky(assert(gListenerSocket = NET_CreateDatagramSocket((void*) &hostAddress, 8080, props));)
+    leaky(assert(gListenerSocket = NET_CreateDatagramSocket((void*) &hostAddress, PING_PORT, props));)
     SDL_DestroyProperties(props);
 
     leaky(assert(gInquirerSocket = NET_CreateDatagramSocket(&gMulticastAddress, 0, props));)
