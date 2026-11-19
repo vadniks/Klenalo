@@ -15,24 +15,27 @@ void credentialsInit() {
     assert(gCredentials.size = (unsigned) size);
 }
 
-static void hexdumpToBytes(void* const buffer, const char* const string, const int size) {
-    constexpr char alphabet[] = "0123456789abcdef";
-    const byte numbers[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+static byte charToHexDigit(const char c) {
+    byte result = 0;
+    if (c >= '0' && c <= '9') result = (byte) (c - '0');
+    else if (c >= 'a' && c <= 'f') result = (byte) (c - 'a' + 10);
+    else assert(false);
+    return result;
+}
 
-    assert(size % 2 == 0);
-
-    for (int srcChar = 0, dstByte = 0; dstByte < size; dstByte++) {
-        byte next = numbers[(byte) (strchr(alphabet, string[srcChar]) - alphabet)] * 0x10;
-        next += (byte) numbers[(strchr(alphabet, string[srcChar + 1]) - alphabet)];
-        srcChar += 2;
-        ((byte*) buffer)[dstByte] = next;
+static void hexdumpToBytes(byte* const buffer, const int bufferSize, const char* const string) {
+    const int stringSize = bufferSize * 2;
+    for (int i = 0; i < stringSize; i += 2) {
+        const byte highHexDigit = charToHexDigit(string[i]);
+        const byte lowHexDigit = charToHexDigit(string[i + 1]);
+        buffer[i / 2] = (byte) (highHexDigit << (byte) 4) | lowHexDigit;
     }
 }
 
-static void findHexdumpedValue(void* const buffer, const int size, const char* const needle) {
-    const char* const position = strstr(gCredentials.data, needle);
+static void findHexdumpedValue(void* const buffer, const int size, const char* const key) {
+    const char* const position = strstr(gCredentials.data, key); // key=value, key=[chars], value=[bytes where each is represented by two hex digits ab=0xab]
     assert(position);
-    hexdumpToBytes(buffer, position + 1ul + strlen(needle), size);
+    hexdumpToBytes(buffer, size, position + 1ul + strlen(key));
 }
 
 void credentialsGlobalSignKey(CredentialsSignKey* const signKey, const bool publicOrSecret) {
@@ -51,19 +54,19 @@ void credentialsGlobalSignKey(CredentialsSignKey* const signKey, const bool publ
 
     void* buffer;
     int size;
-    const char* needle;
+    const char* key;
 
     if (publicOrSecret) {
         buffer = &pk;
         size = sizeof pk;
-        needle = "globalPublicSignKey";
+        key = "globalPublicSignKey";
     } else {
         buffer = &sk;
         size = sizeof sk;
-        needle = "globalSecretSignKey";
+        key = "globalSecretSignKey";
     }
 
-    findHexdumpedValue(buffer, size, needle);
+    findHexdumpedValue(buffer, size, key);
 
     if (publicOrSecret) {
         signKey->publicKey = pk;
