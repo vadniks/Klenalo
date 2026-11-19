@@ -19,8 +19,8 @@ void credentialsInit() {
 
 static byte asciiCharToHexDigit(const char c) {
     byte result = 0;
-    if (c >= '0' && c <= '9') result = (byte) (c - '0');
-    else if (c >= 'a' && c <= 'f') result = (byte) (c - 'a' + 10);
+    if (inRange('0', c, '9')) result = (byte) (c - '0');
+    else if (inRange('a', c, 'f')) result = (byte) (c - 'a' + 10);
     else assert(false);
     return result;
 }
