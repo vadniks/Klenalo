@@ -49,11 +49,22 @@ void credentialsGlobalSignKey(CredentialsSignKey* const signKey, const bool publ
         return;
     }
 
-    findHexdumpedValue(
-        publicOrSecret ? (void*) &pk : (void*) &sk,
-        publicOrSecret ? sizeof pk : sizeof sk,
-        publicOrSecret ? "globalPublicSignKey" : "globalSecretSignKey"
-    );
+    void* buffer;
+    int size;
+    const char* needle;
+
+    if (publicOrSecret) {
+        buffer = &pk;
+        size = sizeof pk;
+        needle = "globalPublicSignKey";
+    } else {
+        buffer = &sk;
+        size = sizeof sk;
+        needle = "globalSecretSignKey";
+    }
+
+    findHexdumpedValue(buffer, size, needle);
+
     if (publicOrSecret) {
         signKey->publicKey = pk;
         loadedPk = true;
