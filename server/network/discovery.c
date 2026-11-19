@@ -81,12 +81,16 @@ void discoveryInit(const Address* const host) {
     cryptoMakeSignKeypair(&gGlobalSessionPublicSignKey, &gGlobalSessionSecretSignKey);
 }
 
+static bool isOurPacket(const NET_Datagram* const datagram) {
+    return networkIsLoopback((In6Addr*) &asSockaddrIn6(datagram->addr->ainfo->ai_addr)->sin6_addr);
+}
+
 static void xlisten() {
     NET_Datagram* datagram = nullptr;
     do {
         assert(NET_ReceiveDatagram(gListenerSocket, &datagram));
 
-        if (datagram && datagram->buflen == sizeof(PingPacket) /*&& !networkIsLoopback((In6Addr*) &asSockaddrIn6(datagram->addr->ainfo->ai_addr)->sin6_addr)*/) {
+        if (datagram && datagram->buflen == sizeof(PingPacket) /*&& !isOurPacket(datagram)*/) {
             printf("received: %s %hu %d\n", datagram->addr->human_readable, datagram->port, datagram->buflen);
 
             const auto* const packet = (PingPacket*) datagram->buf;
