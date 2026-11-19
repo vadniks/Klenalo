@@ -40,10 +40,17 @@ static void findHexdumpedValue(void* const buffer, const int size, const char* c
     hexdumpToBytes(buffer, size, position + 1ul + strlen(key));
 }
 
-void credentialsGlobalSignKey(CredentialsSignKey* const signKey, const bool publicOrSecret) {
+void credentialsGlobalSignKey(CredentialsSignKey* const signKey, const bool publicOrSecret) { // pass (void*) 1, <any> to zero out buffers
     static CryptoGenericKey pk = {};
     static CryptoSignSecretKey sk = {};
     static bool loadedPk = false, loadedSk = false;
+
+    if ((int) (ulong) signKey == 1) {
+        cryptoZeroMemory(&pk, sizeof pk);
+        cryptoZeroMemory(&sk, sizeof sk);
+        loadedPk = loadedSk = false;
+        return;
+    }
 
     if (publicOrSecret && loadedPk) {
         signKey->publicKey = pk;
@@ -83,5 +90,7 @@ void credentialsQuit() {
     assert(gInitialized);
     gInitialized = false;
 
+    credentialsGlobalSignKey((void*) 1, true);
+    cryptoZeroMemory(gCredentials.data, gCredentials.size);
     SDL_free(gCredentials.data);
 }
