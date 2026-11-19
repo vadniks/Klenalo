@@ -176,7 +176,6 @@ include_directories(
 )
 
 set(EXE_LINKER_FLAGS
-    -Wl,--wrap=FT_New_Face
     -pie -Wl,-z,relro
     -Wl,-z,now
     -Wl,-z,nodlopen
