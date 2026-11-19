@@ -42,21 +42,20 @@ void cryptoQuit(void) {
     gInitialized = false;
 }
 
-void cryptoMakeSignKeypair(CryptoGenericKey* const publicKey, CryptoSignSecretKey* const secretKey) {
+void cryptoSignKeypair(CryptoGenericKey* const publicKey, CryptoSignSecretKey* const secretKey) {
     assert(gInitialized);
-    assert(!crypto_sign_keypair((byte*) publicKey, (byte*) secretKey));
+    assert(!crypto_sign_keypair((void*) publicKey, (void*) secretKey));
 }
 
 void cryptoSign(CryptoSignature* const signature, const void* const data, const int dataSize, const CryptoSignSecretKey* const secretKey) {
     assert(gInitialized && dataSize > 0);
 
     assert(!crypto_sign_detached(
-        // ReSharper disable once CppRedundantCastExpression
         (void*) signature,
         nullptr,
         data,
         dataSize,
-        (byte*) secretKey
+        (const void*) secretKey
     ));
 }
 
@@ -64,10 +63,10 @@ bool cryptoSignVerify(const CryptoSignature* const signature, const void* const 
     assert(gInitialized && dataSize > 0);
 
     return !crypto_sign_verify_detached(
-        (void*) signature,
+        (const void*) signature,
         data,
         dataSize,
-        (byte*) publicKey
+        (const void*) publicKey
     );
 }
 

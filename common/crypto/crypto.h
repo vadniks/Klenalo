@@ -43,7 +43,7 @@ typedef vec64ub CryptoSignSecretKey;
 
 typedef vec64ub CryptoSignature;
 
-void cryptoMakeSignKeypair(CryptoGenericKey* publicKey, CryptoSignSecretKey* secretKey);
+void cryptoSignKeypair(CryptoGenericKey* publicKey, CryptoSignSecretKey* secretKey);
 void cryptoSign(CryptoSignature* signature, const void* data, int dataSize, const CryptoSignSecretKey* secretKey);
 bool cryptoSignVerify(const CryptoSignature* signature, const void* data, int dataSize, const CryptoGenericKey* publicKey);
 

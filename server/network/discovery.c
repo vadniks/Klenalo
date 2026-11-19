@@ -78,7 +78,7 @@ void discoveryInit(const Address* const host) {
 
     leaky(assert(gInquirerSocket = NET_CreateDatagramSocket(&gMulticastAddress, 0, props));)
 
-    cryptoMakeSignKeypair(&gGlobalSessionPublicSignKey, &gGlobalSessionSecretSignKey);
+    cryptoSignKeypair(&gGlobalSessionPublicSignKey, &gGlobalSessionSecretSignKey);
 }
 
 static bool isOurPacket(const NET_Datagram* const datagram) {
