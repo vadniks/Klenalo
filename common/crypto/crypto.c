@@ -47,24 +47,25 @@ void cryptoMakeSignKeypair(CryptoGenericKey* const publicKey, CryptoSignSecretKe
     assert(!crypto_sign_keypair((byte*) publicKey, (byte*) secretKey));
 }
 
-void cryptoSign(CryptoSignedBundle* const bundle, const int dataSize, const CryptoSignSecretKey* const secretKey) {
+void cryptoSign(CryptoSignature* const signature, const void* const data, const int dataSize, const CryptoSignSecretKey* const secretKey) {
     assert(gInitialized && dataSize > 0);
 
     assert(!crypto_sign_detached(
-        (byte*) &bundle->signature,
+        // ReSharper disable once CppRedundantCastExpression
+        (void*) signature,
         nullptr,
-        bundle->data,
+        data,
         dataSize,
         (byte*) secretKey
     ));
 }
 
-bool cryptoSignVerify(const CryptoSignedBundle* const bundle, const int dataSize, const CryptoGenericKey* const publicKey) {
+bool cryptoSignVerify(const CryptoSignature* const signature, const void* const data, const int dataSize, const CryptoGenericKey* const publicKey) {
     assert(gInitialized && dataSize > 0);
 
     return !crypto_sign_verify_detached(
-        (byte*) &bundle->signature,
-        bundle->data,
+        (void*) signature,
+        data,
         dataSize,
         (byte*) publicKey
     );

@@ -43,15 +43,9 @@ typedef vec64ub CryptoSignSecretKey;
 
 typedef vec64ub CryptoSignature;
 
-typedef struct xpacked {
-    CryptoSignature signature;
-    byte data[];
-} CryptoSignedBundle;
-
-#define cryptoMakeSignedBundle(dataSize) xalloca2(CRYPTO_SIGNATURE_SIZE + (dataSize))
 void cryptoMakeSignKeypair(CryptoGenericKey* publicKey, CryptoSignSecretKey* secretKey);
-void cryptoSign(CryptoSignedBundle* bundle, int dataSize, const CryptoSignSecretKey* secretKey);
-bool cryptoSignVerify(const CryptoSignedBundle* bundle, int dataSize, const CryptoGenericKey* publicKey);
+void cryptoSign(CryptoSignature* signature, const void* data, int dataSize, const CryptoSignSecretKey* secretKey);
+bool cryptoSignVerify(const CryptoSignature* signature, const void* data, int dataSize, const CryptoGenericKey* publicKey);
 
 // public anonymous encryption (sealing)
 /*
