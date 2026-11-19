@@ -4,6 +4,7 @@
 #include <sanitizer/lsan_interface.h>
 #include <SDL3/SDL.h>
 #include <stdio.h>
+#include "../../common/crypto/crypto.h"
 #include "../network/network.h"
 #include "../../common/collections/deque.h"
 #include "lifecycle.h"
@@ -53,6 +54,7 @@ void lifecycleInit() {
     gNetworkActionsLooper.queue = dequeCreate(free);
     assert(gNetworkActionsLooper.thread = SDL_CreateThread(networkActionsLoop, nullptr, nullptr));
 
+    cryptoInit();
     networkInit();
 }
 
@@ -163,6 +165,7 @@ void lifecycleQuit() {
     assert(gInitialized);
 
     networkQuit();
+    cryptoQuit();
 
     SDL_WaitThread(gNetworkActionsLooper.thread, nullptr);
     SDL_WaitThread(gBackgroundActionsLooper.thread, nullptr);

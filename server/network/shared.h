@@ -11,6 +11,8 @@
 #include <SDL3_net/SDL_net.h>
 #include "../../common/defs.h"
 
+staticAssert(SDL_NET_VERSION == 3002000);
+
 #define asSockaddrIn6(x) ((struct sockaddr_in6*) x)
 
 enum {

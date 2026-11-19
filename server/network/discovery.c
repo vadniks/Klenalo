@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Vadim Nikolaev (https://github.com/vadniks)
 // SPDX-License-Identifier: AGPL-3.0-only
 
+#include "../../common/crypto/crypto.h"
 #include "network.h"
 #include "discovery.h"
 
@@ -13,14 +14,23 @@ enum {
 typedef struct xpacked {
     long magic;
     byte version;
-    vec16uw address;
-    // cryptographic signature
+    // vec16uw address; // unnecessary
+    // public key for p2p connection
+} PingPacketPayload;
+
+typedef struct xpacked {
+    PingPacketPayload;
+    CryptoSignature signature;
 } PingPacket;
 
 static atomic bool gInitialized = false;
 static NET_Address gMulticastAddress = {};
 static NET_DatagramSocket* gListenerSocket = nullptr; // listens for others
 static NET_DatagramSocket* gInquirerSocket = nullptr; // pings others
+
+// TODO: temp
+static CryptoGenericKey gGlobalSessionPublicSignKey;
+static CryptoSignSecretKey gGlobalSessionSecretSignKey;
 
 #define makeNetAddress(addr, interfaceIndex, port) \
     (NET_Address) { \
@@ -67,6 +77,8 @@ void discoveryInit(const Address* const host) {
     SDL_DestroyProperties(props);
 
     leaky(assert(gInquirerSocket = NET_CreateDatagramSocket(&gMulticastAddress, 0, props));)
+
+    cryptoMakeSignKeypair(&gGlobalSessionPublicSignKey, &gGlobalSessionSecretSignKey);
 }
 
 static void xlisten() {
@@ -74,8 +86,17 @@ static void xlisten() {
     do {
         assert(NET_ReceiveDatagram(gListenerSocket, &datagram));
 
-        if (datagram && !networkIsLoopback((In6Addr*) &asSockaddrIn6(datagram->addr->ainfo->ai_addr)->sin6_addr))
+        if (datagram && datagram->buflen == sizeof(PingPacket) /*&& !networkIsLoopback((In6Addr*) &asSockaddrIn6(datagram->addr->ainfo->ai_addr)->sin6_addr)*/) {
             printf("received: %s %hu %d\n", datagram->addr->human_readable, datagram->port, datagram->buflen);
+
+            constexpr int payloadSize = sizeof(PingPacketPayload);
+            const auto* const packet = (PingPacket*) datagram->buf;
+            CryptoSignedBundle* const bundle = cryptoMakeSignedBundle(payloadSize);
+            memcpy(bundle->data, packet, payloadSize);
+            memcpy(&bundle->signature, &packet->signature, sizeof(CryptoSignature));
+
+            assert(cryptoSignVerify(bundle, payloadSize, &gGlobalSessionPublicSignKey));
+        }
 
         NET_DestroyDatagram(datagram);
     } while (datagram);
@@ -88,7 +109,15 @@ void discoveryListen() {
 }
 
 static void ping() {
-    PingPacket packet = {123, 0, {}};
+    constexpr int payloadSize = sizeof(PingPacketPayload);
+    CryptoSignedBundle* const bundle = cryptoMakeSignedBundle(payloadSize);
+    *(PingPacketPayload*) bundle->data = (PingPacketPayload) {123, 0};
+    cryptoSign(bundle, payloadSize, &gGlobalSessionSecretSignKey);
+
+    PingPacket packet;
+    memcpy(&packet, bundle->data, payloadSize);
+    packet.signature = bundle->signature;
+
     assert(NET_SendDatagram(gInquirerSocket, &gMulticastAddress, PING_PORT, &packet, sizeof packet));
     puts("ping");
 }
