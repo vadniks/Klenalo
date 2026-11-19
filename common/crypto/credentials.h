@@ -13,5 +13,5 @@ typedef union {
 } CredentialsSignKey;
 
 void credentialsInit();
-void credentialsGlobalSignKey(CredentialsSignKey* signKey, bool publicOrSecret);
+void credentialsGlobalSignKey(CredentialsSignKey* nullable signKey, bool publicOrSecret); // null to zero out buffers
 void credentialsQuit();
