@@ -15,7 +15,7 @@ void credentialsInit() {
     assert(gCredentials.size = (unsigned) size);
 }
 
-static byte charToHexDigit(const char c) {
+static byte asciiCharToHexDigit(const char c) {
     byte result = 0;
     if (c >= '0' && c <= '9') result = (byte) (c - '0');
     else if (c >= 'a' && c <= 'f') result = (byte) (c - 'a' + 10);
@@ -26,8 +26,8 @@ static byte charToHexDigit(const char c) {
 static void hexdumpToBytes(byte* const buffer, const int bufferSize, const char* const string) {
     const int stringSize = bufferSize * 2;
     for (int i = 0; i < stringSize; i += 2) {
-        const byte highHexDigit = charToHexDigit(string[i]);
-        const byte lowHexDigit = charToHexDigit(string[i + 1]);
+        const byte highHexDigit = asciiCharToHexDigit(string[i]);
+        const byte lowHexDigit = asciiCharToHexDigit(string[i + 1]);
         buffer[i / 2] = (byte) (highHexDigit << (byte) 4) | lowHexDigit;
     }
 }
