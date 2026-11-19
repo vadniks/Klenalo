@@ -29,30 +29,38 @@ static void hexdumpToBytes(void* const buffer, const char* const string, const i
     }
 }
 
-void credentialsGlobalSignKeypair(CryptoGenericKey* const publicKey, CryptoSignSecretKey* const secretKey) {
+static void findHexdumpedValue(void* const buffer, const int size, const char* const needle) {
+    const char* const position = strstr(gCredentials.data, needle);
+    assert(position);
+    hexdumpToBytes(buffer, position + 1ul + strlen(needle), size);
+}
+
+void credentialsGlobalSignKey(CredentialsSignKey* const signKey, const bool publicOrSecret) {
     static CryptoGenericKey pk = {};
     static CryptoSignSecretKey sk = {};
-    static bool loaded = false;
+    static bool loadedPk = false, loadedSk = false;
 
-    if (loaded) {
-        *publicKey = pk;
-        *secretKey = sk;
+    if (publicOrSecret && loadedPk) {
+        signKey->publicKey = pk;
+        return;
+    }
+    if (!publicOrSecret && loadedSk) {
+        signKey->secretKey = sk;
         return;
     }
 
-    constexpr char pkstr[] = "globalPublicSignKey", skstr[] = "globalSecretSignKey";
-
-    const char* const pkpos = strstr(gCredentials.data, pkstr);
-    assert(pkpos);
-    hexdumpToBytes(&pk, pkpos + 1ul + strlen(pkstr), sizeof pk);
-    *publicKey = pk;
-
-    const char* const skpos = strstr(gCredentials.data, skstr);
-    assert(skpos);
-    hexdumpToBytes(&sk, skpos + 1ul + strlen(skstr), sizeof sk);
-    *secretKey = sk;
-
-    loaded = true;
+    findHexdumpedValue(
+        publicOrSecret ? (void*) &pk : (void*) &sk,
+        publicOrSecret ? sizeof pk : sizeof sk,
+        publicOrSecret ? "globalPublicSignKey" : "globalSecretSignKey"
+    );
+    if (publicOrSecret) {
+        signKey->publicKey = pk;
+        loadedPk = true;
+    } else {
+        signKey->secretKey = sk;
+        loadedSk = true;
+    }
 }
 
 void credentialsQuit() {

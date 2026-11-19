@@ -7,6 +7,11 @@
 
 // Planned to be using systemd-creds
 
+typedef union {
+    CryptoGenericKey publicKey;
+    CryptoSignSecretKey secretKey;
+} CredentialsSignKey;
+
 void credentialsInit();
-void credentialsGlobalSignKeypair(CryptoGenericKey* publicKey, CryptoSignSecretKey* secretKey);
+void credentialsGlobalSignKey(CredentialsSignKey* signKey, bool publicOrSecret);
 void credentialsQuit();

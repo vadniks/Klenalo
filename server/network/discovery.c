@@ -88,15 +88,13 @@ static void xlisten() {
         if (datagram && datagram->buflen == sizeof(PingPacket) /*&& !isOurPacket(datagram)*/) {
             printf("received: %s %hu %d\n", datagram->addr->human_readable, datagram->port, datagram->buflen);
 
-            CryptoGenericKey publicKey;
-            CryptoSignSecretKey secretKey;
-            credentialsGlobalSignKeypair(&publicKey, &secretKey);
+            CredentialsSignKey signKey;
+            credentialsGlobalSignKey(&signKey, true);
 
             const auto* const packet = (PingPacket*) datagram->buf;
-            assert(cryptoSignVerify(&packet->signature, packet, sizeof(PingPacketPayload), &publicKey));
+            assert(cryptoSignVerify(&packet->signature, packet, sizeof(PingPacketPayload), &signKey.publicKey));
 
-            cryptoZeroMemory(&publicKey, sizeof publicKey);
-            cryptoZeroMemory(&secretKey, sizeof secretKey);
+            cryptoZeroMemory(&signKey, sizeof signKey);
         }
 
         NET_DestroyDatagram(datagram);
@@ -110,15 +108,13 @@ void discoveryListen() {
 }
 
 static void ping() {
-    CryptoGenericKey publicKey;
-    CryptoSignSecretKey secretKey;
-    credentialsGlobalSignKeypair(&publicKey, &secretKey);
+    CredentialsSignKey signKey;
+    credentialsGlobalSignKey(&signKey, false);
 
     PingPacket packet = {{123, 0}, {}};
-    cryptoSign(&packet.signature, &packet, sizeof(PingPacketPayload), &secretKey);
+    cryptoSign(&packet.signature, &packet, sizeof(PingPacketPayload), &signKey.secretKey);
 
-    cryptoZeroMemory(&publicKey, sizeof publicKey);
-    cryptoZeroMemory(&secretKey, sizeof secretKey);
+    cryptoZeroMemory(&signKey, sizeof signKey);
 
     assert(NET_SendDatagram(gInquirerSocket, &gMulticastAddress, PING_PORT, &packet, sizeof packet));
     puts("ping");
