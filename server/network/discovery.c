@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 #include "../../common/crypto/crypto.h"
+#include "../../common/crypto/credentials.h"
 #include "network.h"
 #include "discovery.h"
 
@@ -27,10 +28,6 @@ static atomic bool gInitialized = false;
 static NET_Address gMulticastAddress = {};
 static NET_DatagramSocket* gListenerSocket = nullptr; // listens for others
 static NET_DatagramSocket* gInquirerSocket = nullptr; // pings others
-
-// TODO: temp
-static CryptoGenericKey gGlobalSessionPublicSignKey;
-static CryptoSignSecretKey gGlobalSessionSecretSignKey;
 
 #define makeNetAddress(addr, interfaceIndex, port) \
     (NET_Address) { \
@@ -77,8 +74,6 @@ void discoveryInit(const Address* const host) {
     SDL_DestroyProperties(props);
 
     leaky(assert(gInquirerSocket = NET_CreateDatagramSocket(&gMulticastAddress, 0, props));)
-
-    cryptoSignKeypair(&gGlobalSessionPublicSignKey, &gGlobalSessionSecretSignKey);
 }
 
 static bool isOurPacket(const NET_Datagram* const datagram) {
@@ -93,8 +88,15 @@ static void xlisten() {
         if (datagram && datagram->buflen == sizeof(PingPacket) /*&& !isOurPacket(datagram)*/) {
             printf("received: %s %hu %d\n", datagram->addr->human_readable, datagram->port, datagram->buflen);
 
+            CryptoGenericKey publicKey;
+            CryptoSignSecretKey secretKey;
+            credentialsGlobalSignKeypair(&publicKey, &secretKey);
+
             const auto* const packet = (PingPacket*) datagram->buf;
-            assert(cryptoSignVerify(&packet->signature, packet, sizeof(PingPacketPayload), &gGlobalSessionPublicSignKey));
+            assert(cryptoSignVerify(&packet->signature, packet, sizeof(PingPacketPayload), &publicKey));
+
+            cryptoZeroMemory(&publicKey, sizeof publicKey);
+            cryptoZeroMemory(&secretKey, sizeof secretKey);
         }
 
         NET_DestroyDatagram(datagram);
@@ -108,8 +110,15 @@ void discoveryListen() {
 }
 
 static void ping() {
+    CryptoGenericKey publicKey;
+    CryptoSignSecretKey secretKey;
+    credentialsGlobalSignKeypair(&publicKey, &secretKey);
+
     PingPacket packet = {{123, 0}, {}};
-    cryptoSign(&packet.signature, &packet, sizeof(PingPacketPayload), &gGlobalSessionSecretSignKey);
+    cryptoSign(&packet.signature, &packet, sizeof(PingPacketPayload), &secretKey);
+
+    cryptoZeroMemory(&publicKey, sizeof publicKey);
+    cryptoZeroMemory(&secretKey, sizeof secretKey);
 
     assert(NET_SendDatagram(gInquirerSocket, &gMulticastAddress, PING_PORT, &packet, sizeof packet));
     puts("ping");

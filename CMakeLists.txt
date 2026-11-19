@@ -226,3 +226,9 @@ if(ENABLE_TESTS)
 
     add_test(NAME serverTests COMMAND $<TARGET_FILE:${SERVER_TESTS_EXE}>)
 endif()
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/credentials.table
+    ${CMAKE_CURRENT_BINARY_DIR}/credentials.table
+    COPYONLY
+)

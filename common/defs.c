@@ -28,14 +28,14 @@ void printMemory(const void* const memory, const int size, const PrintMemoryMode
     int wordSize = 1;
 
     switch (mode) {
-        case PRINT_MEMORY_MODE_DEC:                  format = "%u";    divider = ", ";                             break;
-        case PRINT_MEMORY_MODE_HEX:                  format = "%.2x";  divider = ", ";                             break;
-        case PRINT_MEMORY_MODE_HEXDUMP:              format = "%.2x";  divider = "";                               break;
-        case PRINT_MEMORY_MODE_BINARY:               format = "%.8b";  divider = "_";                              break;
-        case PRINT_MEMORY_MODE_HEX_STR:              format = "\\x%x"; divider = "";                               break;
-        case PRINT_MEMORY_MODE_STR:                  format = "%c";    divider = "";                               break;
-        case PRINT_MEMORY_MODE_IPV6:                 format = "%.2x";  divider = ":"; wordSize = 2;                break;
-        case PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK:                                                tryStr = true; break;
+        case PRINT_MEMORY_MODE_DEC:                  format = "%u";      divider = ", ";                              break;
+        case PRINT_MEMORY_MODE_HEX:                  format = "0x%.2x";  divider = ", ";                              break;
+        case PRINT_MEMORY_MODE_HEXDUMP:              format = "%.2x";    divider = "";                                break;
+        case PRINT_MEMORY_MODE_BINARY:               format = "%.8b";    divider = "_";                               break;
+        case PRINT_MEMORY_MODE_HEX_STR:              format = "\\x%x";   divider = "";                                break;
+        case PRINT_MEMORY_MODE_STR:                  format = "%c";      divider = "";                                break;
+        case PRINT_MEMORY_MODE_IPV6:                 format = "%.2x";    divider = ":";  wordSize = 2;                break;
+        case PRINT_MEMORY_MODE_TRY_STR_HEX_FALLBACK:                                                   tryStr = true; break;
         default: assert(false);
     }
 

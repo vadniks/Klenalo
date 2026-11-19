@@ -37,6 +37,8 @@ typedef vec32ub CryptoGenericKey;
 void cryptoInit();
 void cryptoQuit();
 
+void cryptoZeroMemory(void* memory, int size);
+
 // signature
 
 typedef vec64ub CryptoSignSecretKey;

@@ -6,3 +6,4 @@
 !.gitignore
 /.cache
 /res/*.ttf
+/credentials.table

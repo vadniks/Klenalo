@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 #include <sodium.h>
+#include "credentials.h"
 #include "crypto.h"
 
 staticAssert(
@@ -35,11 +36,18 @@ void cryptoInit(void) {
     gInitialized = true;
 
     assert(!sodium_init()); // there's no quit counterpart function linke sodium_quit()
+    credentialsInit();
 }
 
 void cryptoQuit(void) {
     assert(gInitialized);
     gInitialized = false;
+
+    credentialsQuit();
+}
+
+void cryptoZeroMemory(void* const memory, const int size) {
+    sodium_memzero(memory, size);
 }
 
 void cryptoSignKeypair(CryptoGenericKey* const publicKey, CryptoSignSecretKey* const secretKey) {
