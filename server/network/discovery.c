@@ -10,8 +10,6 @@
 
 enum {
     PING_PORT = 8080,
-    LISTEN_PERIOD = 500,
-    PING_PERIOD = 1000
 };
 
 typedef struct xpacked {
@@ -142,7 +140,7 @@ static bool isOurPacket(const NET_Datagram* const datagram) {
     return isLoopback((In6Addr*) &asSockaddrIn6(datagram->addr->ainfo->ai_addr)->sin6_addr);
 }
 
-static void xlisten() {
+void discoveryListen() {
     NET_Datagram* datagram = nullptr;
     do {
         assert(NET_ReceiveDatagram(gListenerSocket, &datagram));
@@ -164,12 +162,7 @@ static void xlisten() {
     puts("listen");
 }
 
-void discoveryListen() {
-    static ulong last = 0;
-    runPeriodically(&last, LISTEN_PERIOD, xlisten);
-}
-
-static void ping() {
+void discoveryPing() {
     CryptoKey publicKey, secretKey;
     credentialsGlobalSignKey(&publicKey, true);
     credentialsGlobalSignKey(&secretKey, false);
@@ -182,11 +175,6 @@ static void ping() {
 
     assert(NET_SendDatagram(gInquirerSocket, &gMulticastAddress, PING_PORT, &packet, sizeof packet));
     puts("ping");
-}
-
-void discoveryPing() {
-    static ulong last = 0;
-    runPeriodically(&last, PING_PERIOD, ping);
 }
 
 void discoveryQuit() {

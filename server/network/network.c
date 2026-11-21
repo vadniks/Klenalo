@@ -5,9 +5,12 @@
 #include "discovery.h"
 #include "network.h"
 
-static atomic bool gInitialized = false;
+enum {
+    LISTEN_PERIOD = 1000,
+    PING_PERIOD = 1000
+};
 
-static void queryInterfaces0();
+static atomic bool gInitialized = false;
 
 void networkInit() {
     assert(!gInitialized && lifecycleInitialized());
@@ -23,8 +26,9 @@ bool networkInitialized() {
 }
 
 void networkLoopBody() {
-    discoveryListen();
-    discoveryPing();
+    static ulong lastListen = 0, lastPing = 0;
+    runPeriodically(&lastListen, LISTEN_PERIOD, discoveryListen);
+    runPeriodically(&lastPing, PING_PERIOD, discoveryPing);
 }
 
 void networkQuit() {
