@@ -7,11 +7,6 @@
 
 // Planned to be using systemd-creds
 
-typedef union {
-    CryptoGenericKey publicKey;
-    CryptoSignSecretKey secretKey;
-} CredentialsSignKey;
-
 void credentialsInit();
-void credentialsGlobalSignKey(CredentialsSignKey* nullable signKey, bool publicOrSecret); // null to zero out buffers
+void credentialsGlobalSignKey(CryptoKey* nullable key, bool publicOrSecret); // null to zero out buffers
 void credentialsQuit();

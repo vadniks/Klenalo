@@ -5,6 +5,8 @@
 #include "credentials.h"
 #include "crypto.h"
 
+enum {SIGN_SECRET_KEY_SIZE = 64};
+
 staticAssert(
     (CRYPTO_GENERIC_KEY_SIZE == crypto_box_PUBLICKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_box_SECRETKEYBYTES) &
@@ -16,8 +18,8 @@ staticAssert(
         (crypto_box_PUBLICKEYBYTES == crypto_kx_SESSIONKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_secretstream_xchacha20poly1305_KEYBYTES) &
         (CRYPTO_GENERIC_KEY_SIZE == sizeof(vec32ub)) &
-    (CRYPTO_SIGN_SECRET_KEY_SIZE == crypto_sign_SECRETKEYBYTES) &
-        (CRYPTO_SIGN_SECRET_KEY_SIZE == sizeof(vec64ub)) &
+    (SIGN_SECRET_KEY_SIZE == crypto_sign_SECRETKEYBYTES) &
+        (SIGN_SECRET_KEY_SIZE == sizeof(vec64ub)) &
     (CRYPTO_SIGNATURE_SIZE == crypto_sign_BYTES) &
         (crypto_sign_BYTES == crypto_sign_SECRETKEYBYTES) &
         (CRYPTO_SIGNATURE_SIZE == sizeof(vec64ub)) /*&
@@ -50,24 +52,32 @@ void cryptoZeroMemory(void* const memory, const int size) {
     sodium_memzero(memory, size);
 }
 
-void cryptoSignKeypair(CryptoGenericKey* const publicKey, CryptoSignSecretKey* const secretKey) {
+void cryptoSignKeypair(CryptoKey* const publicKey, CryptoKey* const secretKey) {
     assert(gInitialized);
-    assert(!crypto_sign_keypair((void*) publicKey, (void*) secretKey));
+    byte sk[SIGN_SECRET_KEY_SIZE];
+    assert(!crypto_sign_keypair((void*) publicKey, sk));
+    memcpy(secretKey, sk, CRYPTO_GENERIC_KEY_SIZE);
+    cryptoZeroMemory(sk, SIGN_SECRET_KEY_SIZE);
 }
 
-void cryptoSign(CryptoSignature* const signature, const void* const data, const int dataSize, const CryptoSignSecretKey* const secretKey) {
+void cryptoSign(CryptoSignature* const signature, const void* const data, const int dataSize, const CryptoKey* const publicKey, const CryptoKey* const secretKey) {
     assert(gInitialized && dataSize > 0);
+
+    byte sk[SIGN_SECRET_KEY_SIZE];
+    memcpy(sk, secretKey, CRYPTO_GENERIC_KEY_SIZE);
+    memcpy(sk + CRYPTO_GENERIC_KEY_SIZE, publicKey, CRYPTO_GENERIC_KEY_SIZE);
 
     assert(!crypto_sign_detached(
         (void*) signature,
         nullptr,
         data,
         dataSize,
-        (const void*) secretKey
+        sk
     ));
+    cryptoZeroMemory(sk, SIGN_SECRET_KEY_SIZE);
 }
 
-bool cryptoSignVerify(const CryptoSignature* const signature, const void* const data, const int dataSize, const CryptoGenericKey* const publicKey) {
+bool cryptoSignVerify(const CryptoSignature* const signature, const void* const data, const int dataSize, const CryptoKey* const publicKey) {
     assert(gInitialized && dataSize > 0);
 
     return !crypto_sign_verify_detached(

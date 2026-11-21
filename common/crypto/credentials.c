@@ -40,12 +40,11 @@ static void findHexdumpedValue(void* const buffer, const int size, const char* c
     hexdumpToBytes(buffer, size, position + 1ul + strlen(key));
 }
 
-void credentialsGlobalSignKey(CredentialsSignKey* nullable const signKey, const bool publicOrSecret) {
-    static CryptoGenericKey pk = {};
-    static CryptoSignSecretKey sk = {};
+void credentialsGlobalSignKey(CryptoKey* nullable const key, const bool publicOrSecret) {
+    static CryptoKey pk = {}, sk = {};
     static bool loadedPk = false, loadedSk = false;
 
-    if (!signKey) {
+    if (!key) {
         cryptoZeroMemory(&pk, sizeof pk);
         cryptoZeroMemory(&sk, sizeof sk);
         loadedPk = loadedSk = false;
@@ -53,35 +52,35 @@ void credentialsGlobalSignKey(CredentialsSignKey* nullable const signKey, const 
     }
 
     if (publicOrSecret && loadedPk) {
-        signKey->publicKey = pk;
+        *key = pk;
         return;
     }
     if (!publicOrSecret && loadedSk) {
-        signKey->secretKey = sk;
+        *key = sk;
         return;
     }
 
     void* buffer;
     int size;
-    const char* key;
+    const char* needle;
 
     if (publicOrSecret) {
         buffer = &pk;
         size = sizeof pk;
-        key = "globalPublicSignKey";
+        needle = "globalPublicSignKey";
     } else {
         buffer = &sk;
         size = sizeof sk;
-        key = "globalSecretSignKey";
+        needle = "globalSecretSignKey";
     }
 
-    findHexdumpedValue(buffer, size, key);
+    findHexdumpedValue(buffer, size, needle);
 
     if (publicOrSecret) {
-        signKey->publicKey = pk;
+        *key = pk;
         loadedPk = true;
     } else {
-        signKey->secretKey = sk;
+        *key = sk;
         loadedSk = true;
     }
 }

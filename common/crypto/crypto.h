@@ -8,7 +8,6 @@
 enum {
     CRYPTO_GENERIC_KEY_SIZE = 32,
 
-    CRYPTO_SIGN_SECRET_KEY_SIZE = 64,
     CRYPTO_SIGNATURE_SIZE = 64,
 
     /*CRYPTO_SEAL_SIZE = 48,
@@ -30,7 +29,7 @@ enum {
 // don't try to access non-data fields in the more-than-one-field structures from the outside of this module -
 // the actual memory layout isn't necessarily the same as the implementation's documentation doesn't fully describe these details
 
-typedef vec32ub CryptoGenericKey;
+typedef vec32ub CryptoKey;
 
 //
 
@@ -41,13 +40,11 @@ void cryptoZeroMemory(void* memory, int size);
 
 // signature
 
-typedef vec64ub CryptoSignSecretKey;
-
 typedef vec64ub CryptoSignature;
 
-void cryptoSignKeypair(CryptoGenericKey* publicKey, CryptoSignSecretKey* secretKey);
-void cryptoSign(CryptoSignature* signature, const void* data, int dataSize, const CryptoSignSecretKey* secretKey);
-bool cryptoSignVerify(const CryptoSignature* signature, const void* data, int dataSize, const CryptoGenericKey* publicKey);
+void cryptoSignKeypair(CryptoKey* publicKey, CryptoKey* secretKey);
+void cryptoSign(CryptoSignature* signature, const void* data, int dataSize, const CryptoKey* publicKey, const CryptoKey* secretKey);
+bool cryptoSignVerify(const CryptoSignature* signature, const void* data, int dataSize, const CryptoKey* publicKey);
 
 // public anonymous encryption (sealing)
 /*
