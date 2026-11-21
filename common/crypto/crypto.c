@@ -37,7 +37,7 @@ void cryptoInit(void) {
     assert(!gInitialized);
     gInitialized = true;
 
-    assert(!sodium_init()); // there's no quit counterpart function linke sodium_quit()
+    assert(!sodium_init()); // there's no quit counterpart function like sodium_quit()
     credentialsInit();
 }
 
@@ -60,7 +60,13 @@ void cryptoSignKeypair(CryptoKey* const publicKey, CryptoKey* const secretKey) {
     cryptoZeroMemory(sk, SIGN_SECRET_KEY_SIZE);
 }
 
-void cryptoSign(CryptoSignature* const signature, const void* const data, const int dataSize, const CryptoKey* const publicKey, const CryptoKey* const secretKey) {
+void cryptoSign(
+    CryptoSignature* const signature,
+    const void* const data,
+    const int dataSize,
+    const CryptoKey* const publicKey,
+    const CryptoKey* const secretKey
+) {
     assert(gInitialized && dataSize > 0);
 
     byte sk[SIGN_SECRET_KEY_SIZE];
