@@ -3,6 +3,8 @@
 
 #include "../../common/crypto/crypto.h"
 #include "../../common/crypto/credentials.h"
+#include "../../common/collections/treemap.h"
+#include "../../common/collections/vector.h"
 #include "network.h"
 #include "discovery.h"
 
@@ -29,6 +31,56 @@ static NET_Address gMulticastAddress = {};
 static NET_DatagramSocket* gListenerSocket = nullptr; // listens for others
 static NET_DatagramSocket* gInquirerSocket = nullptr; // pings others
 
+static typed(Vector*, Interface*) queryInterfaces() {
+    struct ifaddrs* addrs;
+    assert(!getifaddrs(&addrs));
+
+    typed(Treemap*, Interface*) const interfacesMap = treemapCreate(nullptr);
+
+    for (const struct ifaddrs* ifa = addrs; ifa; ifa = ifa->ifa_next) {
+        if (!(ifa->ifa_flags & IFF_UP) ||
+            !(ifa->ifa_flags & IFF_RUNNING) ||
+            ifa->ifa_flags & IFF_LOOPBACK) continue;
+
+        const struct sockaddr* const interfaceAddress = ifa->ifa_addr;
+
+        if (interfaceAddress->sa_family == AF_PACKET) {
+            Interface* const interface = malloc(sizeof *interface);
+            strncpy(interface->name, ifa->ifa_name, sizeof interface->name);
+            interface->index = if_nametoindex(interface->name);
+            interface->mask = 0;
+
+            treemapInsert(interfacesMap, hashValue(interface->name, sizeof interface->name), interface);
+        } else if (interfaceAddress->sa_family == AF_INET6) {
+            Interface* const interface = treemapSearchKey(interfacesMap, hashValue(ifa->ifa_name, sizeof interface->name));
+
+            const struct in6_addr addr = asSockaddrIn6(ifa->ifa_addr)->sin6_addr;
+            const struct in6_addr netmask = asSockaddrIn6(ifa->ifa_netmask)->sin6_addr;
+
+            byte mask = 0;
+            for (int j = 0; j < (int) sizeof netmask.s6_addr; mask += popcount(netmask.s6_addr[j]), j++) {}
+
+            if ((addr.s6_addr32[0] & bswap(0xffc00000)) == bswap(0xfe800000)) {
+                interface->linkLocalAddress.native = addr;
+                interface->mask = mask;
+            }
+        }
+    }
+    freeifaddrs(addrs);
+
+    typed(Vector*, Interface*) const interfacesVector = vectorCreate(free);
+
+    TreemapIterator* iterator;
+    treemapIterateBegin(interfacesMap, iterator);
+    Interface* interface;
+    while ((interface = treemapIterate(iterator)))
+        vectorAddBack(interfacesVector, interface);
+    treemapIterateEnd(iterator);
+
+    treemapDestroy(interfacesMap);
+    return interfacesVector;
+}
+
 #define makeNetAddress(addr, interfaceIndex, port) \
     (NET_Address) { \
         nullptr, \
@@ -53,18 +105,23 @@ static NET_DatagramSocket* gInquirerSocket = nullptr; // pings others
             nullptr \
         }, \
         nullptr \
-    };
+    }
 
-void discoveryInit(const Address* const host) {
+void discoveryInit() {
     assert(!gInitialized && networkInitialized());
     gInitialized = true;
 
-    const auto hostAddress = makeNetAddress(host->linkLocal.native, host->interfaceIndex, PING_PORT);
+    Vector* const interfaces = queryInterfaces();
+    const Interface* const interface = vectorGet(interfaces, 0);
+    const Address host = {interface->linkLocalAddress, interface->index};
+    vectorDestroy(interfaces);
+
+    const auto hostAddress = makeNetAddress(host.linkLocal.native, host.interfaceIndex, PING_PORT);
     gMulticastAddress = makeNetAddress(
         ((struct in6_addr) {{.__u6_addr32 = {bswap(0x0000ff02), 0, 0, bswap(1)}}}),
-        host->interfaceIndex,
+        host.interfaceIndex,
         0
-    )
+    );
 
     const SDL_PropertiesID props = SDL_CreateProperties();
     assert(props);
@@ -76,8 +133,13 @@ void discoveryInit(const Address* const host) {
     leaky(assert(gInquirerSocket = NET_CreateDatagramSocket(&gMulticastAddress, 0, props));)
 }
 
+static bool isLoopback(const In6Addr* const addr) {
+    const vec16uq loopback = {0, bswap(1l)};
+    return compareXmmVectors((vec16uq) addr->vectorized, loopback);
+}
+
 static bool isOurPacket(const NET_Datagram* const datagram) {
-    return networkIsLoopback((In6Addr*) &asSockaddrIn6(datagram->addr->ainfo->ai_addr)->sin6_addr);
+    return isLoopback((In6Addr*) &asSockaddrIn6(datagram->addr->ainfo->ai_addr)->sin6_addr);
 }
 
 static void xlisten() {

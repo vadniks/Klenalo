@@ -68,7 +68,7 @@ typedef unsigned long ufast64;
     *((struct _S*) x) = *(struct _S*) &(typeof(*x)) {__VA_ARGS__}; \
 } // struct __ANY_STRUCT_TYPE_* const var = xmalloc(sizeof *var); if that struct contains const qualified fields; x is var (pointer to that struct)
 
-staticAssert(sizeof(char) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(long long) == 8 & sizeof(void*) == 8);
+staticAssert(sizeof(char) == 1 & sizeof(bool) == 1 & sizeof(short) == 2 & sizeof(int) == 4 & sizeof(long) == 8 & sizeof(long long) == 8 & sizeof(void*) == 8);
 
 void assert(bool condition);
 int xrand(int min, int max); // general pseudorandom
