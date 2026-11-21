@@ -4,6 +4,7 @@
 #include <sanitizer/lsan_interface.h>
 #include <SDL3/SDL.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "../../common/crypto/crypto.h"
 #include "../network/network.h"
 #include "../../common/collections/deque.h"
@@ -39,6 +40,9 @@ static int backgroundActionsLoop(void* nullable);
 static int networkActionsLoop(void* nullable);
 
 void lifecycleInit() {
+    assert(!getenv("LD_PRELOAD"));
+    // printf("debugging: %s\n", boolToStr(ptrace(PTRACE_TRACEME, 0, nullptr, 0) < 0));
+
     assert(!gInitialized);
     gInitialized = true;
 
