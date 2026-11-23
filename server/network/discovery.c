@@ -10,13 +10,13 @@
 
 enum {
     PING_PORT = 8080,
+    PING_PACKET_MAGIC = 0
 };
 
 typedef struct xpacked {
     long magic;
     byte version;
-    // vec16uw address; // unnecessary
-    // public key for p2p connection
+    CryptoKey publicKey;
 } PingPacketPayload;
 
 typedef struct xpacked {
@@ -148,13 +148,13 @@ void discoveryListen() {
         if (datagram && datagram->buflen == sizeof(PingPacket) /*&& !isOurPacket(datagram)*/) {
             printf("received: %s %hu %d\n", datagram->addr->human_readable, datagram->port, datagram->buflen);
 
-            CryptoKey key;
-            credentialsGlobalSignKey(&key, true);
+            CryptoKey globalPublicKey;
+            credentialsGlobalSignKey(&globalPublicKey, true);
 
             const auto* const packet = (PingPacket*) datagram->buf;
-            assert(cryptoSignVerify(&packet->signature, packet, sizeof(PingPacketPayload), &key));
+            assert(cryptoSignVerify(&packet->signature, packet, sizeof(PingPacketPayload), &globalPublicKey));
 
-            cryptoZeroMemory(&key, sizeof key);
+            cryptoZeroMemory(&globalPublicKey, sizeof globalPublicKey);
         }
 
         NET_DestroyDatagram(datagram);
@@ -163,15 +163,15 @@ void discoveryListen() {
 }
 
 void discoveryPing() {
-    CryptoKey publicKey, secretKey;
-    credentialsGlobalSignKey(&publicKey, true);
-    credentialsGlobalSignKey(&secretKey, false);
+    CryptoKey globalPublicKey, globalSecretKey;
+    credentialsGlobalSignKey(&globalPublicKey, true);
+    credentialsGlobalSignKey(&globalSecretKey, false);
 
-    PingPacket packet = {{123, 0}, {}};
-    cryptoSign(&packet.signature, &packet, sizeof(PingPacketPayload), &publicKey, &secretKey);
+    PingPacket packet = {{PING_PACKET_MAGIC, PROGRAM_VERSION, {}}, {}};
+    cryptoSign(&packet.signature, &packet, sizeof(PingPacketPayload), &globalPublicKey, &globalSecretKey);
 
-    cryptoZeroMemory(&publicKey, sizeof publicKey);
-    cryptoZeroMemory(&secretKey, sizeof secretKey);
+    cryptoZeroMemory(&globalPublicKey, sizeof globalPublicKey);
+    cryptoZeroMemory(&globalSecretKey, sizeof globalSecretKey);
 
     assert(NET_SendDatagram(gInquirerSocket, &gMulticastAddress, PING_PORT, &packet, sizeof packet));
     puts("ping");
