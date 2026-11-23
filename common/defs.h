@@ -53,7 +53,7 @@ typedef unsigned long ufast64;
 #define xnoinline [[clang::noinline]]
 #define xinline [[clang::always_inline]] inline
 #define popcount(x) __builtin_popcount(x)
-#define typed(x, y) x // typed(Collection*, Type*) = declares a collection/container Collection contains a set of objects with type Type
+#define typed(x, ...) x // typed(Collection*, Type*) = typed(Collection*, Key*, Value*) = declares a collection/container Collection contains a set of objects/key-values with type Type
 #define bswap(x) _Generic((x), \
     short: __builtin_bswap16, unsigned short: __builtin_bswap16, \
     int: __builtin_bswap32, unsigned int: __builtin_bswap32, \

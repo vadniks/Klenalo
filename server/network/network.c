@@ -17,7 +17,6 @@ void networkInit() {
     gInitialized = true;
 
     assert(NET_Init());
-
     discoveryInit();
 }
 
