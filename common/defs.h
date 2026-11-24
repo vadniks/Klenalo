@@ -142,3 +142,6 @@ void runPeriodically(
     int periodMillis,
     void (* action)(void)
 );
+
+// ReSharper disable once CppUnusedIncludeDirective
+#include <iso646.h>

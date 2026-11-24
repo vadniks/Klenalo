@@ -143,8 +143,10 @@ void discoveryListen() {
          struct sockaddr_in6 addr;
          unsigned socklen = 0;
          readSize = (int) recvfrom(gListenerSocket, buffer, sizeof buffer, 0, (struct sockaddr*) &addr, &socklen);
+
 printf("%d\n", readSize); //
-         if (readSize < 0 && errno == EAGAIN) break;
+
+         if (readSize < 0 && errno == EWOULDBLOCK) break; // EWOULDBLOCK = EAGAIN
          else if (readSize < 0) assert(false);
          else if (readSize == 0 || addr.sin6_family != AF_INET6) continue;
 
@@ -195,9 +197,9 @@ void discoveryPing() {
         &packet,
         sizeof packet,
         0,
-        (struct sockaddr*) &(struct sockaddr_in6) {AF_INET6, LISTENING_PORT, 0, MULTICAST_ADDR, gInterfaceIndex},
+        (struct sockaddr*) &(struct sockaddr_in6) {AF_INET6, bswap((ushort) LISTENING_PORT), 0, MULTICAST_ADDR, gInterfaceIndex},
         sizeof(struct sockaddr_in6)
-    ) == sizeof packet); // TODO: doesn't get received by the listener
+    ) == sizeof packet);
 
     puts("ping");
 }
