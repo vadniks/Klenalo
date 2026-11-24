@@ -16,7 +16,6 @@ void networkInit() {
     assert(!gInitialized && lifecycleInitialized());
     gInitialized = true;
 
-    assert(NET_Init());
     discoveryInit();
 }
 
@@ -35,5 +34,4 @@ void networkQuit() {
     gInitialized = false;
 
     discoveryQuit();
-    NET_Quit();
 }

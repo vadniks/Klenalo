@@ -8,7 +8,7 @@
 enum {SIGN_SECRET_KEY_SIZE = 64};
 
 staticAssert(
-    (CRYPTO_GENERIC_KEY_SIZE == crypto_box_PUBLICKEYBYTES) &
+    (CRYPTO_KEY_SIZE == crypto_box_PUBLICKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_box_SECRETKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_sign_PUBLICKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_sign_SECRETKEYBYTES / 2) &
@@ -17,7 +17,7 @@ staticAssert(
         (crypto_box_PUBLICKEYBYTES == crypto_kx_SECRETKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_kx_SESSIONKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_secretstream_xchacha20poly1305_KEYBYTES) &
-        (CRYPTO_GENERIC_KEY_SIZE == sizeof(vec32ub)) &
+        (CRYPTO_KEY_SIZE == sizeof(vec32ub)) &
     (SIGN_SECRET_KEY_SIZE == crypto_sign_SECRETKEYBYTES) &
         (SIGN_SECRET_KEY_SIZE == sizeof(vec64ub)) &
     (CRYPTO_SIGNATURE_SIZE == crypto_sign_BYTES) &
@@ -56,7 +56,7 @@ void cryptoSignKeypair(CryptoKey* const publicKey, CryptoKey* const secretKey) {
     assert(gInitialized);
     byte sk[SIGN_SECRET_KEY_SIZE];
     assert(!crypto_sign_keypair((void*) publicKey, sk));
-    memcpy(secretKey, sk, CRYPTO_GENERIC_KEY_SIZE);
+    memcpy(secretKey, sk, CRYPTO_KEY_SIZE);
     cryptoZeroMemory(sk, SIGN_SECRET_KEY_SIZE);
 }
 
@@ -70,8 +70,8 @@ void cryptoSign(
     assert(gInitialized && dataSize > 0);
 
     byte sk[SIGN_SECRET_KEY_SIZE];
-    memcpy(sk, secretKey, CRYPTO_GENERIC_KEY_SIZE);
-    memcpy(sk + CRYPTO_GENERIC_KEY_SIZE, publicKey, CRYPTO_GENERIC_KEY_SIZE);
+    memcpy(sk, secretKey, CRYPTO_KEY_SIZE);
+    memcpy(sk + CRYPTO_KEY_SIZE, publicKey, CRYPTO_KEY_SIZE);
 
     assert(!crypto_sign_detached(
         (void*) signature,
@@ -91,6 +91,30 @@ bool cryptoSignVerify(const CryptoSignature* const signature, const void* const 
         data,
         dataSize,
         (const void*) publicKey
+    );
+}
+
+void cryptoKeypair(CryptoKey* const publicKey, CryptoKey* const secretKey) {
+    assert(gInitialized);
+    crypto_kx_keypair((void*) publicKey, (void*) secretKey);
+}
+
+void cryptoExchangeKeys(
+    CryptoKey* const receiveKey,
+    CryptoKey* const sendKey,
+    const CryptoKey* const sourcePublicKey,
+    const CryptoKey* const sourceSecretKey,
+    const CryptoKey* const destinationPublicKey,
+    const bool sourceOrDestination // clientOrServer
+) {
+    const void* const fun = (void*) (sourceOrDestination ? crypto_kx_client_session_keys : crypto_kx_server_session_keys);
+
+    ((typeof(crypto_kx_client_session_keys)*) fun)(
+        (void*) receiveKey,
+        (void*) sendKey,
+        (const void*) sourcePublicKey,
+        (const void*) sourceSecretKey,
+        (const void*) destinationPublicKey
     );
 }
 

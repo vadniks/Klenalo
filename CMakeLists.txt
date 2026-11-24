@@ -151,6 +151,7 @@ add_compile_options(
     -Wno-format-nonliteral
     -Wno-cast-align
     -Wno-auto-decl-extensions
+    -Wno-gnu-union-cast
     # MSVC/Specific extensions for compatibility
     -fms-extensions
     -Wno-microsoft-anon-tag

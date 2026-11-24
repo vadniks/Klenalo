@@ -9,25 +9,29 @@
 #include "discovery.h"
 
 enum {
-    PING_PORT = 8080,
-    PING_PACKET_MAGIC = 0
+    LISTENING_PORT = 8080,
+    BUFFER_SIZE = 128,
+    PING_PACKET_MAGIC = 0,
+    PONG_PACKET_MAGIC = 1
 };
 
 typedef struct xpacked {
     long magic;
     byte version;
     CryptoKey publicKey;
-} PingPacketPayload;
+} PingPongPacketPayload;
 
 typedef struct xpacked {
-    PingPacketPayload;
+    PingPongPacketPayload;
     CryptoSignature signature;
-} PingPacket;
+} PingPongPacket;
+
+static constexpr struct in6_addr MULTICAST_ADDR = {{.__u6_addr32 = {bswap(0xff020000), 0, 0, bswap(1)}}};
 
 static atomic bool gInitialized = false;
-static NET_Address gMulticastAddress = {};
-static NET_DatagramSocket* gListenerSocket = nullptr; // listens for others
-static NET_DatagramSocket* gInquirerSocket = nullptr; // pings others
+static int gListenerSocket = 0; // listens for others
+static int gInquirerSocket = 0; // pings
+static int gInterfaceIndex = 0;
 
 static typed(Vector*, Interface*) queryInterfaces() {
     struct ifaddrs* addrs;
@@ -79,31 +83,38 @@ static typed(Vector*, Interface*) queryInterfaces() {
     return interfacesVector;
 }
 
-#define makeNetAddress(addr, interfaceIndex, port) \
-    (NET_Address) { \
-        nullptr, \
-        nullptr, \
-        nullptr, \
-        {1}, \
-        NET_SUCCESS, \
-        &(struct addrinfo) { \
-            AI_NUMERICHOST, \
-            AF_INET6, \
-            SOCK_RAW, \
-            IPPROTO_IP, \
-            sizeof(struct sockaddr_in6), \
-            (struct sockaddr*) &(struct sockaddr_in6) { \
-                AF_INET6, \
-                port, \
-                0, \
-                addr, \
-                interfaceIndex \
-            }, \
-            nullptr, \
-            nullptr \
-        }, \
-        nullptr \
-    }
+static void createListener() {
+    assert((gListenerSocket = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP)) >= 0);
+    assert(!setsockopt(gListenerSocket, SOL_SOCKET, SO_REUSEADDR, anonVar(1), sizeof(int)));
+
+    const struct sockaddr_in6 addr = {
+        AF_INET6,
+        bswap((ushort) LISTENING_PORT),
+        0,
+        in6addr_any,
+        gInterfaceIndex
+    };
+    assert(!bind(gListenerSocket, (const struct sockaddr*) &addr, sizeof addr));
+
+    const struct ipv6_mreq request = {MULTICAST_ADDR, gInterfaceIndex};
+    assert(!setsockopt(gListenerSocket, IPPROTO_IPV6, IPV6_JOIN_GROUP, &request, sizeof request));
+}
+
+static void createInquirer() {
+    assert((gInquirerSocket = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP)) >= 0);
+    assert(!setsockopt(gInquirerSocket, IPPROTO_IPV6, IPV6_MULTICAST_IF, &gInterfaceIndex, sizeof(unsigned)));
+
+    const struct sockaddr_in6 addr = {
+        AF_INET6,
+        0,
+        0,
+        MULTICAST_ADDR,
+        gInterfaceIndex
+    };
+    assert(!bind(gInquirerSocket, (const struct sockaddr*) &addr, sizeof addr));
+}
+
+// TODO: server actually doesn't need SDL library at all
 
 void discoveryInit() {
     assert(!gInitialized && networkInitialized());
@@ -114,21 +125,10 @@ void discoveryInit() {
     const Address host = {interface->linkLocalAddress, interface->index};
     vectorDestroy(interfaces);
 
-    const auto hostAddress = makeNetAddress(host.linkLocal.native, host.interfaceIndex, PING_PORT);
-    gMulticastAddress = makeNetAddress(
-        ((struct in6_addr) {{.__u6_addr32 = {bswap(0x0000ff02), 0, 0, bswap(1)}}}),
-        host.interfaceIndex,
-        0
-    );
+    gInterfaceIndex = host.interfaceIndex;
 
-    const SDL_PropertiesID props = SDL_CreateProperties();
-    assert(props);
-    assert(SDL_SetBooleanProperty(props, NET_PROP_DATAGRAM_SOCKET_ALLOW_BROADCAST_BOOLEAN, true));
-
-    leaky(assert(gListenerSocket = NET_CreateDatagramSocket((void*) &hostAddress, PING_PORT, props));)
-    SDL_DestroyProperties(props);
-
-    leaky(assert(gInquirerSocket = NET_CreateDatagramSocket(&gMulticastAddress, 0, props));)
+    createListener();
+    createInquirer();
 }
 
 static bool isLoopback(const In6Addr* const addr) {
@@ -136,30 +136,45 @@ static bool isLoopback(const In6Addr* const addr) {
     return compareXmmVectors((vec16uq) addr->vectorized, loopback);
 }
 
-static bool isOurPacket(const NET_Datagram* const datagram) {
-    return isLoopback((In6Addr*) &asSockaddrIn6(datagram->addr->ainfo->ai_addr)->sin6_addr);
-}
-
 void discoveryListen() {
-    NET_Datagram* datagram = nullptr;
-    do {
-        assert(NET_ReceiveDatagram(gListenerSocket, &datagram));
+    byte buffer[BUFFER_SIZE] = {};
+    int readSize = 0;
+     while (true) {
+         struct sockaddr_in6 addr;
+         unsigned socklen = 0;
+         readSize = (int) recvfrom(gListenerSocket, buffer, sizeof buffer, 0, (struct sockaddr*) &addr, &socklen);
+printf("%d\n", readSize); //
+         if (readSize < 0 && errno == EAGAIN) break;
+         else if (readSize < 0) assert(false);
+         else if (readSize == 0 || addr.sin6_family != AF_INET6) continue;
 
-        if (datagram && datagram->buflen == sizeof(PingPacket) /*&& !isOurPacket(datagram)*/) {
-            printf("received: %s %hu %d\n", datagram->addr->human_readable, datagram->port, datagram->buflen);
+         if (readSize == sizeof(PingPongPacket) /*&& !isOurPacket(datagram)*/) {
+             printf("received: ");
+             printMemory(&addr.sin6_addr, 16, PRINT_MEMORY_MODE_IPV6, false);
+             printf(" %hu %u\n", addr.sin6_port, addr.sin6_scope_id);
 
-            CryptoKey globalPublicKey;
-            credentialsGlobalSignKey(&globalPublicKey, true);
+             const auto* const packet = (PingPongPacket*) buffer;
+             if (packet->magic == PING_PACKET_MAGIC) {
+                 CryptoKey globalPublicKey, globalSecretKey;
+                 credentialsGlobalSignKey(&globalPublicKey, true);
+                 credentialsGlobalSignKey(&globalSecretKey, false);
 
-            const auto* const packet = (PingPacket*) datagram->buf;
-            assert(cryptoSignVerify(&packet->signature, packet, sizeof(PingPacketPayload), &globalPublicKey));
+                 const bool verified = cryptoSignVerify(&packet->signature, packet, sizeof(PingPongPacketPayload), &globalPublicKey);
+                 assert(verified);
 
-            cryptoZeroMemory(&globalPublicKey, sizeof globalPublicKey);
-        }
+                 // if (verified) {
+                 //     PingPongPacket packet = {{PONG_PACKET_MAGIC, PROGRAM_VERSION, {}}, {}};
+                 //     cryptoSign(&packet.signature, &packet, sizeof(PingPongPacketPayload), &globalPublicKey, &globalSecretKey);
+                 //     assert(NET_SendDatagram(gInquirerSocket, datagram->addr, LISTENING_PORT, &packet, sizeof packet));
+                 //     puts("pong");
+                 // }
 
-        NET_DestroyDatagram(datagram);
-    } while (datagram);
-    puts("listen");
+                 cryptoZeroMemory(&globalPublicKey, sizeof globalPublicKey);
+                 cryptoZeroMemory(&globalSecretKey, sizeof globalSecretKey);
+             }
+         }
+     };
+     puts("listen");
 }
 
 void discoveryPing() {
@@ -167,13 +182,23 @@ void discoveryPing() {
     credentialsGlobalSignKey(&globalPublicKey, true);
     credentialsGlobalSignKey(&globalSecretKey, false);
 
-    PingPacket packet = {{PING_PACKET_MAGIC, PROGRAM_VERSION, {}}, {}};
-    cryptoSign(&packet.signature, &packet, sizeof(PingPacketPayload), &globalPublicKey, &globalSecretKey);
+    PingPongPacket packet = {{PING_PACKET_MAGIC, PROGRAM_VERSION, {}}, {}};
+    cryptoSign(&packet.signature, &packet, sizeof(PingPongPacketPayload), &globalPublicKey, &globalSecretKey);
 
     cryptoZeroMemory(&globalPublicKey, sizeof globalPublicKey);
     cryptoZeroMemory(&globalSecretKey, sizeof globalSecretKey);
 
-    assert(NET_SendDatagram(gInquirerSocket, &gMulticastAddress, PING_PORT, &packet, sizeof packet));
+    //
+
+    assert(sendto(
+        gInquirerSocket,
+        &packet,
+        sizeof packet,
+        0,
+        (struct sockaddr*) &(struct sockaddr_in6) {AF_INET6, LISTENING_PORT, 0, MULTICAST_ADDR, gInterfaceIndex},
+        sizeof(struct sockaddr_in6)
+    ) == sizeof packet); // TODO: doesn't get received by the listener
+
     puts("ping");
 }
 
@@ -181,6 +206,6 @@ void discoveryQuit() {
     assert(gInitialized);
     gInitialized = false;
 
-    NET_DestroyDatagramSocket(gListenerSocket);
-    NET_DestroyDatagramSocket(gInquirerSocket);
+    close(gListenerSocket);
+    close(gInquirerSocket);
 }

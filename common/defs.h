@@ -38,6 +38,7 @@ typedef unsigned long ufast64;
 #define xalloca(x) (void*) (byte[x]) {0}
 #define xalloca2(x) __builtin_alloca(x)
 #define unusedVariableBuffer(x) (x[1]) {0} // or just &(x) {0}
+#define anonVar(x) (typeof(x)[1]) {x}
 #define USED(x) ((void) (x))
 #define STUB USED(0)
 #define swapValues(x, y) {x ^= y; y ^= x; x ^= y;}
@@ -118,6 +119,8 @@ void free(void* ptr);
 void* memset(void* s, int c, ulong n);
 void* memmove(void* dest, const void* src, ulong n);
 void* memcpy(void* restrict dest, const void* restrict src, ulong n);
+
+char* strncpy(char* restrict dest, const char* restrict src, ulong n);
 
 // #include <sanitizer/common_interface_defs.h>
 void __lsan_disable();

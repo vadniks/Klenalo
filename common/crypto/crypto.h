@@ -6,7 +6,7 @@
 #include "../defs.h"
 
 enum {
-    CRYPTO_GENERIC_KEY_SIZE = 32,
+    CRYPTO_KEY_SIZE = 32,
 
     CRYPTO_SIGNATURE_SIZE = 64,
 
@@ -45,6 +45,23 @@ typedef vec64ub CryptoSignature;
 void cryptoSignKeypair(CryptoKey* publicKey, CryptoKey* secretKey);
 void cryptoSign(CryptoSignature* signature, const void* data, int dataSize, const CryptoKey* publicKey, const CryptoKey* secretKey);
 bool cryptoSignVerify(const CryptoSignature* signature, const void* data, int dataSize, const CryptoKey* publicKey);
+
+// key exchange
+
+// typedef union xpacked {
+//     struct {CryptoKey publicKey, secretKey;};
+//     struct {CryptoKey sendKey, receiveKey;};
+// } CryptoKeypair;
+
+void cryptoKeypair(CryptoKey* publicKey, CryptoKey* secretKey);
+void cryptoExchangeKeys(
+    CryptoKey* receiveKey,
+    CryptoKey* sendKey,
+    const CryptoKey* sourcePublicKey,
+    const CryptoKey* sourceSecretKey,
+    const CryptoKey* destinationPublicKey,
+    bool sourceOrDestination // clientOrServer
+);
 
 // public anonymous encryption (sealing)
 /*
