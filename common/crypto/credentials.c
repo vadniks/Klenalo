@@ -1,7 +1,10 @@
 // Copyright (C) 2026 Vadim Nikolaev (https://github.com/vadniks)
 // SPDX-License-Identifier: AGPL-3.0-only
 
-#include <SDL3/SDL_iostream.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include <string.h>
 #include "credentials.h"
 
@@ -12,9 +15,16 @@ void credentialsInit() {
     assert(!gInitialized);
     gInitialized = true;
 
-    ulong size;
-    assert(gCredentials.data = SDL_LoadFile("credentials.table", &size));
-    assert(gCredentials.size = (unsigned) size);
+    const int fd = open("credentials.table", O_RDONLY);
+    assert(fd > 0);
+
+    struct stat st;
+    assert(!fstat(fd, &st));
+
+    assert(gCredentials.size = (unsigned) st.st_size);
+    assert(gCredentials.data = mmap(nullptr, gCredentials.size, PROT_READ, MAP_PRIVATE, fd, 0));
+
+    close(fd);
 }
 
 static byte asciiCharToHexDigit(const char c) {
@@ -90,6 +100,6 @@ void credentialsQuit() {
     gInitialized = false;
 
     credentialsGlobalSignKey(nullptr, false);
-    cryptoZeroMemory(gCredentials.data, gCredentials.size);
-    SDL_free(gCredentials.data);
+    // cryptoZeroMemory(gCredentials.data, gCredentials.size); // unnecessary and impossible on readonly memory mappings
+    assert(!munmap(gCredentials.data, gCredentials.size));
 }

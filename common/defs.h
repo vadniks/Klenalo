@@ -143,5 +143,7 @@ void runPeriodically(
     void (* action)(void)
 );
 
+void xsleep(ulong millis);
+
 // ReSharper disable once CppUnusedIncludeDirective
 #include <iso646.h>

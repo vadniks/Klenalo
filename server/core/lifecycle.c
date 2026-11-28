@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 #include <sanitizer/lsan_interface.h>
-#include <SDL3/SDL.h>
+#include <threads.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "../../common/crypto/crypto.h"
@@ -30,33 +31,38 @@ static int gTicker = 0;
 
 static struct {
     typed(Deque*, AsyncAction*) nullable queue;
-    SDL_Thread* nullable thread;
+    thrd_t thread;
 }
-    gMainActionsLooper = {nullptr, nullptr},
-    gBackgroundActionsLooper = {nullptr, nullptr},
-    gNetworkActionsLooper = {nullptr, nullptr};
+    gMainActionsLooper = {nullptr, 0},
+    gBackgroundActionsLooper = {nullptr, 0},
+    gNetworkActionsLooper = {nullptr, 0};
 
 static int backgroundActionsLoop(void* nullable);
 static int networkActionsLoop(void* nullable);
 
+static void signalHandler(const int signal) {
+    assert(signal == SIGINT || signal == SIGTERM);
+    gRunning = false;
+}
+
 void lifecycleInit() {
     assert(!getenv("LD_PRELOAD"));
     // printf("debugging: %s\n", boolToStr(ptrace(PTRACE_TRACEME, 0, nullptr, 0) < 0));
+    setvbuf(stdout, nullptr, _IONBF, 0); // disable heap buffers for stdout
 
     assert(!gInitialized);
     gInitialized = true;
 
-    setvbuf(stdout, nullptr, _IONBF, 0); // disable heap buffers for stdout
-
-    leaky(assert(SDL_Init(SDL_INIT_EVENTS));) // ignore memory leaks produced by SDL3 internally
+    assert(!signal(SIGINT, signalHandler));
+    assert(!signal(SIGTERM, signalHandler));
 
     gMainActionsLooper.queue = dequeCreate(free);
 
     gBackgroundActionsLooper.queue = dequeCreate(free);
-    assert(gBackgroundActionsLooper.thread = SDL_CreateThread(backgroundActionsLoop, nullptr, nullptr));
+    leaky(assert(!thrd_create(&gBackgroundActionsLooper.thread, backgroundActionsLoop, nullptr) && gBackgroundActionsLooper.thread);)
 
     gNetworkActionsLooper.queue = dequeCreate(free);
-    assert(gNetworkActionsLooper.thread = SDL_CreateThread(networkActionsLoop, nullptr, nullptr));
+    leaky(assert(!thrd_create(&gNetworkActionsLooper.thread, networkActionsLoop, nullptr) && gNetworkActionsLooper.thread);)
 
     cryptoInit();
     networkInit();
@@ -67,9 +73,9 @@ bool lifecycleInitialized() {
 }
 
 static void delayThread(const unsigned startMillis) {
-    const unsigned differenceMillis = (unsigned) SDL_GetTicks() - startMillis;
+    const unsigned differenceMillis = (unsigned) currentTimeMillis() - startMillis;
     if (UPDATE_PERIOD > differenceMillis)
-        SDL_Delay(UPDATE_PERIOD - differenceMillis);
+        xsleep(UPDATE_PERIOD - differenceMillis);
 }
 
 static AsyncAction* nullable nextAsyncAction(const Looper looper) {
@@ -81,11 +87,11 @@ static void threadLoop(void (* nullable const body)(), const Looper looper) {
     unsigned startMillis;
 
     while (gRunning) {
-        assert(startMillis = (unsigned) SDL_GetTicks());
+        assert(startMillis = (unsigned) currentTimeMillis());
 
         AsyncAction* action;
         if ((action = nextAsyncAction(looper))) {
-            if (action->delayMillis) SDL_Delay(action->delayMillis);
+            if (action->delayMillis) xsleep(action->delayMillis);
             if (gRunning) action->function(action->parameter);
             free(action);
         }
@@ -142,15 +148,8 @@ void lifecycleLoop() {
     unsigned startMillis;
     AsyncAction* action;
 
-    while (true) {
-        assert(startMillis = (unsigned) SDL_GetTicks());
-
-        SDL_Event event;
-        while (SDL_PollEvent(&event) == 1) {
-            if (event.type == SDL_EVENT_QUIT)
-                goto end;
-
-        }
+    while (gRunning) {
+        assert(startMillis = (unsigned) currentTimeMillis());
 
         if ((action = nextAsyncAction(LOOPER_MAIN))) {
             action->function(action->parameter);
@@ -160,7 +159,6 @@ void lifecycleLoop() {
         delayThread(startMillis);
         // pulse();
     }
-    end:
 
     gRunning = false;
 }
@@ -171,14 +169,12 @@ void lifecycleQuit() {
     networkQuit();
     cryptoQuit();
 
-    SDL_WaitThread(gNetworkActionsLooper.thread, nullptr);
-    SDL_WaitThread(gBackgroundActionsLooper.thread, nullptr);
+    assert(!thrd_join(gNetworkActionsLooper.thread, nullptr));
+    assert(!thrd_join(gBackgroundActionsLooper.thread, nullptr));
 
     gInitialized = false;
 
     dequeDestroy(gNetworkActionsLooper.queue);
     dequeDestroy(gBackgroundActionsLooper.queue);
     dequeDestroy(gMainActionsLooper.queue);
-
-    SDL_Quit();
 }

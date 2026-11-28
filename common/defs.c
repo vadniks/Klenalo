@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Vadim Nikolaev (https://github.com/vadniks)
 // SPDX-License-Identifier: AGPL-3.0-only
 
+#include <threads.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -76,4 +77,8 @@ void runPeriodically(
     if (currentMillis - *lastRunMillis < (unsigned) periodMillis) return;
     *lastRunMillis = currentMillis;
     action();
+}
+
+void xsleep(const ulong millis) {
+    thrd_sleep(&(struct timespec) {.tv_nsec = millis * 1'000'000ul}, nullptr);
 }
