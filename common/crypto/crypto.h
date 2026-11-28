@@ -54,14 +54,7 @@ bool cryptoSignVerify(const CryptoSignature* signature, const void* data, int da
 // } CryptoKeypair;
 
 void cryptoKeypair(CryptoKey* publicKey, CryptoKey* secretKey);
-bool cryptoExchangeKeys(
-    CryptoKey* receiveKey,
-    CryptoKey* sendKey,
-    const CryptoKey* sourcePublicKey,
-    const CryptoKey* sourceSecretKey,
-    const CryptoKey* destinationPublicKey,
-    bool sourceOrDestination // clientOrServer
-);
+bool cryptoExchangeKeys(CryptoKey* key, const CryptoKey* publicKey, const CryptoKey* secretKey);
 
 // public anonymous encryption (sealing)
 /*

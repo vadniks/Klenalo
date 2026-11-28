@@ -28,10 +28,20 @@ typedef struct xpacked {
     CryptoSignature signature;
 } PingPongPacket;
 
-typedef struct xpacked {
+typedef struct {
     PingPongPacket packet;
     struct in6_addr address;
 } DeferredPongPacket;
+
+typedef enum {
+    DISCOVERED_STATE_PING_RECEIVED,
+    DISCOVERED_STATE_VERIFIED,
+    DISCOVERED_STATE_PONG_RECEIVED
+} DiscoveredState;
+
+typedef struct {
+
+} DiscoveredNode;
 
 static constexpr struct in6_addr MULTICAST_ADDR = {{.__u6_addr32 = {bswap(0xff020000), 0, 0, bswap(1)}}};
 
@@ -42,6 +52,7 @@ static struct in6_addr gHostAddress = {};
 static unsigned gInterfaceIndex = 0;
 static CryptoKey gListenerPublicKey, glistenerSecretKey, gInquirerPublicKey, gInquirerSecretKey; // TODO: temp
 static typed(Deque*, *) gDeferredPongPacketsQueue = nullptr;
+// static typed(Treemap*, int, )
 
 static typed(Vector*, Interface*) queryInterfaces();
 static void createListener();
@@ -175,24 +186,20 @@ static void processIncomingPing(const struct sockaddr_in6* const addr, const Pin
         cryptoSign(&deferred->packet.signature, &deferred->packet, sizeof(PingPongPacketPayload), &globalPublicKey, &globalSecretKey);
         deferred->address = addr->sin6_addr;
         dequeQueuePush(gDeferredPongPacketsQueue, deferred);
-    }
+    } // else delete & ignore the node
 
     cryptoZeroMemory(&globalPublicKey, sizeof globalPublicKey);
     cryptoZeroMemory(&globalSecretKey, sizeof globalSecretKey);
 }
 
 static void processIncomingPong(const struct sockaddr_in6* const addr, const PingPongPacket* const packet) {
-    printf("process pong %hu ", addr->sin6_port); printMemory(&addr->sin6_addr, sizeof(struct in6_addr), PRINT_MEMORY_MODE_IPV6, true);
+    printf("process pong %hu ", addr->sin6_port); printMemory(&addr->sin6_addr, sizeof(struct in6_addr), PRINT_MEMORY_MODE_IPV6, false);
 
-    CryptoKey receiveKey, sendKey;
-    const bool successful = cryptoExchangeKeys(
-        &receiveKey,
-        &sendKey,
-        &gListenerPublicKey,
-        &glistenerSecretKey,
-        &packet->publicKey,
-        true
-    );
+    CryptoKey key;
+    const bool successful = cryptoExchangeKeys(&key, &packet->publicKey, &glistenerSecretKey); // if not - retry
+
+    printf(" ");
+    printMemory(&key, 32, PRINT_MEMORY_MODE_HEXDUMP, true);
 
     printf("ping-pong %s\n", boolToStr(successful));
 }

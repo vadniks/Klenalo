@@ -99,23 +99,8 @@ void cryptoKeypair(CryptoKey* const publicKey, CryptoKey* const secretKey) {
     crypto_kx_keypair((void*) publicKey, (void*) secretKey);
 }
 
-bool cryptoExchangeKeys(
-    CryptoKey* const receiveKey,
-    CryptoKey* const sendKey,
-    const CryptoKey* const sourcePublicKey,
-    const CryptoKey* const sourceSecretKey,
-    const CryptoKey* const destinationPublicKey,
-    const bool sourceOrDestination // clientOrServer
-) {
-    const void* const fun = (void*) (sourceOrDestination ? crypto_kx_client_session_keys : crypto_kx_server_session_keys);
-
-    return !((typeof(crypto_kx_client_session_keys)*) fun)(
-        (void*) receiveKey,
-        (void*) sendKey,
-        (const void*) sourcePublicKey,
-        (const void*) sourceSecretKey,
-        (const void*) destinationPublicKey
-    );
+bool cryptoExchangeKeys(CryptoKey* const key, const CryptoKey* const publicKey, const CryptoKey* const secretKey) {
+    return !crypto_box_beforenm((void*) key, (const void*) publicKey, (const void*) secretKey);
 }
 
 /*
