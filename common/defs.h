@@ -120,6 +120,7 @@ void* memset(void* s, int c, ulong n);
 void* memmove(void* dest, const void* src, ulong n);
 void* memcpy(void* restrict dest, const void* restrict src, ulong n);
 int memcmp(const void* s1, const void* s2, ulong n);
+inline bool equals(const void* const a, const void* const b, const ulong size) { return !memcmp(a, b, size); }
 
 char* strncpy(char* restrict dest, const char* restrict src, ulong n);
 
@@ -127,14 +128,14 @@ char* strncpy(char* restrict dest, const char* restrict src, ulong n);
 void __lsan_disable();
 void __lsan_enable();
 
-typedef byte vec16ub [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm (sse) vector[1-16] of 16 bytes represented just as bytes
-typedef short vec16uw [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-8] of 16 bytes represented as 4 packed words (shorts)
-typedef int vec16ul [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-4] of 16 bytes represented as 4 packed longwords (ints)
-typedef long vec16uq [[gnu::vector_size(16), gnu::aligned(1)]]; // unaligned xmm vector[1-2] of 16 bytes represented as 2 packed quadwords (longs)
+typedef byte vec16ub [[gnu::vector_size(16), gnu::aligned(1)]]; // octaword unaligned xmm (sse) vector[1-16] of 16 bytes represented just as bytes
+typedef short vec16uw [[gnu::vector_size(16), gnu::aligned(1)]]; // vector[1-8] of 8 packed words (shorts)
+typedef int vec16ul [[gnu::vector_size(16), gnu::aligned(1)]]; // vector[1-4] of 4 packed longwords (ints)
+typedef long vec16uq [[gnu::vector_size(16), gnu::aligned(1)]]; // vector[1-2] of 2 packed quadwords (longs)
 
-typedef byte vec32ub [[gnu::vector_size(32), gnu::aligned(1)]]; // ymm (avx2)
+typedef byte vec32ub [[gnu::vector_size(32), gnu::aligned(1)]]; // hexadecaword ymm (avx2)
 
-typedef byte vec64ub [[gnu::vector_size(64), gnu::aligned(1)]]; // zmm (avx512)
+typedef byte vec64ub [[gnu::vector_size(64), gnu::aligned(1)]]; // duotrigintaword zmm (avx512)
 
 bool compareXmmVectors(vec16uq vec1, vec16uq vec2);
 

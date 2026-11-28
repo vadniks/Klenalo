@@ -33,15 +33,17 @@ typedef struct {
     struct in6_addr address;
 } DeferredPongPacket;
 
-typedef enum {
-    DISCOVERED_STATE_PING_RECEIVED,
-    DISCOVERED_STATE_VERIFIED,
-    DISCOVERED_STATE_PONG_RECEIVED
-} DiscoveredState;
-
-typedef struct {
-
-} DiscoveredNode;
+// typedef enum {
+//     DISCOVERED_STATE_PING_RECEIVED,
+//     DISCOVERED_STATE_VERIFIED,
+//     DISCOVERED_STATE_PONG_RECEIVED
+// } DiscoveredState;
+//
+// typedef struct {
+//     DiscoveredState state;
+//     CryptoKey publicKey;
+//     CryptoKey sendKey, receiveKey;
+// } DiscoveredNode;
 
 static constexpr struct in6_addr MULTICAST_ADDR = {{.__u6_addr32 = {bswap(0xff020000), 0, 0, bswap(1)}}};
 static constexpr CryptoKeyContext CONNECTION_KEYS_CONTEXT = {49, 210, 167, 215, 104, 101, 96, 217, 204, 70, 176, 188, 152, 250, 67, 252};
@@ -53,7 +55,7 @@ static struct in6_addr gHostAddress = {};
 static unsigned gInterfaceIndex = 0;
 static CryptoKey gListenerPublicKey, glistenerSecretKey, gInquirerPublicKey, gInquirerSecretKey; // TODO: temp
 static typed(Deque*, *) gDeferredPongPacketsQueue = nullptr;
-// static typed(Treemap*, int, )
+// static typed(Treemap*, int, DiscoveredNode*) gDiscoveredNodesMap = nullptr;
 
 static typed(Vector*, Interface*) queryInterfaces();
 static void createListener();
@@ -163,11 +165,11 @@ static void createInquirer() {
 
 static bool isLoopback(const struct in6_addr* const addr) {
     const struct in6_addr loopback = {.__in6_u.__u6_addr32 = {0, 0, 0, bswap(1)}};
-    return !memcmp(addr, &loopback, sizeof loopback);
+    return equals(addr, &loopback, sizeof loopback);
 }
 
 static bool isThisHost(const struct in6_addr* const addr) {
-    return !memcmp(&gHostAddress, addr, sizeof gHostAddress);
+    return equals(&gHostAddress, addr, sizeof gHostAddress);
 }
 
 static void processIncomingPing(const struct sockaddr_in6* const addr, const PingPongPacket* const pingPacket) {
