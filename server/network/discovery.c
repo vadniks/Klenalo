@@ -44,6 +44,7 @@ typedef struct {
 } DiscoveredNode;
 
 static constexpr struct in6_addr MULTICAST_ADDR = {{.__u6_addr32 = {bswap(0xff020000), 0, 0, bswap(1)}}};
+static constexpr CryptoKeyContext CONNECTION_KEYS_CONTEXT = {49, 210, 167, 215, 104, 101, 96, 217, 204, 70, 176, 188, 152, 250, 67, 252};
 
 static bool gInitialized = false;
 static int gListenerSocket = 0; // listens for others
@@ -195,13 +196,20 @@ static void processIncomingPing(const struct sockaddr_in6* const addr, const Pin
 static void processIncomingPong(const struct sockaddr_in6* const addr, const PingPongPacket* const packet) {
     printf("process pong %hu ", addr->sin6_port); printMemory(&addr->sin6_addr, sizeof(struct in6_addr), PRINT_MEMORY_MODE_IPV6, false);
 
-    CryptoKey key;
-    const bool successful = cryptoExchangeKeys(&key, &packet->publicKey, &glistenerSecretKey); // if not - retry
+    CryptoKey connectionKey;
+    assert(cryptoKeyExchange(&connectionKey, &packet->publicKey, &glistenerSecretKey)); // if not - retry
+
+    CryptoExpandedKey expanded;
+    cryptoExpandKey(&expanded, &connectionKey, &CONNECTION_KEYS_CONTEXT);
 
     printf(" ");
-    printMemory(&key, 32, PRINT_MEMORY_MODE_HEXDUMP, true);
+    printMemory(&connectionKey, 32, PRINT_MEMORY_MODE_HEXDUMP, false);
+    printf(" ");
+    printMemory(&expanded.sendKey, 32, PRINT_MEMORY_MODE_HEXDUMP, false);
+    printf(" ");
+    printMemory(&expanded.receiveKey, 32, PRINT_MEMORY_MODE_HEXDUMP, true);
 
-    printf("ping-pong %s\n", boolToStr(successful));
+    puts("ping-pong");
 }
 
 void discoveryListen() {

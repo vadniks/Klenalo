@@ -17,6 +17,7 @@ staticAssert(
         (crypto_box_PUBLICKEYBYTES == crypto_kx_SECRETKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_kx_SESSIONKEYBYTES) &
         (crypto_box_PUBLICKEYBYTES == crypto_secretstream_xchacha20poly1305_KEYBYTES) &
+        (crypto_box_PUBLICKEYBYTES == crypto_kdf_hkdf_sha256_KEYBYTES) &
         (CRYPTO_KEY_SIZE == sizeof(vec32ub)) &
     (SIGN_SECRET_KEY_SIZE == crypto_sign_SECRETKEYBYTES) &
         (SIGN_SECRET_KEY_SIZE == sizeof(vec64ub)) &
@@ -96,11 +97,15 @@ bool cryptoSignVerify(const CryptoSignature* const signature, const void* const 
 
 void cryptoKeypair(CryptoKey* const publicKey, CryptoKey* const secretKey) {
     assert(gInitialized);
-    crypto_kx_keypair((void*) publicKey, (void*) secretKey);
+    assert(!crypto_kx_keypair((void*) publicKey, (void*) secretKey));
 }
 
-bool cryptoExchangeKeys(CryptoKey* const key, const CryptoKey* const publicKey, const CryptoKey* const secretKey) {
+bool cryptoKeyExchange(CryptoKey* const key, const CryptoKey* const publicKey, const CryptoKey* const secretKey) {
     return !crypto_box_beforenm((void*) key, (const void*) publicKey, (const void*) secretKey);
+}
+
+void cryptoExpandKey(CryptoExpandedKey* const expanded, const CryptoKey* const key, const CryptoKeyContext* const context) {
+    assert(!crypto_kdf_hkdf_sha256_expand((void*) expanded, sizeof *expanded, (const void*) context, sizeof *context, (const void*) key));
 }
 
 /*

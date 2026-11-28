@@ -48,13 +48,18 @@ bool cryptoSignVerify(const CryptoSignature* signature, const void* data, int da
 
 // key exchange
 
-// typedef union xpacked {
-//     struct {CryptoKey publicKey, secretKey;};
-//     struct {CryptoKey sendKey, receiveKey;};
-// } CryptoKeypair;
-
 void cryptoKeypair(CryptoKey* publicKey, CryptoKey* secretKey);
-bool cryptoExchangeKeys(CryptoKey* key, const CryptoKey* publicKey, const CryptoKey* secretKey);
+bool cryptoKeyExchange(CryptoKey* key, const CryptoKey* publicKey, const CryptoKey* secretKey);
+
+// key expansion
+
+typedef vec16ub CryptoKeyContext;
+
+typedef struct xpacked {
+    CryptoKey sendKey, receiveKey;
+} CryptoExpandedKey;
+
+void cryptoExpandKey(CryptoExpandedKey* expanded, const CryptoKey* key, const CryptoKeyContext* context);
 
 // public anonymous encryption (sealing)
 /*
