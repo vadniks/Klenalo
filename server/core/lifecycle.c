@@ -21,7 +21,7 @@ static bool gInitialized = false;
 static bool gRunning = false;
 static int gTicker = 0;
 
-typed(Deque*, AsyncAction*) nullable gActionsQueue = nullptr;
+static typed(Deque*, AsyncAction*) nullable gActionsQueue = nullptr;
 
 static void signalHandler(const int signal) {
     assert(signal == SIGINT || signal == SIGTERM);
