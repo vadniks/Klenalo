@@ -7,7 +7,8 @@
 
 enum {
     LISTEN_PERIOD = 1000,
-    PING_PERIOD = 1000
+    PING_PERIOD = 1000,
+    PONG_PERIOD = 1000
 };
 
 static atomic bool gInitialized = false;
@@ -24,9 +25,10 @@ bool networkInitialized() {
 }
 
 void networkLoopBody() {
-    static ulong lastListen = 0, lastPing = 0;
+    static ulong lastListen = 0, lastPing = 0, lastPong = 0;
     runPeriodically(&lastListen, LISTEN_PERIOD, discoveryListen);
     runPeriodically(&lastPing, PING_PERIOD, discoveryPing);
+    runPeriodically(&lastPong, PONG_PERIOD, discoveryPong);
 }
 
 void networkQuit() {

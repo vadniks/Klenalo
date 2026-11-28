@@ -165,14 +165,13 @@ void lifecycleLoop() {
 
 void lifecycleQuit() {
     assert(gInitialized);
+    gInitialized = false;
 
     networkQuit();
     cryptoQuit();
 
     assert(!thrd_join(gNetworkActionsLooper.thread, nullptr));
     assert(!thrd_join(gBackgroundActionsLooper.thread, nullptr));
-
-    gInitialized = false;
 
     dequeDestroy(gNetworkActionsLooper.queue);
     dequeDestroy(gBackgroundActionsLooper.queue);

@@ -6,6 +6,7 @@
 #include "../../common/collections/treemap.h"
 #include "../../common/collections/vector.h"
 #include "../../common/collections/deque.h"
+#include "shared.h"
 #include "network.h"
 #include "discovery.h"
 
@@ -27,20 +28,20 @@ typedef struct xpacked {
     CryptoSignature signature;
 } PingPongPacket;
 
+typedef struct xpacked {
+    PingPongPacket packet;
+    struct in6_addr address;
+} DeferredPongPacket;
+
 static constexpr struct in6_addr MULTICAST_ADDR = {{.__u6_addr32 = {bswap(0xff020000), 0, 0, bswap(1)}}};
 
 static atomic bool gInitialized = false;
-
 static int gListenerSocket = 0; // listens for others
 static int gInquirerSocket = 0; // pings
-
 static struct in6_addr gHostAddress = {};
-static int gInterfaceIndex = 0;
-
-// TODO: temp
-static CryptoKey gListenerPublicKey, glistenerSecretKey, gInquirerPublicKey, gInquirerSecretKey;
-
-// static typed(Deque*, UdpPacket*) gPacketsToSendDeque = nullptr;
+static unsigned gInterfaceIndex = 0;
+static CryptoKey gListenerPublicKey, glistenerSecretKey, gInquirerPublicKey, gInquirerSecretKey; // TODO: temp
+static typed(Deque*, *) gDeferredPongPacketsQueue = nullptr;
 
 static typed(Vector*, Interface*) queryInterfaces();
 static void createListener();
@@ -58,14 +59,13 @@ void discoveryInit() {
     gHostAddress = host.linkLocal.native;
     gInterfaceIndex = host.interfaceIndex;
 
-printf("if %u ", gInterfaceIndex);
-printMemory(&gHostAddress, sizeof(struct in6_addr), PRINT_MEMORY_MODE_IPV6, true);
-
     createListener();
     createInquirer();
 
     cryptoKeypair(&gListenerPublicKey, &glistenerSecretKey);
     cryptoKeypair(&gInquirerPublicKey, &gInquirerSecretKey);
+
+    gDeferredPongPacketsQueue = dequeCreate(free);
 }
 
 static typed(Vector*, Interface*) queryInterfaces() {
@@ -160,6 +160,7 @@ static bool isThisHost(const struct in6_addr* const addr) {
 
 static void processIncomingPing(const struct sockaddr_in6* const addr, const PingPongPacket* const pingPacket) {
     printf("process ping %hu ", addr->sin6_port); printMemory(&addr->sin6_addr, sizeof(struct in6_addr), PRINT_MEMORY_MODE_IPV6, true);
+    assert(addr->sin6_scope_id == gInterfaceIndex);
 
     CryptoKey globalPublicKey, globalSecretKey;
     credentialsGlobalSignKey(&globalPublicKey, true);
@@ -169,25 +170,11 @@ static void processIncomingPing(const struct sockaddr_in6* const addr, const Pin
     assert(verified);
 
     if (verified) {
-        PingPongPacket pongPacket = {{PONG_PACKET_MAGIC, PROGRAM_VERSION, gListenerPublicKey}, {}};
-        cryptoSign(&pongPacket.signature, &pongPacket, sizeof(PingPongPacketPayload), &globalPublicKey, &globalSecretKey);
-
-        assert(sendto( // TODO: send asynchronously through the queue from inside the networkLoopBody's centralized dedicated func inside discovery
-            gInquirerSocket,
-            &pongPacket,
-            sizeof pongPacket,
-            0,
-            (struct sockaddr*) &(struct sockaddr_in6) {
-                AF_INET6,
-                bswap((ushort) LISTENING_PORT),
-                0,
-                addr->sin6_addr,
-                addr->sin6_scope_id
-            },
-            sizeof(struct sockaddr_in6)
-        ) == sizeof pongPacket);
-
-        puts("pong");
+        DeferredPongPacket* const deferred = malloc(sizeof *deferred);
+        deferred->packet = (PingPongPacket) {{PONG_PACKET_MAGIC, PROGRAM_VERSION, gListenerPublicKey}, {}};
+        cryptoSign(&deferred->packet.signature, &deferred->packet, sizeof(PingPongPacketPayload), &globalPublicKey, &globalSecretKey);
+        deferred->address = addr->sin6_addr;
+        dequeQueuePush(gDeferredPongPacketsQueue, deferred);
     }
 
     cryptoZeroMemory(&globalPublicKey, sizeof globalPublicKey);
@@ -211,6 +198,8 @@ static void processIncomingPong(const struct sockaddr_in6* const addr, const Pin
 }
 
 void discoveryListen() {
+    assert(gInitialized && networkInitialized());
+
     byte buffer[BUFFER_SIZE] = {}; // TODO: select/poll/epoll
     int readSize = 0;
 
@@ -219,11 +208,6 @@ void discoveryListen() {
          memset(&addr, 0xff, sizeof addr);
          unsigned socklen = sizeof addr;
          readSize = (int) recvfrom(gListenerSocket, buffer, sizeof buffer, 0, (struct sockaddr*) &addr, &socklen);
-
-if (readSize >= 0) {
-    printf("                           li %d %u %u ", readSize, socklen, addr.sin6_port);
-    printMemory(&addr.sin6_addr, 16, PRINT_MEMORY_MODE_IPV6, true);
-}
 
          if (readSize < 0 && errno == EWOULDBLOCK) break; // EWOULDBLOCK = EAGAIN
          else if (readSize < 0) assert(false);
@@ -242,6 +226,8 @@ if (readSize >= 0) {
 }
 
 void discoveryPing() {
+    assert(gInitialized && networkInitialized());
+
     CryptoKey globalPublicKey, globalSecretKey;
     credentialsGlobalSignKey(&globalPublicKey, true);
     credentialsGlobalSignKey(&globalSecretKey, false);
@@ -272,9 +258,38 @@ void discoveryPing() {
     puts("ping");
 }
 
+void discoveryPong() {
+    assert(gInitialized && networkInitialized());
+
+    while (dequeQueuePeek(gDeferredPongPacketsQueue)) {
+        DeferredPongPacket* const deferred = dequeQueuePop(gDeferredPongPacketsQueue, false);
+
+        assert(sendto(
+            gInquirerSocket,
+            &deferred->packet,
+            sizeof(PingPongPacket),
+            0,
+            (struct sockaddr*) &(struct sockaddr_in6) {
+                AF_INET6,
+                bswap((ushort) LISTENING_PORT),
+                0,
+                deferred->address,
+                gInterfaceIndex
+            },
+            sizeof(struct sockaddr_in6)
+        ) == sizeof(PingPongPacket));
+
+        free(deferred);
+
+        puts("pong");
+    }
+}
+
 void discoveryQuit() {
     assert(gInitialized);
     gInitialized = false;
+
+    dequeDestroy(gDeferredPongPacketsQueue);
 
     close(gListenerSocket);
     close(gInquirerSocket);

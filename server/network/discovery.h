@@ -3,9 +3,8 @@
 
 #pragma once
 
-#include "shared.h"
-
 void discoveryInit();
 void discoveryListen();
 void discoveryPing();
+void discoveryPong();
 void discoveryQuit();
