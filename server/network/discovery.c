@@ -158,24 +158,24 @@ static bool isThisHost(const struct in6_addr* const addr) {
     return !memcmp(&gHostAddress, addr, sizeof gHostAddress);
 }
 
-static void processIncomingPing(const struct sockaddr_in6* const addr, const PingPongPacket* const packet) {
+static void processIncomingPing(const struct sockaddr_in6* const addr, const PingPongPacket* const pingPacket) {
     printf("process ping %hu ", addr->sin6_port); printMemory(&addr->sin6_addr, sizeof(struct in6_addr), PRINT_MEMORY_MODE_IPV6, true);
 
     CryptoKey globalPublicKey, globalSecretKey;
     credentialsGlobalSignKey(&globalPublicKey, true);
     credentialsGlobalSignKey(&globalSecretKey, false);
 
-    const bool verified = cryptoSignVerify(&packet->signature, packet, sizeof(PingPongPacketPayload), &globalPublicKey);
+    const bool verified = cryptoSignVerify(&pingPacket->signature, pingPacket, sizeof(PingPongPacketPayload), &globalPublicKey);
     assert(verified);
 
     if (verified) {
-        PingPongPacket reply = {{PONG_PACKET_MAGIC, PROGRAM_VERSION, gListenerPublicKey}, {}};
-        cryptoSign(&reply.signature, &reply, sizeof(PingPongPacketPayload), &globalPublicKey, &globalSecretKey);
+        PingPongPacket pongPacket = {{PONG_PACKET_MAGIC, PROGRAM_VERSION, gListenerPublicKey}, {}};
+        cryptoSign(&pongPacket.signature, &pongPacket, sizeof(PingPongPacketPayload), &globalPublicKey, &globalSecretKey);
 
         assert(sendto( // TODO: send asynchronously through the queue from inside the networkLoopBody's centralized dedicated func inside discovery
             gInquirerSocket,
-            &packet,
-            sizeof packet,
+            &pongPacket,
+            sizeof pongPacket,
             0,
             (struct sockaddr*) &(struct sockaddr_in6) {
                 AF_INET6,
@@ -185,7 +185,7 @@ static void processIncomingPing(const struct sockaddr_in6* const addr, const Pin
                 addr->sin6_scope_id
             },
             sizeof(struct sockaddr_in6)
-        ) == sizeof packet);
+        ) == sizeof pongPacket);
 
         puts("pong");
     }
@@ -220,10 +220,10 @@ void discoveryListen() {
          unsigned socklen = sizeof addr;
          readSize = (int) recvfrom(gListenerSocket, buffer, sizeof buffer, 0, (struct sockaddr*) &addr, &socklen);
 
-// if (readSize >= 0) {
-//     printf("li %d %u %u ", readSize, socklen, addr.sin6_port);
-//     printMemory(&addr.sin6_addr, 16, PRINT_MEMORY_MODE_IPV6, true);
-// }
+if (readSize >= 0) {
+    printf("                           li %d %u %u ", readSize, socklen, addr.sin6_port);
+    printMemory(&addr.sin6_addr, 16, PRINT_MEMORY_MODE_IPV6, true);
+}
 
          if (readSize < 0 && errno == EWOULDBLOCK) break; // EWOULDBLOCK = EAGAIN
          else if (readSize < 0) assert(false);
@@ -233,7 +233,7 @@ void discoveryListen() {
              const auto* const packet = (PingPongPacket*) buffer;
              switch (packet->magic) {
                  case PING_PACKET_MAGIC: processIncomingPing(&addr, packet); break;
-                 case PONG_PACKET_MAGIC: puts("x"); processIncomingPong(&addr, packet); break;
+                 case PONG_PACKET_MAGIC: processIncomingPong(&addr, packet); break;
                  default: assert(false);
              }
          }
