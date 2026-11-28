@@ -119,6 +119,7 @@ void free(void* ptr);
 void* memset(void* s, int c, ulong n);
 void* memmove(void* dest, const void* src, ulong n);
 void* memcpy(void* restrict dest, const void* restrict src, ulong n);
+int memcmp(const void* s1, const void* s2, ulong n);
 
 char* strncpy(char* restrict dest, const char* restrict src, ulong n);
 

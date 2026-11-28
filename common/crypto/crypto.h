@@ -54,7 +54,7 @@ bool cryptoSignVerify(const CryptoSignature* signature, const void* data, int da
 // } CryptoKeypair;
 
 void cryptoKeypair(CryptoKey* publicKey, CryptoKey* secretKey);
-void cryptoExchangeKeys(
+bool cryptoExchangeKeys(
     CryptoKey* receiveKey,
     CryptoKey* sendKey,
     const CryptoKey* sourcePublicKey,

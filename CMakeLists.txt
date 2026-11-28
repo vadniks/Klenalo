@@ -166,10 +166,9 @@ set(EXE_COMPILER_FLAGS
 )
 
 add_compile_definitions(
-    "-D_GNU_SOURCE=
+    -D_GNU_SOURCE=
     -D_THREAD_SAFE=
-    -U_FORTIFY_SOURCE=
-    -D_FORTIFY_SOURCE=3"
+    -D_FORTIFY_SOURCE=3
 )
 
 include_directories(

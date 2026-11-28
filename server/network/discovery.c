@@ -5,6 +5,7 @@
 #include "../../common/crypto/credentials.h"
 #include "../../common/collections/treemap.h"
 #include "../../common/collections/vector.h"
+#include "../../common/collections/deque.h"
 #include "network.h"
 #include "discovery.h"
 
@@ -29,9 +30,43 @@ typedef struct xpacked {
 static constexpr struct in6_addr MULTICAST_ADDR = {{.__u6_addr32 = {bswap(0xff020000), 0, 0, bswap(1)}}};
 
 static atomic bool gInitialized = false;
+
 static int gListenerSocket = 0; // listens for others
 static int gInquirerSocket = 0; // pings
+
+static struct in6_addr gHostAddress = {};
 static int gInterfaceIndex = 0;
+
+// TODO: temp
+static CryptoKey gListenerPublicKey, glistenerSecretKey, gInquirerPublicKey, gInquirerSecretKey;
+
+// static typed(Deque*, UdpPacket*) gPacketsToSendDeque = nullptr;
+
+static typed(Vector*, Interface*) queryInterfaces();
+static void createListener();
+static void createInquirer();
+
+void discoveryInit() {
+    assert(!gInitialized && networkInitialized());
+    gInitialized = true;
+
+    Vector* const interfaces = queryInterfaces();
+    const Interface* const interface = vectorGet(interfaces, 0);
+    const Address host = {interface->linkLocalAddress, interface->index};
+    vectorDestroy(interfaces);
+
+    gHostAddress = host.linkLocal.native;
+    gInterfaceIndex = host.interfaceIndex;
+
+printf("if %u ", gInterfaceIndex);
+printMemory(&gHostAddress, sizeof(struct in6_addr), PRINT_MEMORY_MODE_IPV6, true);
+
+    createListener();
+    createInquirer();
+
+    cryptoKeypair(&gListenerPublicKey, &glistenerSecretKey);
+    cryptoKeypair(&gInquirerPublicKey, &gInquirerSecretKey);
+}
 
 static typed(Vector*, Interface*) queryInterfaces() {
     struct ifaddrs* addrs;
@@ -114,68 +149,95 @@ static void createInquirer() {
     assert(!bind(gInquirerSocket, (const struct sockaddr*) &addr, sizeof addr));
 }
 
-// TODO: server actually doesn't need SDL library at all
-
-void discoveryInit() {
-    assert(!gInitialized && networkInitialized());
-    gInitialized = true;
-
-    Vector* const interfaces = queryInterfaces();
-    const Interface* const interface = vectorGet(interfaces, 0);
-    const Address host = {interface->linkLocalAddress, interface->index};
-    vectorDestroy(interfaces);
-
-    gInterfaceIndex = host.interfaceIndex;
-
-    createListener();
-    createInquirer();
+static bool isLoopback(const struct in6_addr* const addr) {
+    const struct in6_addr loopback = {.__in6_u.__u6_addr32 = {0, 0, 0, bswap(1)}};
+    return !memcmp(addr, &loopback, sizeof loopback);
 }
 
-static bool isLoopback(const In6Addr* const addr) {
-    const vec16uq loopback = {0, bswap(1l)};
-    return compareXmmVectors((vec16uq) addr->vectorized, loopback);
+static bool isThisHost(const struct in6_addr* const addr) {
+    return !memcmp(&gHostAddress, addr, sizeof gHostAddress);
+}
+
+static void processIncomingPing(const struct sockaddr_in6* const addr, const PingPongPacket* const packet) {
+    printf("process ping %hu ", addr->sin6_port); printMemory(&addr->sin6_addr, sizeof(struct in6_addr), PRINT_MEMORY_MODE_IPV6, true);
+
+    CryptoKey globalPublicKey, globalSecretKey;
+    credentialsGlobalSignKey(&globalPublicKey, true);
+    credentialsGlobalSignKey(&globalSecretKey, false);
+
+    const bool verified = cryptoSignVerify(&packet->signature, packet, sizeof(PingPongPacketPayload), &globalPublicKey);
+    assert(verified);
+
+    if (verified) {
+        PingPongPacket reply = {{PONG_PACKET_MAGIC, PROGRAM_VERSION, gListenerPublicKey}, {}};
+        cryptoSign(&reply.signature, &reply, sizeof(PingPongPacketPayload), &globalPublicKey, &globalSecretKey);
+
+        assert(sendto( // TODO: send asynchronously through the queue from inside the networkLoopBody's centralized dedicated func inside discovery
+            gInquirerSocket,
+            &packet,
+            sizeof packet,
+            0,
+            (struct sockaddr*) &(struct sockaddr_in6) {
+                AF_INET6,
+                bswap((ushort) LISTENING_PORT),
+                0,
+                addr->sin6_addr,
+                addr->sin6_scope_id
+            },
+            sizeof(struct sockaddr_in6)
+        ) == sizeof packet);
+
+        puts("pong");
+    }
+
+    cryptoZeroMemory(&globalPublicKey, sizeof globalPublicKey);
+    cryptoZeroMemory(&globalSecretKey, sizeof globalSecretKey);
+}
+
+static void processIncomingPong(const struct sockaddr_in6* const addr, const PingPongPacket* const packet) {
+    printf("process pong %hu ", addr->sin6_port); printMemory(&addr->sin6_addr, sizeof(struct in6_addr), PRINT_MEMORY_MODE_IPV6, true);
+
+    CryptoKey receiveKey, sendKey;
+    const bool successful = cryptoExchangeKeys(
+        &receiveKey,
+        &sendKey,
+        &gListenerPublicKey,
+        &glistenerSecretKey,
+        &packet->publicKey,
+        true
+    );
+
+    printf("ping-pong %s\n", boolToStr(successful));
 }
 
 void discoveryListen() {
-    byte buffer[BUFFER_SIZE] = {};
+    byte buffer[BUFFER_SIZE] = {}; // TODO: select/poll/epoll
     int readSize = 0;
+
      while (true) {
          struct sockaddr_in6 addr;
-         unsigned socklen = 0;
+         memset(&addr, 0xff, sizeof addr);
+         unsigned socklen = sizeof addr;
          readSize = (int) recvfrom(gListenerSocket, buffer, sizeof buffer, 0, (struct sockaddr*) &addr, &socklen);
 
-printf("%d\n", readSize); //
+// if (readSize >= 0) {
+//     printf("li %d %u %u ", readSize, socklen, addr.sin6_port);
+//     printMemory(&addr.sin6_addr, 16, PRINT_MEMORY_MODE_IPV6, true);
+// }
 
          if (readSize < 0 && errno == EWOULDBLOCK) break; // EWOULDBLOCK = EAGAIN
          else if (readSize < 0) assert(false);
          else if (readSize == 0 || addr.sin6_family != AF_INET6) continue;
 
-         if (readSize == sizeof(PingPongPacket) /*&& !isOurPacket(datagram)*/) {
-             printf("received: ");
-             printMemory(&addr.sin6_addr, 16, PRINT_MEMORY_MODE_IPV6, false);
-             printf(" %hu %u\n", addr.sin6_port, addr.sin6_scope_id);
-
+         if (readSize == sizeof(PingPongPacket) && !isLoopback(&addr.sin6_addr) && !isThisHost(&addr.sin6_addr)) {
              const auto* const packet = (PingPongPacket*) buffer;
-             if (packet->magic == PING_PACKET_MAGIC) {
-                 CryptoKey globalPublicKey, globalSecretKey;
-                 credentialsGlobalSignKey(&globalPublicKey, true);
-                 credentialsGlobalSignKey(&globalSecretKey, false);
-
-                 const bool verified = cryptoSignVerify(&packet->signature, packet, sizeof(PingPongPacketPayload), &globalPublicKey);
-                 assert(verified);
-
-                 // if (verified) {
-                 //     PingPongPacket packet = {{PONG_PACKET_MAGIC, PROGRAM_VERSION, {}}, {}};
-                 //     cryptoSign(&packet.signature, &packet, sizeof(PingPongPacketPayload), &globalPublicKey, &globalSecretKey);
-                 //     assert(NET_SendDatagram(gInquirerSocket, datagram->addr, LISTENING_PORT, &packet, sizeof packet));
-                 //     puts("pong");
-                 // }
-
-                 cryptoZeroMemory(&globalPublicKey, sizeof globalPublicKey);
-                 cryptoZeroMemory(&globalSecretKey, sizeof globalSecretKey);
+             switch (packet->magic) {
+                 case PING_PACKET_MAGIC: processIncomingPing(&addr, packet); break;
+                 case PONG_PACKET_MAGIC: puts("x"); processIncomingPong(&addr, packet); break;
+                 default: assert(false);
              }
          }
-     };
+     }
      puts("listen");
 }
 
@@ -184,7 +246,7 @@ void discoveryPing() {
     credentialsGlobalSignKey(&globalPublicKey, true);
     credentialsGlobalSignKey(&globalSecretKey, false);
 
-    PingPongPacket packet = {{PING_PACKET_MAGIC, PROGRAM_VERSION, {}}, {}};
+    PingPongPacket packet = {{PING_PACKET_MAGIC, PROGRAM_VERSION, gInquirerPublicKey}, {}};
     cryptoSign(&packet.signature, &packet, sizeof(PingPongPacketPayload), &globalPublicKey, &globalSecretKey);
 
     cryptoZeroMemory(&globalPublicKey, sizeof globalPublicKey);
@@ -197,7 +259,13 @@ void discoveryPing() {
         &packet,
         sizeof packet,
         0,
-        (struct sockaddr*) &(struct sockaddr_in6) {AF_INET6, bswap((ushort) LISTENING_PORT), 0, MULTICAST_ADDR, gInterfaceIndex},
+        (struct sockaddr*) &(struct sockaddr_in6) {
+            AF_INET6,
+            bswap((ushort) LISTENING_PORT),
+            0,
+            MULTICAST_ADDR,
+            gInterfaceIndex
+        },
         sizeof(struct sockaddr_in6)
     ) == sizeof packet);
 
