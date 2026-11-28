@@ -11,7 +11,7 @@ enum {
     PONG_PERIOD = 1000
 };
 
-static atomic bool gInitialized = false;
+static bool gInitialized = false;
 
 void networkInit() {
     assert(!gInitialized && lifecycleInitialized());

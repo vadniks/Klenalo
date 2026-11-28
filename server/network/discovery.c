@@ -35,7 +35,7 @@ typedef struct xpacked {
 
 static constexpr struct in6_addr MULTICAST_ADDR = {{.__u6_addr32 = {bswap(0xff020000), 0, 0, bswap(1)}}};
 
-static atomic bool gInitialized = false;
+static bool gInitialized = false;
 static int gListenerSocket = 0; // listens for others
 static int gInquirerSocket = 0; // pings
 static struct in6_addr gHostAddress = {};

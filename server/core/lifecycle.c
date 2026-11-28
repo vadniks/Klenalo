@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 #include <sanitizer/lsan_interface.h>
-#include <threads.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,31 +13,15 @@
 typedef struct {
     const LifecycleAsyncActionFunction function;
     void* nullable const parameter;
-    const int delayMillis;
 } AsyncAction;
-
-typedef enum {
-    LOOPER_MAIN,
-    LOOPER_BACKGROUND,
-    LOOPER_NETWORK
-} Looper;
 
 static constexpr int UPDATE_PERIOD = 1000 / 60; // floorf(1000.0f / 60.0f)
 
-static atomic bool gInitialized = false;
-static atomic bool gRunning = false;
+static bool gInitialized = false;
+static bool gRunning = false;
 static int gTicker = 0;
 
-static struct {
-    typed(Deque*, AsyncAction*) nullable queue;
-    thrd_t thread;
-}
-    gMainActionsLooper = {nullptr, 0},
-    gBackgroundActionsLooper = {nullptr, 0},
-    gNetworkActionsLooper = {nullptr, 0};
-
-static int backgroundActionsLoop(void* nullable);
-static int networkActionsLoop(void* nullable);
+typed(Deque*, AsyncAction*) nullable gActionsQueue = nullptr;
 
 static void signalHandler(const int signal) {
     assert(signal == SIGINT || signal == SIGTERM);
@@ -56,13 +39,7 @@ void lifecycleInit() {
     assert(!signal(SIGINT, signalHandler));
     assert(!signal(SIGTERM, signalHandler));
 
-    gMainActionsLooper.queue = dequeCreate(free);
-
-    gBackgroundActionsLooper.queue = dequeCreate(free);
-    leaky(assert(!thrd_create(&gBackgroundActionsLooper.thread, backgroundActionsLoop, nullptr) && gBackgroundActionsLooper.thread);)
-
-    gNetworkActionsLooper.queue = dequeCreate(free);
-    leaky(assert(!thrd_create(&gNetworkActionsLooper.thread, networkActionsLoop, nullptr) && gNetworkActionsLooper.thread);)
+    gActionsQueue = dequeCreate(free);
 
     cryptoInit();
     networkInit();
@@ -78,54 +55,13 @@ static void delayThread(const unsigned startMillis) {
         xsleep(UPDATE_PERIOD - differenceMillis);
 }
 
-static AsyncAction* nullable nextAsyncAction(const Looper looper) {
-    return dequeQueuePop(looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.queue : gMainActionsLooper.queue, false);
-}
-
-static void threadLoop(void (* nullable const body)(), const Looper looper) {
-    while (!gRunning) {} // wait for main thread to start looping
-    unsigned startMillis;
-
-    while (gRunning) {
-        assert(startMillis = (unsigned) currentTimeMillis());
-
-        AsyncAction* action;
-        if ((action = nextAsyncAction(looper))) {
-            if (action->delayMillis) xsleep(action->delayMillis);
-            if (gRunning) action->function(action->parameter);
-            free(action);
-        }
-
-        if (body) body();
-        delayThread(startMillis);
-    }
-}
-
-static int backgroundActionsLoop(void* nullable const) {
-    threadLoop(nullptr, LOOPER_BACKGROUND);
-    return 0;
-}
-
-static int networkActionsLoop(void* nullable const) {
-    threadLoop(networkLoopBody, LOOPER_NETWORK);
-    return 0;
-}
-
-static void scheduleAction(const LifecycleAsyncActionFunction function, void* nullable const parameter, const int delayMillis, const Looper looper) {
+void lifecycleRunDeferred(const LifecycleAsyncActionFunction function, void* nullable const parameter) {
     assert(gInitialized);
 
     AsyncAction* const action = malloc(sizeof *action);
-    assignToStructWithConsts(action, function, parameter, delayMillis)
+    assignToStructWithConsts(action, function, parameter)
 
-    dequeQueuePush(looper == LOOPER_BACKGROUND ? gBackgroundActionsLooper.queue : gMainActionsLooper.queue, action);
-}
-
-void lifecycleRunInBackground(const LifecycleAsyncActionFunction function, void* nullable const parameter, const int delayMillis) {
-    scheduleAction(function, parameter, delayMillis, LOOPER_BACKGROUND);
-}
-
-void lifecycleRunInMainThread(const LifecycleAsyncActionFunction function, void* nullable const parameter) {
-    scheduleAction(function, parameter, 0, LOOPER_MAIN);
+    dequeQueuePush(gActionsQueue, action);
 }
 
 static void pulse() {
@@ -151,10 +87,12 @@ void lifecycleLoop() {
     while (gRunning) {
         assert(startMillis = (unsigned) currentTimeMillis());
 
-        if ((action = nextAsyncAction(LOOPER_MAIN))) {
+        if ((action = dequeQueuePop(gActionsQueue, false))) {
             action->function(action->parameter);
             free(action);
         }
+
+        networkLoopBody();
 
         delayThread(startMillis);
         // pulse();
@@ -170,10 +108,5 @@ void lifecycleQuit() {
     networkQuit();
     cryptoQuit();
 
-    assert(!thrd_join(gNetworkActionsLooper.thread, nullptr));
-    assert(!thrd_join(gBackgroundActionsLooper.thread, nullptr));
-
-    dequeDestroy(gNetworkActionsLooper.queue);
-    dequeDestroy(gBackgroundActionsLooper.queue);
-    dequeDestroy(gMainActionsLooper.queue);
+    dequeDestroy(gActionsQueue);
 }
